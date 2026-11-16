@@ -361,3 +361,9 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 .harmonics.collapsed .harmonics-head { padding-bottom: 0; }
 .harmonics.collapsed .harmonics-head::after { display: none; }
 .harmonics.collapsed { flex: 0 0 auto; }
+
+/* small screens: the play icon is 2.1 times as large (46% -> 96.6% of the button) */
+@media (max-width: 600px) {
+  .play { grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
+  .play svg { width: 96.6%; height: 96.6%; pointer-events: none; }
+}

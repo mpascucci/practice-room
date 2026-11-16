@@ -232,3 +232,10 @@ body {
 .credits-body a { color: #6aa8ff; overflow-wrap: anywhere; }
 .credits-body code { font-size: .85em; background: #00000040; padding: 1px 4px; border-radius: 4px; overflow-wrap: anywhere; }
 #creditsClose { flex: none; margin: 8px 20px 16px; min-height: 40px; border-radius: 9px; border: 1px solid var(--line); background: var(--tab); color: var(--text); font: 600 .95rem system-ui, sans-serif; cursor: pointer; }
+
+/* small screens: the play icon in the tab buttons is twice as large (44% -> 88% of the button; the svg may
+   extend past the circle, the glyph itself stays inside) */
+@media (max-width: 600px) {
+  .play { grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
+  .play svg { width: 88%; height: 88%; pointer-events: none; }
+}

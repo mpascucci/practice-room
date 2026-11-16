@@ -241,3 +241,9 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 .loop-pause { display: flex; align-items: center; gap: 12px; }
 .loop-pause label { flex: 0 0 auto; min-width: 7.5ch; }
 .loop-pause input[type="range"] { flex: 1 1 auto; }
+
+/* small devices: the play icon is 2.1 times as large (44% -> 92.4% of the button) */
+@media (max-width: 600px), (max-height: 480px) {
+  .play { grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
+  .play svg { width: 92.4%; height: 92.4%; pointer-events: none; }
+}
