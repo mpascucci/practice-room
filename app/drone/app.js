@@ -1,7 +1,7 @@
 // Drone — additive drone: one sine partial per harmonic, bellows-like breathing.
 
-const SOLFEGE = ['DO', 'DO♯', 'RE', 'RE♯', 'MI', 'FA', 'FA♯', 'SOL', 'SOL♯', 'LA', 'LA♯', 'SI'];
-const LETTERS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
+const SOLFEGE = ['DO', 'DO♯', 'RE', 'RE♯', 'MI', 'FA', 'FA♯', 'SOL', 'SOL♯', 'LA', 'SI♭', 'SI'];
+const LETTERS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B'];
 const HARMONICS = 13;
 const STORAGE_KEY = 'shrutibox:v1';
 const ATTACK = 0.6, RELEASE = 0.9, GLIDE = 0.08; // seconds

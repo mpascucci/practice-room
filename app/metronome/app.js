@@ -2,7 +2,7 @@
 
 const STATES = ['silent', 'normal', 'accent'];
 const MIN_BEATS = 1, MAX_BEATS = 24;
-const MIN_MEASURES = 1, MAX_MEASURES = 4;
+const MIN_MEASURES = 1, MAX_MEASURES = 8;
 const MIN_BPM = 20, MAX_BPM = 300;
 const LOOKAHEAD = 0.12;      // seconds of audio scheduled ahead
 const TICK_MS = 25;          // scheduler wake-up interval
@@ -11,8 +11,8 @@ const TAP_MAX = 9;           // taps kept for the running average (8 intervals)
 const STORAGE_KEY = 'metronome:v2';
 const TIMBRES = ['string', 'brass'];
 const MIN_DENOM = 1, MAX_DENOM = 16;
-const LETTERS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'A♯', 'B'];
-const SOLFEGE = ['DO', 'DO♯', 'RE', 'RE♯', 'MI', 'FA', 'FA♯', 'SOL', 'SOL♯', 'LA', 'LA♯', 'SI'];
+const LETTERS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B'];
+const SOLFEGE = ['DO', 'DO♯', 'RE', 'RE♯', 'MI', 'FA', 'FA♯', 'SOL', 'SOL♯', 'LA', 'SI♭', 'SI'];
 const MIN_OCT = 1, MAX_OCT = 6;
 const MIN_MIDI = 12 * (MIN_OCT + 1), MAX_MIDI = 12 * (MAX_OCT + 1) + 11;
 const freqOfMidi = (m) => 440 * Math.pow(2, (m - 69) / 12);
