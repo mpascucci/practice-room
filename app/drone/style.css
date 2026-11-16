@@ -56,7 +56,6 @@ body {
 }
 
 .field { display: flex; flex-direction: column; gap: 5px; }
-.field.master { flex: 1 1 120px; min-width: 120px; }
 
 label, .harmonics-head > span {
   font-size: .72rem;
@@ -327,7 +326,6 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
   .row { grid-template-columns: 66px 74px 1fr 30px; gap: 8px; padding: 0 8px; }
   .hz { display: none; }
   .pitch { font-size: .8rem; }
-  .field.master { flex-basis: 100%; order: 5; }
   /* row 1: heading + instrument picker; row 2: the buttons */
   .harmonics-head { gap: 8px 5px; }
   .bulk { display: contents; }

@@ -26,7 +26,6 @@ function sweepSignal(i, u) {
 const defaults = () => ({
   note: 0,          // pitch class, 0 = C
   octave: 3,
-  master: 70,
   mod: { on: false, rate: 0.2, depth: 70, from: 2 },
   swell: { on: false, rate: 0.1, depth: 70 },
   harmonics: Array.from({ length: HARMONICS }, (_, i) => ({
@@ -39,7 +38,6 @@ const $ = (id) => document.getElementById(id);
 const playBtn = $('play');
 const noteSel = $('note');
 const octaveSel = $('octave');
-const masterRange = $('master');
 const freqEl = $('freq');
 const rowsEl = $('rows');
 const sweepEl = document.querySelector('.sweep');
@@ -69,7 +67,6 @@ function load() {
     state = {
       note: Number.isInteger(s.note) && s.note >= 0 && s.note < 12 ? s.note : d.note,
       octave: [2, 3, 4].includes(s.octave) ? s.octave : d.octave,
-      master: Number.isFinite(s.master) ? Math.min(100, Math.max(0, s.master)) : d.master,
       mod: {
         on: false,   // sweep always starts off; rate, depth and range are remembered
         rate: Number.isFinite(s.mod?.rate) ? Math.min(RATE_MAX, Math.max(RATE_MIN, s.mod.rate)) : d.mod.rate,
@@ -109,6 +106,7 @@ function harmonicPitch(k) {
 
 // Perceptual slider → gain.
 const volToGain = (v) => Math.pow(v / 100, 2);
+const MASTER_VOL = 70;   // fixed output level (there is no volume slider here: the home page sets the level per app)
 
 // ---------- Audio graph ----------
 // partials[k] → partialGain[k] → mix → breath (bellows LFO) → master → limiter → out
@@ -349,7 +347,7 @@ function applyPitch() {
   nodes.partials.forEach((p, i) => p.osc.frequency.setTargetAtTime(f0 * (i + 1), ctx.currentTime, GLIDE));
 }
 
-function applyMaster(target = playing ? volToGain(state.master) : 0, tc = 0.05) {
+function applyMaster(target = playing ? volToGain(MASTER_VOL) : 0, tc = 0.05) {
   if (!nodes) return;
   const g = nodes.master.gain;
   g.cancelScheduledValues(ctx.currentTime);
@@ -362,7 +360,7 @@ function start() {
   if (!ctx) buildGraph();
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   playing = true;
-  applyMaster(volToGain(state.master), ATTACK / 3);   // bellows fill up
+  applyMaster(volToGain(MASTER_VOL), ATTACK / 3);   // bellows fill up
   playBtn.setAttribute('aria-pressed', 'true');
   playBtn.setAttribute('aria-label', 'Stop');
   syncAnimation();
@@ -515,8 +513,6 @@ const updateLevels = () => state.harmonics.forEach((_, i) => renderRow(i));
 function renderAll() {
   noteSel.value = state.note;
   octaveSel.value = state.octave;
-  masterRange.value = state.master;
-  setRangeFill(masterRange);
   renderMod();
   renderSwell();
   renderPitch();
@@ -540,12 +536,6 @@ noteSel.addEventListener('change', () => {
 octaveSel.addEventListener('change', () => {
   state.octave = +octaveSel.value;
   renderPitch(); applyPitch(); save();
-});
-masterRange.addEventListener('input', () => {
-  setRangeFill(masterRange);
-  state.master = masterRange.valueAsNumber;
-  if (playing) applyMaster();
-  save();
 });
 
 modOn.addEventListener('change', () => {
