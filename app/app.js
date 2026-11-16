@@ -142,6 +142,76 @@ let initial = location.hash.slice(1);
 if (!APPS.includes(initial)) { try { initial = localStorage.getItem(TAB_KEY); } catch {} }
 select(APPS.includes(initial) ? initial : 'metronome');
 
+// ---------- Credits dialog ----------
+// Shows CREDITS.md (cached by the service worker, so it works offline). A tiny Markdown subset is rendered
+// with DOM nodes (never innerHTML): #/## headings, paragraphs, "- " lists, **bold**, `code` and [links](https://...).
+const creditsDialog = document.getElementById('creditsDialog');
+const creditsBody = document.getElementById('creditsBody');
+let creditsLoaded = false;
+
+function mdInline(text, parent) {
+  for (const part of text.split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)]+\))/)) {
+    let m;
+    if (!part) continue;
+    if ((m = part.match(/^\*\*([^*]+)\*\*$/))) parent.append(Object.assign(document.createElement('strong'), { textContent: m[1] }));
+    else if ((m = part.match(/^`([^`]+)`$/))) parent.append(Object.assign(document.createElement('code'), { textContent: m[1] }));
+    else if ((m = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/)) && /^https?:\/\//.test(m[2])) {
+      const a = Object.assign(document.createElement('a'), { textContent: m[1], href: m[2], target: '_blank', rel: 'noopener' });
+      parent.append(a);
+    } else parent.append(part);
+  }
+}
+
+function renderMarkdown(md, root) {
+  root.replaceChildren();
+  let list = null, para = null;
+  const flush = () => { list = para = null; };
+  for (const raw of md.split('\n')) {
+    const line = raw.trimEnd();
+    let m;
+    if (!line.trim()) { flush(); continue; }
+    if ((m = line.match(/^(#{1,3})\s+(.*)$/))) {
+      flush();
+      const h = document.createElement(m[1].length === 1 ? 'h2' : 'h3');
+      mdInline(m[2], h);
+      if (!root.querySelector('[id="creditsTitle"]')) h.id = 'creditsTitle';
+      root.append(h);
+    } else if ((m = line.match(/^[-*]\s+(.*)$/))) {
+      para = null;
+      if (!list) root.append((list = document.createElement('ul')));
+      const li = document.createElement('li');
+      mdInline(m[1], li);
+      list.append(li);
+    } else {
+      list = null;
+      if (!para) root.append((para = document.createElement('p')));
+      else para.append(' ');
+      mdInline(line.trim(), para);
+    }
+  }
+}
+
+async function openCredits() {
+  creditsDialog.showModal();
+  if (creditsLoaded) return;
+  try {
+    const res = await fetch('CREDITS.md');
+    if (!res.ok) throw new Error(res.status);
+    renderMarkdown(await res.text(), creditsBody);
+    creditsLoaded = true;
+  } catch {
+    creditsBody.replaceChildren();
+    const p = document.createElement('p');
+    p.append('Could not load the credits. See ');
+    mdInline('[CREDITS.md on GitHub](https://github.com/mpascucci/practice-room/blob/main/app/CREDITS.md)', p);
+    p.append('.');
+    creditsBody.append(p);
+  }
+}
+document.getElementById('creditsBtn').addEventListener('click', openCredits);
+document.getElementById('creditsClose').addEventListener('click', () => creditsDialog.close());
+creditsDialog.addEventListener('click', (e) => { if (e.target === creditsDialog) creditsDialog.close(); });   // backdrop
+
 // ---------- PWA: offline support ----------
 // Service workers need http(s); skip when opened as a local file.
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {

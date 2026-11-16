@@ -72,8 +72,13 @@
               src="player/index.html" title="Player" allow="autoplay; microphone; screen-wake-lock"></iframe>
     </main>
 
-    <footer class="copyright">&copy; Marco Pascucci 2026 &middot; <a href="https://github.com/mpascucci/practice-room" target="_blank" rel="noopener">GitHub</a> &middot; <a href="https://buymeacoffee.com/mpascucci" target="_blank" rel="noopener">&#9749; Buy me a coffee</a></footer>
+    <footer class="copyright"><button type="button" class="linklike" id="creditsBtn" aria-haspopup="dialog">&copy; and Credits</button> &middot; <a href="https://github.com/mpascucci/practice-room" target="_blank" rel="noopener">GitHub</a> &middot; <a href="https://buymeacoffee.com/mpascucci" target="_blank" rel="noopener">&#9749; Buy me a coffee</a></footer>
   </div>
+
+  <dialog id="creditsDialog" aria-labelledby="creditsTitle">
+    <div class="credits-body" id="creditsBody" tabindex="0">Loading…</div>
+    <button type="button" id="creditsClose">Close</button>
+  </dialog>
 
   <script src="app.js" defer></script>
 </body>
