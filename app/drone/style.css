@@ -147,7 +147,13 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 }
 .play:active { transform: scale(.95); }
 .play:focus-visible { outline: 3px solid var(--amber); outline-offset: 3px; }
-.play svg { width: 46%; height: 46%; fill: currentColor; }
+.play { padding: 0; grid-template: minmax(0, 1fr) / minmax(0, 1fr); }   /* definite track + no default button padding, so the % sizes below are of the whole button */
+.play svg { fill: currentColor; pointer-events: none; }
+/* Uniform play/stop symbol, same in every app and at every size: its circumscribed circle is half the button's
+   diameter and concentric with the button. Triangle: circle d = 15.45/24 of the icon box, centre (11.27, 12), so the
+   box is 77.67% of the button, nudged right 3.04%. Square: d = 16.97/24, so the box is 70.71%. */
+.play .icon-play { width: 77.67%; height: 77.67%; transform: translateX(3.04%); }
+.play .icon-stop { width: 70.71%; height: 70.71%; }
 .play .icon-stop { display: none; }
 .play[aria-pressed="true"] { background: var(--stop); }
 .play[aria-pressed="true"] .icon-play { display: none; }
@@ -362,8 +368,3 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 .harmonics.collapsed .harmonics-head::after { display: none; }
 .harmonics.collapsed { flex: 0 0 auto; }
 
-/* small screens: the play icon is 2.1 times as large (46% -> 96.6% of the button) */
-@media (max-width: 600px) {
-  .play { grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
-  .play svg { width: 96.6%; height: 96.6%; pointer-events: none; }
-}

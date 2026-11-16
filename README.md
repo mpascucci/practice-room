@@ -3,11 +3,11 @@
 A small, installable web app for music practice: a **metronome**, a harmonic **drone** and an audio **player**, side by side. They can run at the same time, and the app works offline.
 
 <p align="center">
-  <img src="screenshots/metronome.png" alt="Metronome" width="150">
+  <a href="screenshots/metronome.png"><img src="screenshots/metronome.png" alt="Metronome" width="150"></a>
   &nbsp;&nbsp;
-  <img src="screenshots/drone.png" alt="Drone" width="150">
+  <a href="screenshots/drone.png"><img src="screenshots/drone.png" alt="Drone" width="150"></a>
   &nbsp;&nbsp;
-  <img src="screenshots/player.png" alt="Player" width="150">
+  <a href="screenshots/player.png"><img src="screenshots/player.png" alt="Player" width="150"></a>
 </p>
 
 Try it online: <https://mpascucci.github.io/practice-room/app>
@@ -36,7 +36,7 @@ Try it online: <https://mpascucci.github.io/practice-room/app>
 
 ## Credits
 
-The Tapan sounds are CC0 davul recordings from Freesound, and the Darabuka sounds are from Freesound under CC BY-NC 3.0; see [CREDITS.md](app/CREDITS.md).
+Some of the precussion sounds are taken from [Freesound](https://freesound.org/), and each has his own licence; see [CREDITS.md](app/CREDITS.md).
 
 ## AI disclaimer
 

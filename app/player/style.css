@@ -64,7 +64,13 @@ output { font-variant-numeric: tabular-nums; color: var(--text); margin-left: 6p
   width: 72px; height: 72px; min-height: 0; padding: 0; border: 0; border-radius: 50%;
   background: var(--play); color: #fff; display: grid; place-items: center;
 }
-.play svg { width: 44%; height: 44%; fill: currentColor; }
+.play { padding: 0; grid-template: minmax(0, 1fr) / minmax(0, 1fr); }   /* definite track + no default button padding, so the % sizes below are of the whole button */
+.play svg { fill: currentColor; pointer-events: none; }
+/* Uniform play/stop symbol, same in every app and at every size: its circumscribed circle is half the button's
+   diameter and concentric with the button. Triangle: circle d = 15.45/24 of the icon box, centre (11.27, 12), so the
+   box is 77.67% of the button, nudged right 3.04%. Square: d = 16.97/24, so the box is 70.71%. */
+.play .icon-play { width: 77.67%; height: 77.67%; transform: translateX(3.04%); }
+.play .icon-stop { width: 70.71%; height: 70.71%; }
 .play .icon-stop { display: none; }
 .play[aria-pressed="true"] { background: var(--stop); }
 .play[aria-pressed="true"] .icon-play { display: none; }
@@ -242,11 +248,6 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 .loop-pause label { flex: 0 0 auto; min-width: 7.5ch; }
 .loop-pause input[type="range"] { flex: 1 1 auto; }
 
-/* small devices: the play icon is 2.1 times as large (44% -> 92.4% of the button) */
-@media (max-width: 600px), (max-height: 480px) {
-  .play { grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
-  .play svg { width: 92.4%; height: 92.4%; pointer-events: none; }
-}
 
 /* Shift held: the pointer is a capital I with serifs (loop selector). Panning (grabbing) still wins while dragging the view. */
 .wave.shift-select { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cpath d='M12 3V21M7.5 3H16.5M7.5 21H16.5' fill='none' stroke='black' stroke-opacity='.75' stroke-width='4.5' stroke-linecap='square'/%3E%3Cpath d='M12 3V21M7.5 3H16.5M7.5 21H16.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='square'/%3E%3C/svg%3E") 12 12, text; }
