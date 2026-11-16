@@ -217,3 +217,13 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 @media (max-width: 600px) {
   .speed-panel .ticks { grid-column: 1; grid-row: 3; margin-top: -2px; }   /* under the slider, not under the reset button */
 }
+
+/* Layout: the controls sit at the bottom; the waveform takes the height left above them, up to half its
+   own width (50cqw = half the width of .seek), and is centred vertically in that space. */
+.seek { flex: 1 1 0; min-height: 124px; display: flex; flex-direction: column; justify-content: center; container-type: inline-size; }
+.wave { flex: 1 1 0; height: auto; min-height: 96px; max-height: 50cqw; }
+
+/* small devices (phones, portrait or landscape): play button 30% smaller (72px -> ~50px) */
+@media (max-width: 600px), (max-height: 480px) {
+  .play { width: calc(72px * 0.7); height: calc(72px * 0.7); }
+}

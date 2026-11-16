@@ -212,6 +212,7 @@ function drawWave() {
   }
 }
 window.addEventListener('resize', drawWave);
+new ResizeObserver(drawWave).observe(el.wave.parentElement);   // the waveform height follows the available space
 
 // ---------- Rendering ----------
 function renderSpeed() {
