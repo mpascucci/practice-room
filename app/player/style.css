@@ -21,10 +21,11 @@ body {
 }
 .app {
   min-height: 100dvh;
-  width: min(100%, 720px);
+  width: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: clamp(10px, 2dvh, 18px);
   padding: max(14px, env(safe-area-inset-top)) max(14px, env(safe-area-inset-right))
            max(14px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left));
@@ -224,10 +225,10 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
   .speed-panel .ticks { grid-column: 1; grid-row: 3; margin-top: -2px; }   /* under the slider, not under the reset button */
 }
 
-/* Layout: the controls sit at the bottom; the waveform takes the height left above them, up to half its
-   own width (50cqw = half the width of .seek), and is centred vertically in that space. */
-.seek { flex: 1 1 0; min-height: 124px; display: flex; flex-direction: column; justify-content: center; container-type: inline-size; }
-.wave { flex: 1 1 0; height: auto; min-height: 96px; max-height: 50cqw; }
+/* Layout: the controls sit at the bottom; the waveform takes the height left above them, up to 300px, and is
+   centred vertically in that space. */
+.seek { flex: 1 1 0; min-height: 124px; display: flex; flex-direction: column; justify-content: center; }
+.wave { flex: 1 1 0; height: auto; min-height: 96px; max-height: 300px; }
 
 /* small devices (phones, portrait or landscape): play button 30% smaller (72px -> ~50px) */
 @media (max-width: 600px), (max-height: 480px) {
@@ -252,3 +253,8 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 /* Shift held: the pointer is a capital I with serifs (loop selector). Panning (grabbing) still wins while dragging the view. */
 .wave.shift-select { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cpath d='M12 3V21M7.5 3H16.5M7.5 21H16.5' fill='none' stroke='black' stroke-opacity='.75' stroke-width='4.5' stroke-linecap='square'/%3E%3Cpath d='M12 3V21M7.5 3H16.5M7.5 21H16.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='square'/%3E%3C/svg%3E") 12 12, text; }
 .wave.panning { cursor: grabbing; }
+
+/* Width: everything stays in a 720px centred column, except the waveform block, which spans the window with at
+   least a 100px margin on each side (never narrower than the column, so phones are unaffected). */
+.app > * { width: min(100%, 720px); }
+.app > .seek { width: max(min(100%, 720px), calc(100% - 172px)); }   /* window width minus 100px margins (172 = 200 - the 2x14px page padding), but never narrower than the 720px column */
