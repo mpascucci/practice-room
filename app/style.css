@@ -1,0 +1,211 @@
+:root {
+  --bg: #161616;
+  --bar: #1f1f1f;
+  --tab: #262626;
+  --tab-active: #303030;
+  --line: #3a3a3a;
+  --text: #ececec;
+  --muted: #9a9a9a;
+  --play: #2e7d32;
+  --stop: #b23a3a;
+  --metronome: #6aa8ff;
+  --drone: #e0a43a;
+  --player: #5fc9a0;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.3 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.shell { height: 100dvh; display: flex; flex-direction: column; }
+
+/* ---------- Top bar: tab + transport per app ---------- */
+.bar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) 8px max(8px, env(safe-area-inset-left));
+  background: var(--bar);
+  border-bottom: 1px solid #000;
+}
+
+.slot {
+  --c: var(--metronome);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 6px 6px 6px 12px;
+  border-radius: 12px;
+  background: var(--tab);
+  border: 1px solid transparent;
+  transition: background-color 150ms, border-color 150ms;
+}
+.slot[data-app="drone"] { --c: var(--drone); }
+.slot[data-app="player"] { --c: var(--player); }
+.slot.active { background: var(--tab-active); border-color: var(--line); }
+.slot.active::after {
+  content: "";
+  position: absolute;
+  left: 12px; right: 12px; bottom: -9px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--c);
+}
+
+/* the tab itself fills the slot; the play button sits beside it */
+.tab {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+.tab::before { content: ""; position: absolute; inset: 0; border-radius: 12px; } /* whole slot clickable */
+.tab:focus-visible { outline: none; }
+.slot:has(.tab:focus-visible) { outline: 2px solid #6aa8ff; outline-offset: 2px; }
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.ico { display: none; width: 22px; height: 22px; flex: 0 0 auto; }
+.led {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #444;
+  flex: 0 0 auto;
+}
+.slot.playing .led { background: var(--c); box-shadow: 0 0 8px var(--c); animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .45; } }
+
+.info {
+  max-width: 100%;
+  font-size: .78rem;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.info.warn { color: #ff9a8a; }
+
+.play {
+  position: relative;   /* above the slot-wide tab hit area */
+  z-index: 1;
+  flex: 0 0 auto;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--play);
+  color: #fff;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background-color 150ms, transform 80ms;
+}
+.play:active { transform: scale(.94); }
+.play:focus-visible { outline: 2px solid #6aa8ff; outline-offset: 2px; }
+.play svg { width: 44%; height: 44%; fill: currentColor; }
+.play .i-stop { display: none; }
+.slot.playing .play { background: var(--stop); }
+.slot.playing .play .i-play { display: none; }
+.slot.playing .play .i-stop { display: block; }
+
+/* ---------- App panes ---------- */
+.panes { position: relative; flex: 1 1 auto; min-height: 0; }
+.panes iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  /* keep inactive pane alive (audio, timers) but out of sight and out of the tab order */
+  visibility: hidden;
+}
+.panes iframe.active { visibility: visible; }
+
+.copyright {
+  flex: none;
+  padding: 6px 8px max(6px, env(safe-area-inset-bottom));
+  background: var(--bar);
+  border-top: 1px solid #000;
+  color: var(--muted);
+  font-size: .75rem;
+  text-align: center;
+}
+
+.copyright a { color: inherit; text-decoration: underline; }
+.copyright a:hover { color: var(--text); }
+
+/* narrow screens: tab labels become icons */
+@media (max-width: 600px) {
+  .name .label { display: none; }
+  .name .ico { display: block; }
+  .slot.playing .name .ico { color: var(--c); }
+  .info:not(.warn) { display: none; }
+  .slot { padding-left: 10px; gap: 6px; }
+  .play { width: 40px; height: 40px; }
+}
+
+@media (max-width: 380px) {
+  .slot { padding-left: 10px; gap: 6px; }
+  .name { font-size: .9rem; }
+  .play { width: 40px; height: 40px; }
+}
+
+/* ---------- Per-app volume button + popover ---------- */
+.vol {
+  position: relative; z-index: 1; flex: 0 0 auto;
+  width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%;
+  background: transparent; color: var(--muted); cursor: pointer;
+  display: grid; place-items: center;
+}
+.vol:hover, .vol[aria-expanded="true"] { color: var(--text); background: #ffffff14; }
+.vol:focus-visible { outline: 2px solid #6aa8ff; outline-offset: 2px; }
+.vol svg { width: 20px; height: 20px; }
+.slot.muted .vol .waves { display: none; }
+
+.volpop {
+  position: fixed; z-index: 10;
+  width: 84px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  padding: 12px 8px; border-radius: 12px;
+  background: var(--tab-active); border: 1px solid var(--line); box-shadow: 0 8px 24px #000a;
+}
+.volpop[hidden] { display: none; }
+.volname { order: 3; font-size: .72rem; font-weight: 600; color: var(--muted); }
+.volpop input {
+  order: 2;
+  writing-mode: vertical-lr; direction: rtl;   /* vertical, minimum at the bottom */
+  width: 28px; height: 140px; margin: 0;
+  accent-color: var(--c, var(--metronome)); cursor: pointer;
+}
+.volpop output { order: 1; font-variant-numeric: tabular-nums; font-size: .85rem; }
+
+@media (max-width: 600px) {
+  .bar { gap: 6px; }
+  .led { display: none; }
+  .vol { width: 28px; height: 28px; }
+  .vol svg { width: 18px; height: 18px; }
+  .play { width: 36px; height: 36px; }
+  .slot { gap: 2px; padding: 6px 6px 6px 8px; }
+}

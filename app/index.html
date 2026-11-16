@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f1f1f">
+  <title>Practice Room</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Practice">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="shell">
+    <nav class="bar" role="tablist" aria-label="Apps">
+      <div class="slot" data-app="metronome">
+        <button class="tab" role="tab" id="tab-metronome" aria-label="Metronome" aria-controls="pane-metronome" aria-selected="false">
+          <span class="name"><i class="led"></i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l4 18H5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 17 16 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14.7" cy="10" r="1.6" fill="currentColor"/></svg><span class="label">Metronome</span></span>
+          <span class="info" data-info></span>
+        </button>
+        <button class="vol" type="button" aria-label="Metronome volume" aria-haspopup="true" aria-expanded="false" title="Metronome volume"><svg class="i-vol" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.500v5h4l5 4v-13l-5 4z" fill="currentColor"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.500 6.500a8 8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        <button class="play" type="button" aria-label="Play metronome" aria-pressed="false">
+          <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+        </button>
+      </div>
+
+      <div class="slot" data-app="drone">
+        <button class="tab" role="tab" id="tab-drone" aria-label="Drone" aria-controls="pane-drone" aria-selected="false">
+          <span class="name"><i class="led"></i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="14" rx="6" ry="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 13h10M7.5 16.5h9" stroke="currentColor" stroke-width="1.8"/><path d="M9 9.5C7 5 10 3.5 11.5 8M15 9.5c2-4.500-1-6-2.500-1.500" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 19.500v2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="label">Drone</span></span>
+          <span class="info" data-info></span>
+        </button>
+        <button class="vol" type="button" aria-label="Drone volume" aria-haspopup="true" aria-expanded="false" title="Drone volume"><svg class="i-vol" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.500v5h4l5 4v-13l-5 4z" fill="currentColor"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.500 6.500a8 8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        <button class="play" type="button" aria-label="Play drone" aria-pressed="false">
+          <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+        </button>
+      </div>
+
+      <div class="slot" data-app="player">
+        <button class="tab" role="tab" id="tab-player" aria-label="Player" aria-controls="pane-player" aria-selected="false">
+          <span class="name"><i class="led"></i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.500v15l13-7.500z" fill="currentColor"/></svg><span class="label">Player</span></span>
+          <span class="info" data-info></span>
+        </button>
+        <button class="vol" type="button" aria-label="Player volume" aria-haspopup="true" aria-expanded="false" title="Player volume"><svg class="i-vol" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.500v5h4l5 4v-13l-5 4z" fill="currentColor"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.500 6.500a8 8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
+        <button class="play" type="button" aria-label="Play player" aria-pressed="false">
+          <svg class="i-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+          <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+        </button>
+      </div>
+    </nav>
+
+    <div class="volpop" id="volpop" role="group" aria-label="Volume" hidden>
+      <span class="volname" id="volname"></span>
+      <input id="volrange" type="range" min="0" max="100" step="1" aria-label="Volume">
+      <output id="volout"></output>
+    </div>
+
+    <main class="panes">
+      <iframe id="pane-metronome" data-app="metronome" role="tabpanel" aria-labelledby="tab-metronome"
+              src="metronome/index.html" title="Metronome" allow="autoplay; screen-wake-lock"></iframe>
+      <iframe id="pane-drone" data-app="drone" role="tabpanel" aria-labelledby="tab-drone"
+              src="drone/index.html" title="Drone" allow="autoplay; screen-wake-lock"></iframe>
+      <iframe id="pane-player" data-app="player" role="tabpanel" aria-labelledby="tab-player"
+              src="player/index.html" title="Player" allow="autoplay; microphone; screen-wake-lock"></iframe>
+    </main>
+
+    <footer class="copyright">&copy; Marco Pascucci 2026 &middot; <a href="https://github.com/mpascucci/practice-room" target="_blank" rel="noopener">GitHub</a></footer>
+  </div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

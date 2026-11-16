@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#222222">
+  <title>Metronome</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+    <h1 class="title">Metronome</h1>
+
+    <div class="stage" id="stage">
+      <section class="panel" aria-label="Measure beats">
+        <div class="measures" id="measures"></div>
+      </section>
+    </div>
+
+    <p class="legend" aria-hidden="true">
+      <span><i class="dot silent"></i>silent</span>
+      <span><i class="dot normal"></i>normal</span>
+      <span><i class="dot accent"></i>accent</span>
+    </p>
+
+    <div class="transport">
+      <div class="mode-toggle" role="group" aria-label="Sound type">
+        <button type="button" id="modeClick" aria-pressed="true">Click</button>
+        <button type="button" id="modeInst" aria-pressed="false" aria-haspopup="dialog" title="Instrument (opens settings)">Instrument</button>
+        <button type="button" id="modePerc" aria-pressed="false" aria-haspopup="dialog" title="Percussion (opens settings)">Percussion</button>
+      </div>
+      <button class="play" id="play" type="button" aria-pressed="false" aria-label="Play">
+      <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+      <svg class="icon-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+      </button>
+    </div>
+
+    <div class="controls">
+      <div class="field">
+        <label for="beatCount">Beats</label>
+        <div class="tempo-row">
+          <div class="stepper">
+            <button type="button" data-step="beatCount" data-dir="-1" aria-label="Fewer beats">−</button>
+            <input id="beatCount" type="number" inputmode="numeric" min="1" max="24" step="1" value="4">
+            <button type="button" data-step="beatCount" data-dir="1" aria-label="More beats">+</button>
+          </div>
+          <button class="icon-btn" id="editSeq" type="button" aria-label="Enter a beat sequence" title="Enter a beat sequence">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20h4L18.5 9.5a2.83 2.83 0 0 0-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="measureCount">Measures</label>
+        <div class="stepper">
+          <button type="button" data-step="measureCount" data-dir="-1" aria-label="Fewer measures">−</button>
+          <input id="measureCount" type="number" inputmode="numeric" min="1" max="4" step="1" value="1">
+          <button type="button" data-step="measureCount" data-dir="1" aria-label="More measures">+</button>
+        </div>
+      </div>
+
+      <div class="field tempo">
+        <label for="tempo">Tempo <span class="unit">BPM</span></label>
+        <div class="tempo-row">
+          <div class="stepper">
+            <button type="button" data-step="tempo" data-dir="-1" aria-label="Slower">−</button>
+            <input id="tempo" type="number" inputmode="numeric" min="20" max="300" step="1" value="120">
+            <button type="button" data-step="tempo" data-dir="1" aria-label="Faster">+</button>
+          </div>
+          <button class="tap" id="tap" type="button" aria-label="Tap tempo">
+            <span class="tap-label">Tap</span>
+            <span class="tap-info" id="tapInfo" aria-live="polite"></span>
+          </button>
+        </div>
+        <input id="tempoRange" type="range" min="20" max="300" step="1" value="120" aria-label="Tempo slider">
+      </div>
+    </div>
+  </main>
+
+  <dialog class="seq-dialog" id="seqDialog" aria-labelledby="seqLabel">
+    <form method="dialog" id="seqForm">
+      <label id="seqLabel" for="seqInput">Enter a beat sequence: e.g. 2 2 3</label>
+      <input id="seqInput" type="text" inputmode="decimal" autocomplete="off" autocorrect="off"
+             autocapitalize="off" spellcheck="false" placeholder="2 2 3">
+      <p class="seq-error" id="seqError" role="alert" hidden>Only digits 1–9 and separators , . ; + - / or space</p>
+      <output class="seq-result" id="seqResult" for="seqInput"></output>
+      <p class="seq-warn" id="seqWarn" role="status" hidden></p>
+
+      <fieldset class="seg">
+        <legend>Down beats <small>first beat of a group</small></legend>
+        <div class="seg-opts">
+          <label><input type="radio" name="down" value="normal"><i class="dot normal"></i>normal</label>
+          <label><input type="radio" name="down" value="accent"><i class="dot accent"></i>accent</label>
+          <label><input type="radio" name="down" value="silent"><i class="dot silent"></i>silent</label>
+        </div>
+      </fieldset>
+      <fieldset class="seg">
+        <legend>Up beats <small>other beats in the group</small></legend>
+        <div class="seg-opts">
+          <label><input type="radio" name="up" value="normal"><i class="dot normal"></i>normal</label>
+          <label><input type="radio" name="up" value="accent"><i class="dot accent"></i>accent</label>
+          <label><input type="radio" name="up" value="silent"><i class="dot silent"></i>silent</label>
+        </div>
+      </fieldset>
+      <div class="seq-actions">
+        <button type="button" class="btn" id="seqCancel">Cancel</button>
+        <button type="submit" class="btn primary" id="seqOk">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="seq-dialog" id="settingsDialog" aria-labelledby="settingsLabel">
+    <form method="dialog" id="settingsForm">
+      <p id="settingsLabel" class="dlg-title">Sound settings</p>
+
+      <fieldset class="seg">
+        <legend>Normal beat <small>note</small></legend>
+        <div class="note-row">
+          <select id="normalNote" aria-label="Normal beat note"></select>
+          <label class="oct-label" for="normalOct">Octave</label>
+          <select id="normalOct" aria-label="Normal beat octave"></select>
+        </div>
+      </fieldset>
+      <fieldset class="seg">
+        <legend>Accent beat <small>note</small></legend>
+        <div class="note-row">
+          <select id="accentNote" aria-label="Accent beat note"></select>
+          <label class="oct-label" for="accentOct">Octave</label>
+          <select id="accentOct" aria-label="Accent beat octave"></select>
+        </div>
+      </fieldset>
+      <fieldset class="seg">
+        <legend>Note length <small>fraction of the beat</small></legend>
+        <div class="note-row">
+          <div class="stepper">
+            <button type="button" data-step="denom" data-dir="-1" aria-label="Shorter notes">−</button>
+            <input id="denom" class="frac-input display-only" type="text" readonly tabindex="-1" value="1/3" aria-label="Note length as a fraction of the beat">
+            <button type="button" data-step="denom" data-dir="1" aria-label="Longer notes">+</button>
+          </div>
+        </div>
+      </fieldset>
+      <fieldset class="seg">
+        <legend>Sound</legend>
+        <div class="seg-opts two">
+          <label><input type="radio" name="timbre" value="string">string</label>
+          <label><input type="radio" name="timbre" value="brass">brass</label>
+        </div>
+      </fieldset>
+      <div class="seq-actions">
+        <button type="submit" class="btn primary">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="seq-dialog" id="percDialog" aria-labelledby="percLabel">
+    <form method="dialog" id="percForm">
+      <p id="percLabel" class="dlg-title">Percussion</p>
+      <fieldset class="seg">
+        <legend>Instrument <small>bass on accent beats, high on normal beats</small></legend>
+        <div class="seg-opts stack">
+          <label><input type="radio" name="perc" value="machine">Drum machine (synthetic)</label>
+          <label><input type="radio" name="perc" value="bass-snare">Bass / Snare</label>
+          <label><input type="radio" name="perc" value="darabouka">Darabouka</label>
+          <label><input type="radio" name="perc" value="tapan">Tapan / Davul</label>
+          <label><input type="radio" name="perc" value="pier">Pier</label>
+        </div>
+      </fieldset>
+      <div class="seq-actions">
+        <button type="submit" class="btn primary">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

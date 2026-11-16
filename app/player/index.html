@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#161a19">
+  <title>Player</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app" id="app">
+    <header class="top">
+      <div class="title-wrap">
+        <h1 class="title">Player</h1>
+        <button type="button" class="info-btn" id="infoBtn" aria-label="Gestures help" title="Gestures help" aria-haspopup="dialog">i</button>
+      </div>
+      <div class="actions">
+        <a class="btn" id="takeDownload" role="button" hidden title="Download this recording" aria-label="Download recording">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10m0 0-4-4m4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="label">Download</span>
+        </a>
+        <button type="button" class="rec" id="rec" aria-pressed="false" aria-label="Record a take" title="Record a take with the microphone (R)">
+          <i class="dot"></i><span class="label" id="recLabel">Rec</span>
+        </button>
+        <label class="open" for="file" title="Open an audio file" aria-label="Open audio file">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="label">Open audio file…</span>
+        </label>
+        <input id="file" type="file" accept="audio/*,.mp3,.m4a,.wav,.ogg,.flac,.aac" hidden>
+      </div>
+    </header>
+
+    <p class="track-name placeholder" id="trackName" aria-live="polite">Drop an audio file here or open one. Files stay on this device.</p>
+
+    <section class="seek" aria-label="Position">
+      <div class="wave">
+        <canvas id="wave" aria-hidden="true"></canvas>
+        <button type="button" class="zoom-reset" id="zoomReset" hidden aria-label="Reset zoom" title="Reset zoom"></button>
+        <input id="seek" type="range" min="0" max="1000" value="0" step="1" disabled aria-label="Position">
+      </div>
+      <div class="times"><output id="cur">0:00</output><output id="dur">0:00</output></div>
+    </section>
+
+    <section class="transport" aria-label="Transport">
+      <button type="button" class="skip" id="back" aria-label="Back 5 seconds" disabled>−5s</button>
+      <button type="button" class="skip" id="rewind" aria-label="Back to the beginning" title="Back to the beginning" disabled>
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M19 6v12l-9-6z" fill="currentColor"/></svg>
+      </button>
+      <button class="play" id="play" type="button" aria-pressed="false" aria-label="Play" disabled>
+        <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        <svg class="icon-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
+      </button>
+      <button type="button" class="skip" id="fwd" aria-label="Forward 5 seconds" disabled>+5s</button>
+    </section>
+
+    <p class="hint" id="recMsg" aria-live="polite">Recording uses the microphone. Starting a recording replaces the loaded track.</p>
+
+    <div class="controls">
+    <section class="panel speed-panel" aria-label="Speed">
+      <div class="row-head">
+        <label for="speed"><span class="lt">Speed</span> <output id="speedOut"></output></label>
+        <div class="steps">
+          <button type="button" id="speedDown" aria-label="Slower">−</button>
+          <button type="button" id="speedUp" aria-label="Faster">+</button>
+          <button type="button" id="speedReset" aria-label="Reset speed to 100%" title="Reset speed to 100%"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.700-6M4 4v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">100%</span></button>
+        </div>
+      </div>
+      <input id="speed" type="range" min="25" max="150" step="1" value="100">
+      <div class="ticks" aria-hidden="true"><span style="--f:0">25%</span><span style="--f:0.2">50%</span><span style="--f:0.4">75%</span><span style="--f:0.6">100%</span><span style="--f:0.8">125%</span><span style="--f:1">150%</span></div>
+      <p class="hint">Pitch stays the same when the speed changes.</p>
+    </section>
+
+    <section class="panel" aria-label="Loop">
+      <div class="row-head">
+        <span class="lbl"><span class="lt">Loop A–B</span> <output id="loopOut">off</output></span>
+      </div>
+      <div class="loop-btns">
+        <button type="button" id="setA" disabled aria-label="Set loop start (A)" title="Set loop start (A, [)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M9 12h11M13 8l-4 4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">Set A</span></button>
+        <button type="button" id="setB" disabled aria-label="Set loop end (B)" title="Set loop end (B, ])"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14M15 12H4M11 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">Set B</span></button>
+        <button type="button" id="clearLoop" disabled aria-label="Clear loop" title="Clear loop"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4.5l4 4a1.5 1.5 0 0 1 0 2.1L10.700 19.500H6.300l-2.500-2.500a1.500 1.500 0 0 1 0-2.100L13.400 4.500a1.500 1.500 0 0 1 2.100 0zM8 10l6 6M11 19.500h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">Clear</span></button>
+        <button type="button" class="toggle" id="loopOn" data-on="true" aria-label="Stop loop" title="Stop loop (L)">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3l3 3-3 3M4 11V9a3 3 0 0 1 3-3h13M7 21l-3-3 3-3M20 13v2a3 3 0 0 1-3 3H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path class="strike" d="M4 20 20 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <span class="txt">Stop Loop</span>
+        </button>
+      </div>
+    </section>
+    </div>
+
+  </main>
+
+  <dialog id="recDialog" aria-labelledby="recTitle">
+    <div class="rec-body">
+      <p class="rec-title" id="recTitle"><i class="dot"></i>Recording…</p>
+      <output class="rec-time" id="recTime">0:00</output>
+      <div class="meter" role="meter" aria-label="Input level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="meter">
+        <div class="meter-fill" id="meterFill"></div>
+        <div class="meter-peak" id="meterPeak"></div>
+      </div>
+      <button type="button" class="rec-stop" id="recStop">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>Stop
+      </button>
+    </div>
+  </dialog>
+
+  <dialog id="infoDialog" aria-labelledby="infoTitle">
+    <div class="rec-body info-body">
+      <p class="rec-title" id="infoTitle">Waveform gestures</p>
+      <dl class="info-list">
+        <dt>Zoom</dt><dd data-mouse="mouse wheel" data-touch="pinch"></dd>
+        <dt>Translate</dt><dd data-mouse="Shift + drag" data-touch="two fingers"></dd>
+        <dt>Set playback start</dt><dd data-mouse="click" data-touch="tap"></dd>
+      </dl>
+      <button type="button" id="infoClose">Close</button>
+    </div>
+  </dialog>
+
+  <dialog id="confirmDialog" aria-labelledby="confirmText">
+    <div class="rec-body">
+      <p class="confirm-text" id="confirmText">Your unsaved recording will be replaced. Download it first if you want to keep it.</p>
+      <div class="confirm-btns">
+        <button type="button" id="confirmCancel">Cancel</button>
+        <button type="button" id="confirmOk" class="rec-stop">Replace</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
