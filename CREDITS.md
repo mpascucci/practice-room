@@ -1,5 +1,9 @@
 # Credits
 
+## Ideas and contributors
+This application was coded with the help of AI by Marco Pascucci.
+The idea was inspired by the need of such practice
+
 ## Sounds
 
 The **Tapan** percussion sounds (`app/metronome/sounds/tapan/`) are davul recordings from [Freesound](https://freesound.org), both released under [Creative Commons 0](https://creativecommons.org/publicdomain/zero/1.0/):
