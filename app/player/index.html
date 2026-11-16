@@ -75,11 +75,16 @@
       <div class="loop-btns">
         <button type="button" id="setA" disabled aria-label="Set loop start (A)" title="Set loop start (A, [)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M9 12h11M13 8l-4 4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">Set A</span></button>
         <button type="button" id="setB" disabled aria-label="Set loop end (B)" title="Set loop end (B, ])"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14M15 12H4M11 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">Set B</span></button>
+        <button type="button" class="arm" id="armLoop" hidden disabled aria-pressed="false" aria-label="Select a loop region" title="Select a loop region: tap, then drag on the waveform"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M19 5v14M8 12h8M8 12l2.500-2.500M8 12l2.500 2.500M16 12l-2.500-2.500M16 12l-2.500 2.500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">Select</span></button>
         <button type="button" id="clearLoop" disabled aria-label="Clear loop" title="Clear loop"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4.5l4 4a1.5 1.5 0 0 1 0 2.1L10.700 19.500H6.300l-2.500-2.500a1.500 1.500 0 0 1 0-2.100L13.400 4.500a1.500 1.500 0 0 1 2.100 0zM8 10l6 6M11 19.500h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">Clear</span></button>
         <button type="button" class="toggle" id="loopOn" data-on="true" aria-label="Stop loop" title="Stop loop (L)">
           <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3l3 3-3 3M4 11V9a3 3 0 0 1 3-3h13M7 21l-3-3 3-3M20 13v2a3 3 0 0 1-3 3H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path class="strike" d="M4 20 20 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           <span class="txt">Stop Loop</span>
         </button>
+      </div>
+      <div class="loop-pause">
+        <label for="loopPause">Pause <output id="loopPauseOut"></output></label>
+        <input id="loopPause" type="range" min="0" max="10" step="0.5" value="0" aria-label="Pause before replaying the loop, in seconds">
       </div>
     </section>
     </div>
@@ -106,8 +111,8 @@
       <dl class="info-list">
         <dt>Zoom</dt><dd data-mouse="mouse wheel" data-touch="pinch"></dd>
         <dt>Translate</dt><dd data-mouse="Shift + drag" data-touch="two fingers"></dd>
-        <dt>Set playback start</dt><dd data-mouse="click" data-touch="tap"></dd>
-        <dt>Set loop A–B</dt><dd data-mouse="click + drag" data-touch="drag"></dd>
+        <dt>Set playback start</dt><dd data-mouse="click" data-touch="tap or drag"></dd>
+        <dt>Set loop A–B</dt><dd data-mouse="click + drag" data-touch="tap Select, then drag"></dd>
       </dl>
       <button type="button" id="infoClose">Close</button>
     </div>

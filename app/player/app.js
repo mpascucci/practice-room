@@ -11,7 +11,7 @@ const el = {
   back: $('back'), rewind: $('rewind'), fwd: $('fwd'), play: $('play'),
   speed: $('speed'), speedOut: $('speedOut'), speedDown: $('speedDown'), speedUp: $('speedUp'), speedReset: $('speedReset'),
   loopOn: $('loopOn'), loopOut: $('loopOut'), setA: $('setA'), setB: $('setB'), clearLoop: $('clearLoop'),
-  wave: $('wave'), zoomReset: $('zoomReset'),
+  wave: $('wave'), armLoop: $('armLoop'), loopPause: $('loopPause'), loopPauseOut: $('loopPauseOut'), zoomReset: $('zoomReset'),
   rec: $('rec'), recLabel: $('recLabel'), recMsg: $('recMsg'), takeDownload: $('takeDownload'),
   meter: $('meter'), meterFill: $('meterFill'), meterPeak: $('meterPeak'),
   confirmDialog: $('confirmDialog'), confirmOk: $('confirmOk'), confirmCancel: $('confirmCancel'),
@@ -19,7 +19,7 @@ const el = {
   recDialog: $('recDialog'), recTime: $('recTime'), recStop: $('recStop'),
 };
 
-const state = { speed: 100, loop: true };   // loop = the A-B loop toggle; remembered even when no A-B is set
+const state = { speed: 100, loop: true, loopPause: 0 };   // loop = the A-B loop toggle; remembered even when no A-B is set
 let trackName = '';
 let url = null;
 let loaded = false;
@@ -43,6 +43,7 @@ function load() {
   try {
     const s = JSON.parse(localStorage.getItem(KEY));
     if (s && typeof s.loop === 'boolean') state.loop = s.loop;
+    if (s && Number.isFinite(s.loopPause)) state.loopPause = Math.min(10, Math.max(0, Math.round(s.loopPause * 2) / 2));
     if (s && Number.isFinite(s.speed)) state.speed = Math.min(SPEED_MAX, Math.max(SPEED_MIN, Math.round(s.speed)));
   } catch {}
 }
@@ -249,13 +250,28 @@ function renderPlay() {
   el.play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
 }
 function renderEnabled() {
-  for (const b of [el.play, el.back, el.rewind, el.fwd, el.setA, el.setB, el.seek]) b.disabled = !loaded;
+  for (const b of [el.play, el.back, el.rewind, el.fwd, el.setA, el.setB, el.seek, el.armLoop]) b.disabled = !loaded;
+  if (!loaded) setArm(false);
   renderLoop();
 }
 
 // ---------- Playback ----------
+// Loop pause: when the loop reaches B the audio is paused for state.loopPause seconds (real time, not scaled by
+// the speed) with the playhead already back on A, then plays on from A. `playing` stays true during the wait.
+let loopWaitTimer = 0;
+function loopWaitCancel() { clearTimeout(loopWaitTimer); loopWaitTimer = 0; }
+
 function tick() {
-  if (hasLoop() && state.loop && audio.currentTime >= loopB) audio.currentTime = loopA;
+  if (hasLoop() && state.loop && !loopWaitTimer && audio.currentTime >= loopB) {
+    audio.currentTime = loopA;
+    if (state.loopPause > 0) {
+      audio.pause();
+      loopWaitTimer = setTimeout(() => {
+        loopWaitTimer = 0;
+        if (playing) audio.play().catch(() => stop());
+      }, state.loopPause * 1000);
+    }
+  }
   renderTime();
 }
 
@@ -279,6 +295,7 @@ async function start() {
 function stop() {
   if (recording) { stopRec(); return; }
   if (!playing) return;
+  loopWaitCancel();
   audio.pause();
   if (startMark != null) audio.currentTime = startMark;   // back to where playback started
   viewToMark();
@@ -313,6 +330,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 audio.addEventListener('ended', () => {
+  loopWaitCancel();
   if (startMark != null) audio.currentTime = startMark;
   viewToMark();
   playing = false;
@@ -597,6 +615,16 @@ function setSpeed(v) {
   save();
   report();
 }
+function renderLoopPause() {
+  el.loopPause.value = state.loopPause;
+  fill(el.loopPause, state.loopPause, 0, 10);
+  el.loopPauseOut.textContent = state.loopPause ? `${state.loopPause} s` : 'none';
+}
+el.loopPause.addEventListener('input', () => {
+  state.loopPause = +el.loopPause.value;
+  renderLoopPause();
+  save();
+});
 el.speed.addEventListener('input', () => setSpeed(+el.speed.value));
 el.speedDown.addEventListener('click', () => setSpeed(state.speed - 5));
 el.speedUp.addEventListener('click', () => setSpeed(state.speed + 5));
@@ -617,7 +645,8 @@ const box = el.wave.parentElement;
 const ptrs = new Map();
 let pan = null;   // Shift+drag: {x, start} while translating the view
 let pinch = null, gestureHadPinch = false;
-let sel = null;          // drag in progress: {x0, t0, active}
+let sel = null;          // drag in progress: {x0, t0, active, mode}  mode: 'loop' (select a region) or 'scrub' (move the start mark)
+let armLoop = false;     // touch devices: the Select button is on, so the next drag selects a loop region
 let dragRange = null;    // [lo, hi] seconds while dragging out a loop region (preview only, applied on release)
 const MIN_LOOP = 0.2, DRAG_PX = 6;
 
@@ -638,6 +667,13 @@ function setLoopRegion(lo, hi) {
   save();
   seekTo(lo, true);   // play starts at A (and jumps there if already playing)
   renderLoop();
+}
+// Touch devices only: the Select button arms the loop drag until the drop. Not armed, a one-finger drag scrubs the
+// start mark as before. A mouse always drags out a loop region (no button needed).
+function setArm(on) {
+  armLoop = on;
+  el.armLoop.setAttribute('aria-pressed', on);
+  box.classList.toggle('armed', on);
 }
 function startPinch() {
   const [a, b] = [...ptrs.values()];
@@ -668,7 +704,7 @@ box.addEventListener('pointerdown', (e) => {
     box.classList.add('panning');
   } else if (ptrs.size === 1) {
     gestureHadPinch = false;
-    sel = { x0: e.clientX, t0: timeAtX(e.clientX), active: false };
+    sel = { x0: e.clientX, t0: timeAtX(e.clientX), active: false, mode: e.pointerType === 'touch' && !armLoop ? 'scrub' : 'loop' };
   } else if (ptrs.size === 2) startPinch();
 });
 box.addEventListener('pointermove', (e) => {
@@ -680,7 +716,8 @@ box.addEventListener('pointermove', (e) => {
   } else if (pinch && ptrs.size >= 2) applyPinch();
   else if (sel && ptrs.size === 1 && !gestureHadPinch) {
     if (!sel.active && Math.abs(e.clientX - sel.x0) > DRAG_PX) sel.active = true;
-    if (sel.active) {
+    if (sel.active && sel.mode === 'scrub') seekAtX(e.clientX);   // not armed on touch: move the start mark
+    else if (sel.active) {
       const t = timeAtX(e.clientX);
       dragRange = [Math.min(sel.t0, t), Math.max(sel.t0, t)];
       drawWave();
@@ -695,14 +732,20 @@ function endPointer(e) {
   if (ptrs.size > 0) return;   // other fingers still down
   if (s && e.type === 'pointerup' && !gestureHadPinch) {
     const t = timeAtX(e.clientX), lo = Math.min(s.t0, t), hi = Math.max(s.t0, t);
-    if (s.active && hi - lo >= MIN_LOOP) setLoopRegion(lo, hi);   // drag: loop region
-    else seekAtX(e.clientX);                                       // click / tap: start mark
+    if (s.mode === 'loop' && s.active) {
+      if (hi - lo >= MIN_LOOP) setLoopRegion(lo, hi);   // drag: loop region
+      else seekAtX(e.clientX);
+      setArm(false);                                     // the drop releases the Select button
+    } else seekAtX(e.clientX);                           // click / tap / scrub end: start mark
   }
   sel = dragRange = pan = null;
   box.classList.remove('panning');
   interacting = false;
   drawWave();
 }
+// The Select button only makes sense with a touch screen.
+el.armLoop.hidden = !matchMedia('(any-pointer: coarse)').matches;
+el.armLoop.addEventListener('click', () => setArm(!armLoop));
 box.addEventListener('pointerup', endPointer);
 box.addEventListener('pointercancel', endPointer);
 box.addEventListener('wheel', (e) => {
@@ -815,6 +858,7 @@ window.addEventListener('message', (e) => {
 // ---------- Init ----------
 load();
 renderSpeed();
+renderLoopPause();
 renderEnabled();
 renderTime();
 renderPlay();

@@ -590,8 +590,22 @@ $('allOff').addEventListener('click', () => setAll((h) => { h.on = false; }));
 // Spectrum presets
 const FLAT_VOL = 60;
 const linearVol = (i) => Math.round((100 * (HARMONICS - i)) / HARMONICS);   // H1 100 → H13 8
-$('presetFlat').addEventListener('click', () => setAll((h) => { h.on = true; h.vol = FLAT_VOL; }));
+const FLAT_ON = 10;   // flat: H1–H10 on, H11–H13 off (still set to the flat volume, so they sound right if switched on)
+$('presetFlat').addEventListener('click', () => setAll((h, i) => { h.on = i < FLAT_ON; h.vol = FLAT_VOL; }));
 $('presetLinear').addEventListener('click', () => setAll((h, i) => { h.on = true; h.vol = linearVol(i); }));
+
+// ---------- Collapsible harmonics panel ----------
+// The header's chevron button folds the preset buttons and the harmonic rows away (open by default, remembered).
+const harmSection = document.querySelector('.harmonics');
+const harmToggle = $('harmToggle');
+const HARM_OPEN_KEY = 'shrutibox:harmonicsOpen';
+function setHarmonicsOpen(open, remember = true) {
+  harmSection.classList.toggle('collapsed', !open);
+  harmToggle.setAttribute('aria-expanded', open);
+  if (remember) { try { localStorage.setItem(HARM_OPEN_KEY, open ? '1' : '0'); } catch {} }
+}
+harmToggle.addEventListener('click', () => setHarmonicsOpen(harmToggle.getAttribute('aria-expanded') !== 'true'));
+try { if (localStorage.getItem(HARM_OPEN_KEY) === '0') setHarmonicsOpen(false, false); } catch {}
 
 // ---------- Instrument presets ----------
 // Amplitudes are relative linear levels (0 = off). Sliders are perceptual (gain = (v/100)²),

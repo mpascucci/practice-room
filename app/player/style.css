@@ -227,3 +227,17 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 @media (max-width: 600px), (max-height: 480px) {
   .play { width: calc(72px * 0.7); height: calc(72px * 0.7); }
 }
+
+/* Select (arm loop drag) button, touch devices only */
+.arm[aria-pressed="true"] { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+.wave.armed { box-shadow: inset 0 0 0 2px var(--accent); }
+
+/* portable devices: no track title label (errors, which are not .loaded, stay visible) */
+@media (max-width: 600px), (max-height: 480px) {
+  .track-name.loaded { display: none; }
+}
+
+/* Loop pause: label + output on the left, slider on the right */
+.loop-pause { display: flex; align-items: center; gap: 12px; }
+.loop-pause label { flex: 0 0 auto; min-width: 7.5ch; }
+.loop-pause input[type="range"] { flex: 1 1 auto; }

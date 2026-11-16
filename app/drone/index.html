@@ -43,11 +43,14 @@
 
     <section class="harmonics" aria-label="Harmonics">
       <div class="harmonics-head">
-        <span>Harmonics</span>
-        <div class="bulk">
+        <button type="button" class="harm-toggle" id="harmToggle" aria-expanded="true" aria-controls="harmBody rows" title="Collapse / expand the harmonics">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <span>Harmonics</span>
+        </button>
+        <div class="bulk" id="harmBody">
           <button type="button" id="allOn">all on</button>
           <button type="button" id="allOff">all off</button>
-          <button type="button" id="presetFlat" title="All harmonics at the same volume">flat</button>
+          <button type="button" id="presetFlat" title="H1–H10 at the same volume (H11–H13 off)">flat</button>
           <button type="button" id="presetLinear" title="Volume decreasing linearly from H1 to H13">linear</button>
           <select id="instrument" class="instrument" aria-label="Instrument preset" title="Instrument preset"></select>
           <button type="button" id="reset">reset</button>
