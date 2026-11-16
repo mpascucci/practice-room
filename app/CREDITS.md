@@ -10,7 +10,7 @@ The idea was inspired by years of music practice, an education in physics, my en
 I do not aim to enrich this application with complex features (I leave that to specialized apps), but rather to keep it simple and effective. I am open to suggestions and contributions, so please feel free to contact me if you have any ideas or feedback.
 
 ## Special thanks
-- [BalkanLabOrchestra](https://www.balkanlaborchestra.com/) and its musicians, motivated the collapse of a long standing idea into a real application.
+- [BalkanLabOrchestra](https://www.instagram.com/balkanlaborchestra/) and its musicians, motivated the collapse of a long standing idea into a real application.
 - All my friends and colleagues that have supported me in the development of this application, and provided feedback and suggestions.
 
 ## Contribute
