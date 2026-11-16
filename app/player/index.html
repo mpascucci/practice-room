@@ -31,6 +31,7 @@
     <p class="track-name placeholder" id="trackName" aria-live="polite"></p>
 
     <section class="seek" aria-label="Position">
+      <div class="marker-strip" id="markerStrip" aria-label="Markers"></div>
       <div class="wave">
         <canvas id="wave" aria-hidden="true"></canvas>
         <button type="button" class="zoom-reset" id="zoomReset" hidden aria-label="Reset zoom" title="Reset zoom"></button>
@@ -40,7 +41,6 @@
     </section>
 
     <section class="transport" aria-label="Transport">
-      <button type="button" class="skip" id="back" aria-label="Back 5 seconds" disabled>−5s</button>
       <button type="button" class="skip" id="rewind" aria-label="Back to the beginning" title="Back to the beginning" disabled>
         <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M19 6v12l-9-6z" fill="currentColor"/></svg>
       </button>
@@ -48,7 +48,7 @@
         <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
         <svg class="icon-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
       </button>
-      <button type="button" class="skip" id="fwd" aria-label="Forward 5 seconds" disabled>+5s</button>
+      <button type="button" class="skip" id="addMarker" aria-label="Add a marker at the playback start" title="Add a marker at the playback start (M)" disabled><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16l-5-3.500L7 20z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
     </section>
 
     <p class="hint" id="recMsg" aria-live="polite"></p>
@@ -113,10 +113,25 @@
         <dt>Translate</dt><dd data-mouse="drag" data-touch="two fingers"></dd>
         <dt>Set playback start</dt><dd data-mouse="click" data-touch="tap or drag"></dd>
         <dt>Set loop A–B</dt><dd data-mouse="Shift + drag" data-touch="tap Select, then drag"></dd>
-        <dt>Move a loop limit</dt><dd data-mouse="drag the A or B bar" data-touch=""></dd>
+        <dt>Add a marker</dt><dd data-mouse="bookmark button or M, then name it" data-touch="bookmark button, then name it"></dd>
+        <dt>Rename or remove a marker</dt><dd data-mouse="click its label" data-touch="tap its label"></dd>
+        <dt>Move a loop limit</dt><dd data-mouse="drag its bar" data-touch=""></dd>
+        <dt>Move a marker</dt><dd data-mouse="drag its label" data-touch="drag its label"></dd>
       </dl>
       <button type="button" id="infoClose">Close</button>
     </div>
+  </dialog>
+
+  <dialog id="markerDialog" aria-labelledby="markerTitle">
+    <form id="markerForm" class="rec-body" method="dialog">
+      <p class="rec-title" id="markerTitle">New marker</p>
+      <input id="markerName" type="text" maxlength="24" autocomplete="off" spellcheck="false" aria-label="Marker name">
+      <div class="confirm-btns">
+        <button type="button" id="markerRemove" class="danger" hidden>Remove</button>
+        <button type="button" id="markerCancel">Cancel</button>
+        <button type="submit" id="markerOk" class="rec-stop">Add</button>
+      </div>
+    </form>
   </dialog>
 
   <dialog id="confirmDialog" aria-labelledby="confirmText">

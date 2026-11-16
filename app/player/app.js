@@ -3,12 +3,12 @@
 
 const KEY = 'player:v1';
 const SPEED_MIN = 25, SPEED_MAX = 150;
-const SEEK_STEP = 5;     // seconds, skip buttons and arrow keys
+const SEEK_STEP = 5;     // seconds, arrow keys
 const $ = (id) => document.getElementById(id);
 
 const el = {
   app: $('app'), file: $('file'), name: $('trackName'), seek: $('seek'), cur: $('cur'), dur: $('dur'),
-  back: $('back'), rewind: $('rewind'), fwd: $('fwd'), play: $('play'),
+  rewind: $('rewind'), play: $('play'), addMarker: $('addMarker'), markerStrip: $('markerStrip'), markerDialog: $('markerDialog'), markerName: $('markerName'), markerCancel: $('markerCancel'), markerTitle: $('markerTitle'), markerOk: $('markerOk'), markerRemove: $('markerRemove'),
   speed: $('speed'), speedOut: $('speedOut'), speedDown: $('speedDown'), speedUp: $('speedUp'), speedReset: $('speedReset'),
   loopOn: $('loopOn'), loopOut: $('loopOut'), setA: $('setA'), setB: $('setB'), clearLoop: $('clearLoop'),
   wave: $('wave'), armLoop: $('armLoop'), loopPause: $('loopPause'), loopPauseOut: $('loopPauseOut'), zoomReset: $('zoomReset'),
@@ -133,6 +133,118 @@ function followPlayhead() {
   }
 }
 
+// Markers: added at the playback start position. Magenta dashed lines in the waveform, numbered labels above it (outside the waveform). Click a label to go
+// to the marker, double-click to remove it. They belong to the loaded track and are not saved.
+let markers = [];      // [{t: seconds, name}], sorted by t
+let markerSeq = 1;     // the next default name: an increasing integer, per loaded track
+let markerKey = '';    // what the labels were last laid out for
+let markerDrag = null; // {index, t} while a marker is being dragged with the mouse (preview, applied on release)
+let markerAt = 0;      // where the marker being named will go (captured when the dialog opens)
+let markerEditing = null;   // index of the marker being renamed / removed, or null when adding a new one
+const shownMarkers = () => markers.map((m, i) => (markerDrag && markerDrag.index === i ? markerDrag.t : m.t));
+const clearMarkers = () => { markers = []; markerSeq = 1; };
+
+// The bookmark button / M key opens a dialog to name the marker; the default name is an increasing integer.
+function addMarker() {
+  if (!loaded) return;
+  const t = startMark ?? audio.currentTime;   // markers go at the playback start position (the yellow line)
+  if (markers.some((m) => Math.abs(m.t - t) < 0.1)) return;   // already marked here
+  markerAt = t;
+  markerEditing = null;
+  el.markerTitle.textContent = 'New marker';
+  el.markerOk.textContent = 'Add';
+  el.markerRemove.hidden = true;
+  el.markerName.value = String(markerSeq);
+  el.markerDialog.showModal();
+  el.markerName.select();
+}
+// Clicking a label opens the same dialog for that marker: rename it, or remove it.
+function editMarker(i) {
+  markerEditing = i;
+  el.markerTitle.textContent = 'Marker';
+  el.markerOk.textContent = 'Save';
+  el.markerRemove.hidden = false;
+  el.markerName.value = markers[i].name;
+  el.markerDialog.showModal();
+  el.markerName.select();
+}
+function confirmMarker() {
+  if (markerEditing != null) {
+    markers[markerEditing].name = el.markerName.value.trim() || markers[markerEditing].name;   // empty keeps the old name
+    markerEditing = null;
+    markerKey = '';
+  } else {
+    const name = el.markerName.value.trim() || String(markerSeq);   // an empty name falls back to the default
+    markers.push({ t: markerAt, name });
+    markers.sort((a, b) => a.t - b.t);
+    markerSeq++;
+  }
+  el.markerDialog.close();
+  drawWave();
+}
+function removeMarker(i) {
+  markers.splice(i, 1);
+  markerKey = '';
+  drawWave();
+}
+// A marker is moved by dragging its label (mouse or touch). While dragging, the labels are not rebuilt (that would drop
+// the pointer); the dragged label and the dashed line follow live, and the move is applied on release.
+let lastLabelDrag = 0;   // time of the last label drag end, to ignore the click that follows it
+function renderMarkerLabels(w) {
+  if (markerDrag) return;
+  const d = audio.duration || 0;
+  const key = [viewStart, viewSpan, w, d, markers.map((m) => `${m.t}:${m.name}`).join('|')].join('/');
+  if (key === markerKey) return;
+  markerKey = key;
+  el.markerStrip.replaceChildren();
+  markers.forEach((m, i) => {
+    const f = d ? (m.t / d - viewStart) / viewSpan : -1;
+    if (f < -0.01 || f > 1.01) return;   // outside the zoomed view
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'marker-label';
+    b.textContent = m.name;
+    b.style.left = `${f * 100}%`;
+    b.title = `Marker "${m.name}" at ${fmt(m.t)}: click to rename or remove, drag to move`;
+    b.setAttribute('aria-label', `Marker ${m.name} at ${fmt(m.t)}`);
+    let x0 = 0, moved = false;
+    b.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0) return;
+      b.setPointerCapture(e.pointerId);
+      x0 = e.clientX;
+      moved = false;
+    });
+    b.addEventListener('pointermove', (e) => {
+      if (!b.hasPointerCapture(e.pointerId)) return;
+      if (!moved && Math.abs(e.clientX - x0) > 4) { moved = true; b.classList.add('dragging'); }
+      if (!moved) return;
+      const t = timeAtX(e.clientX);
+      markerDrag = { index: i, t };
+      b.style.left = `${((t / audio.duration - viewStart) / viewSpan) * 100}%`;
+      drawWave();
+    });
+    const end = (e) => {
+      if (!b.hasPointerCapture(e.pointerId)) return;
+      b.releasePointerCapture(e.pointerId);
+      b.classList.remove('dragging');
+      if (!moved) return;   // a plain click: leave the label in place so the click / double-click still reaches it
+      if (e.type === 'pointerup' && markerDrag) {
+        markers[i].t = markerDrag.t;
+        markers.sort((p, q) => p.t - q.t);
+      }
+      lastLabelDrag = performance.now();
+      markerDrag = null;
+      markerKey = '';     // lay the labels out again (the order may have changed)
+      moved = false;
+      drawWave();
+    };
+    b.addEventListener('pointerup', end);
+    b.addEventListener('pointercancel', end);
+    b.addEventListener('click', () => { if (performance.now() - lastLabelDrag > 300) editMarker(i); });
+    el.markerStrip.append(b);
+  });
+}
+
 function drawWave() {
   const cv = el.wave;
   const w = cv.clientWidth, h = cv.clientHeight;
@@ -203,6 +315,23 @@ function drawWave() {
     }
   }
 
+  // markers
+  if (markers.length && d) {
+    g.save();
+    g.setLineDash([5, 4]);
+    g.strokeStyle = '#e040fb';
+    g.lineWidth = 1.5;
+    for (const t of shownMarkers()) {
+      const x = xOf(t);
+      if (x < 0 || x > w) continue;
+      g.beginPath();
+      g.moveTo(x, 0);
+      g.lineTo(x, h);
+      g.stroke();
+    }
+    g.restore();
+  }
+
   // playhead
   if (d) {
     const x = xOf(audio.currentTime);
@@ -211,6 +340,7 @@ function drawWave() {
       g.fillRect(Math.min(w - 1, x), 0, 1, h);
     }
   }
+  renderMarkerLabels(w);
 }
 window.addEventListener('resize', drawWave);
 new ResizeObserver(drawWave).observe(el.wave.parentElement);   // the waveform height follows the available space
@@ -250,7 +380,7 @@ function renderPlay() {
   el.play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
 }
 function renderEnabled() {
-  for (const b of [el.play, el.back, el.rewind, el.fwd, el.setA, el.setB, el.seek, el.armLoop]) b.disabled = !loaded;
+  for (const b of [el.play, el.rewind, el.addMarker, el.setA, el.setB, el.seek, el.armLoop]) b.disabled = !loaded;
   if (!loaded) setArm(false);
   renderLoop();
 }
@@ -443,6 +573,7 @@ function unloadTrack() {
   loadToken++;            // ignore a waveform still being decoded
   peaks = null;
   loopA = loopB = null;
+  clearMarkers();
   startMark = null;
   trackName = '';
   takeUnsaved = false;
@@ -555,6 +686,7 @@ function openFile(file, isTake = false) {
   url = URL.createObjectURL(file);
   trackName = file.name.replace(/\.[^.]+$/, '');
   loopA = loopB = null;
+  clearMarkers();
   startMark = null;
   loaded = false;
   peaks = null;
@@ -635,8 +767,6 @@ el.rewind.addEventListener('click', () => {
   seekTo(0, true);   // the start mark goes back to the beginning too
   if (viewSpan < 0.999) { viewStart = 0; afterZoom(); }
 });
-el.back.addEventListener('click', () => seekTo(audio.currentTime - SEEK_STEP));
-el.fwd.addEventListener('click', () => seekTo(audio.currentTime + SEEK_STEP));
 
 
 // Waveform gestures. One finger / mouse: tap or click sets the start mark, drag-and-drop sets the A-B loop. Two fingers: pinch to zoom the time
@@ -654,20 +784,21 @@ function timeAtX(clientX) {
   const f = viewStart + Math.min(1, Math.max(0, (clientX - r.left) / r.width)) * viewSpan;
   return Math.min(1, Math.max(0, f)) * (audio.duration || 0);
 }
-// Loop limit bars (mouse only): hovering one shows a resize cursor, click-drag moves it. The new range is previewed in
+// Loop limit bars (mouse only): hovering one shows a resize cursor, click-drag moves it. (Markers are not draggable here: they are moved by dragging their labels.) The new range is previewed in
 // dragRange and applied on release, like a region drag, so the audio loop never jumps mid-drag.
 function xOfTime(t) {
   const r = box.getBoundingClientRect();
   return r.left + ((t / audio.duration - viewStart) / viewSpan) * r.width;
 }
-function hitLimit(clientX) {
+function hitBar(clientX) {
   if (!loaded || !audio.duration) return null;
   let best = null, bestDist = LIMIT_PX + 1;
-  for (const [which, t] of [['A', loopA], ['B', loopB]]) {
-    if (t == null) continue;
+  const consider = (hit, t) => {
     const dist = Math.abs(clientX - xOfTime(t));
-    if (dist < bestDist) { best = which; bestDist = dist; }
-  }
+    if (dist < bestDist) { best = hit; bestDist = dist; }   // the nearest bar wins; on a tie the earlier candidate (loop bars) wins
+  };
+  if (loopA != null) consider({ type: 'limit', which: 'A' }, loopA);
+  if (loopB != null) consider({ type: 'limit', which: 'B' }, loopB);
   return best;
 }
 function setLoopLimits(a, b) {
@@ -730,10 +861,10 @@ box.addEventListener('pointerdown', (e) => {
     gestureHadPinch = false;
     // Mouse: drag a loop limit bar if the pointer is on one; else drag = translate the view, Shift+drag = select a
     // loop region. Touch: drag = move the start mark, or select a loop region when the Select button is on.
-    const limit = e.pointerType !== 'touch' ? hitLimit(e.clientX) : null;
-    const mode = limit ? 'limit' : e.pointerType === 'touch' ? (armLoop ? 'loop' : 'scrub') : (e.shiftKey ? 'loop' : 'pan');
-    sel = { x0: e.clientX, t0: timeAtX(e.clientX), active: false, mode, which: limit, start: viewStart };
-    if (limit) box.classList.add('dragging-limit');
+    const hit = e.pointerType !== 'touch' ? hitBar(e.clientX) : null;
+    const mode = hit ? hit.type : e.pointerType === 'touch' ? (armLoop ? 'loop' : 'scrub') : (e.shiftKey ? 'loop' : 'pan');
+    sel = { x0: e.clientX, t0: timeAtX(e.clientX), active: false, mode, which: hit?.which, start: viewStart };
+    if (hit) box.classList.add('dragging-limit');
   } else if (ptrs.size === 2) startPinch();
 });
 box.addEventListener('pointermove', (e) => {
@@ -794,7 +925,7 @@ window.addEventListener('blur', () => setShiftCursor(false));
 box.addEventListener('pointermove', (e) => {
   if (e.pointerType === 'touch') return;
   setShiftCursor(e.shiftKey);
-  if (!sel) box.classList.toggle('over-limit', !!hitLimit(e.clientX));   // resize cursor while hovering a loop limit bar
+  if (!sel) box.classList.toggle('over-limit', !!hitBar(e.clientX));   // resize cursor while hovering a loop limit bar
 });
 box.addEventListener('pointerleave', () => box.classList.remove('over-limit'));   // stays right even if the key event went elsewhere
 // The Select button only makes sense with a touch screen.
@@ -844,6 +975,14 @@ function setB() {
 }
 el.setA.addEventListener('click', setA);
 el.setB.addEventListener('click', setB);
+el.addMarker.addEventListener('click', addMarker);
+$('markerForm').addEventListener('submit', (e) => { e.preventDefault(); confirmMarker(); });   // Enter or the Add button
+el.markerCancel.addEventListener('click', () => el.markerDialog.close());
+el.markerRemove.addEventListener('click', () => {
+  if (markerEditing != null) removeMarker(markerEditing);
+  markerEditing = null;
+  el.markerDialog.close();
+});
 el.clearLoop.addEventListener('click', () => { loopA = loopB = null; renderLoop(); });
 const toggleLoop = () => { state.loop = !state.loop; save(); renderLoop(); };
 el.loopOn.addEventListener('click', toggleLoop);
@@ -860,6 +999,7 @@ window.addEventListener('keydown', (e) => {
   else if (e.key === 'ArrowLeft' && !onRange) seekTo(audio.currentTime - SEEK_STEP);
   else if (e.key === 'ArrowRight' && !onRange) seekTo(audio.currentTime + SEEK_STEP);
   else if ((e.key === 'r' || e.key === 'R') && canRecord) (recording ? stopRec() : startRec());
+  else if ((e.key === 'm' || e.key === 'M') && loaded) addMarker();
   else if (e.key === '[' && loaded) setA();
   else if (e.key === ']' && loaded) setB();
   else if (e.key === 'l' || e.key === 'L') toggleLoop();

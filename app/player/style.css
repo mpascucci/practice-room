@@ -130,8 +130,8 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 [hidden] { display: none !important; }
 
 /* Recording dialog */
-#recDialog, #confirmDialog, #infoDialog { border: 1px solid #e5484d; border-radius: 14px; background: var(--panel); color: var(--text); padding: 0; width: min(88vw, 320px); }
-#recDialog::backdrop, #confirmDialog::backdrop, #infoDialog::backdrop { background: rgba(0, 0, 0, .65); }
+#recDialog, #confirmDialog, #infoDialog, #markerDialog { border: 1px solid #e5484d; border-radius: 14px; background: var(--panel); color: var(--text); padding: 0; width: min(88vw, 320px); }
+#recDialog::backdrop, #confirmDialog::backdrop, #infoDialog::backdrop, #markerDialog::backdrop { background: rgba(0, 0, 0, .65); }
 .rec-body { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 24px 20px; }
 .rec-title { margin: 0; display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
 .rec-title .dot { width: 12px; height: 12px; border-radius: 50%; background: #e5484d; animation: blink 1s steps(2, start) infinite; }
@@ -265,3 +265,31 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 
 /* Hovering or dragging a loop limit bar (mouse) */
 .wave.over-limit, .wave.dragging-limit { cursor: ew-resize; }
+
+/* Markers: labels sit in a strip above the waveform (outside it); the dashed lines are drawn on the canvas */
+.marker-strip { position: relative; height: 22px; flex: none; }
+.marker-label {
+  position: absolute; top: 0; transform: translateX(-50%);
+  min-width: 20px; height: 20px; min-height: 0; padding: 0 6px; border: 0; border-radius: 10px;
+  background: #e040fb; color: #1a0620; font: 700 .72rem system-ui, sans-serif; cursor: pointer;
+}
+.marker-label:hover { background: #ee82ff; }
+.marker-label:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
+.seek { min-height: 146px; }   /* the label strip adds 22px */
+
+/* Marker name dialog */
+#markerDialog { border-color: #e040fb; }
+#markerName {
+  width: 100%; height: 44px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--bg); color: var(--text); font: 600 1.05rem system-ui, sans-serif; text-align: center;
+}
+#markerName:focus-visible { outline: 2px solid #e040fb; outline-offset: 1px; }
+.marker-label { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* marker labels are draggable (along the strip) */
+.marker-label { cursor: grab; touch-action: none; }
+.marker-label.dragging { cursor: grabbing; z-index: 1; }
+
+#markerRemove { color: #ff9a8a; border-color: #7a3a3a; }
+#markerDialog .confirm-btns { flex-wrap: wrap; }
+#markerOk { background: #e040fb; border-color: #e040fb; color: #1a0620; }
