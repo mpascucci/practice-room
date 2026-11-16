@@ -258,3 +258,10 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
    least a 100px margin on each side (never narrower than the column, so phones are unaffected). */
 .app > * { width: min(100%, 720px); }
 .app > .seek { width: max(min(100%, 720px), calc(100% - 172px)); }   /* window width minus 100px margins (172 = 200 - the 2x14px page padding), but never narrower than the 720px column */
+
+/* No default help texts: the track label shows only a loaded track's name or an error, and the recording message
+   only a microphone warning; both are hidden while empty. */
+.track-name.placeholder, #recMsg:empty { display: none; }
+
+/* Hovering or dragging a loop limit bar (mouse) */
+.wave.over-limit, .wave.dragging-limit { cursor: ew-resize; }

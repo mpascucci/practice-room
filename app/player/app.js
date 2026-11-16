@@ -647,12 +647,40 @@ let pinch = null, gestureHadPinch = false;
 let sel = null;          // drag in progress: {x0, t0, active, mode, start}  mode: 'loop' (select a region), 'scrub' (touch: move the start mark) or 'pan' (mouse: translate the view)
 let armLoop = false;     // touch devices: the Select button is on, so the next drag selects a loop region
 let dragRange = null;    // [lo, hi] seconds while dragging out a loop region (preview only, applied on release)
-const MIN_LOOP = 0.2, DRAG_PX = 6;
+const MIN_LOOP = 0.2, DRAG_PX = 6, LIMIT_PX = 6;
 
 function timeAtX(clientX) {
   const r = box.getBoundingClientRect();
   const f = viewStart + Math.min(1, Math.max(0, (clientX - r.left) / r.width)) * viewSpan;
   return Math.min(1, Math.max(0, f)) * (audio.duration || 0);
+}
+// Loop limit bars (mouse only): hovering one shows a resize cursor, click-drag moves it. The new range is previewed in
+// dragRange and applied on release, like a region drag, so the audio loop never jumps mid-drag.
+function xOfTime(t) {
+  const r = box.getBoundingClientRect();
+  return r.left + ((t / audio.duration - viewStart) / viewSpan) * r.width;
+}
+function hitLimit(clientX) {
+  if (!loaded || !audio.duration) return null;
+  let best = null, bestDist = LIMIT_PX + 1;
+  for (const [which, t] of [['A', loopA], ['B', loopB]]) {
+    if (t == null) continue;
+    const dist = Math.abs(clientX - xOfTime(t));
+    if (dist < bestDist) { best = which; bestDist = dist; }
+  }
+  return best;
+}
+function setLoopLimits(a, b) {
+  const aMoved = loopA !== a;
+  loopA = a;
+  loopB = b;
+  // The playback start becomes the new A: the start mark moves there, and so does a stopped playhead (otherwise a
+  // white line would stay at the old start). While playing, the playhead keeps going.
+  if (aMoved) {
+    if (playing) startMark = a;
+    else seekTo(a, true);
+  }
+  renderLoop();
 }
 function seekAtX(clientX) {
   if (!loaded || !audio.duration) return;
@@ -700,10 +728,12 @@ box.addEventListener('pointerdown', (e) => {
   interacting = true;
   if (ptrs.size === 1) {
     gestureHadPinch = false;
-    // Mouse: drag = translate the view, Shift+drag = select a loop region. Touch: drag = move the start mark,
-    // or select a loop region when the Select button is on.
-    const mode = e.pointerType === 'touch' ? (armLoop ? 'loop' : 'scrub') : (e.shiftKey ? 'loop' : 'pan');
-    sel = { x0: e.clientX, t0: timeAtX(e.clientX), active: false, mode, start: viewStart };
+    // Mouse: drag a loop limit bar if the pointer is on one; else drag = translate the view, Shift+drag = select a
+    // loop region. Touch: drag = move the start mark, or select a loop region when the Select button is on.
+    const limit = e.pointerType !== 'touch' ? hitLimit(e.clientX) : null;
+    const mode = limit ? 'limit' : e.pointerType === 'touch' ? (armLoop ? 'loop' : 'scrub') : (e.shiftKey ? 'loop' : 'pan');
+    sel = { x0: e.clientX, t0: timeAtX(e.clientX), active: false, mode, which: limit, start: viewStart };
+    if (limit) box.classList.add('dragging-limit');
   } else if (ptrs.size === 2) startPinch();
 });
 box.addEventListener('pointermove', (e) => {
@@ -711,11 +741,20 @@ box.addEventListener('pointermove', (e) => {
   ptrs.set(e.pointerId, e.clientX);
   if (pinch && ptrs.size >= 2) applyPinch();
   else if (sel && ptrs.size === 1 && !gestureHadPinch) {
-    if (!sel.active && Math.abs(e.clientX - sel.x0) > DRAG_PX) {
+    if (!sel.active && Math.abs(e.clientX - sel.x0) > (sel.mode === 'limit' ? 2 : DRAG_PX)) {
       sel.active = true;
       if (sel.mode === 'pan') box.classList.add('panning');
     }
-    if (sel.active && sel.mode === 'pan') {
+    if (sel.active && sel.mode === 'limit') {
+      const t = timeAtX(e.clientX), d = audio.duration;
+      let a = loopA, b = loopB;
+      if (sel.which === 'A') a = Math.min(t, b != null ? b - MIN_LOOP : d);
+      else b = Math.max(t, (a ?? 0) + MIN_LOOP);
+      a = Math.max(0, a);
+      if (b != null) b = Math.min(d, b);
+      dragRange = [a, b];
+      drawWave();
+    } else if (sel.active && sel.mode === 'pan') {
       viewStart = sel.start - (e.clientX - sel.x0) / box.getBoundingClientRect().width * viewSpan;
       afterZoom();
     } else if (sel.active && sel.mode === 'scrub') seekAtX(e.clientX);   // not armed on touch: move the start mark
@@ -732,7 +771,9 @@ function endPointer(e) {
   ptrs.delete(e.pointerId);
   if (ptrs.size < 2) pinch = null;
   if (ptrs.size > 0) return;   // other fingers still down
-  if (s && e.type === 'pointerup' && !gestureHadPinch) {
+  if (s && s.mode === 'limit' && e.type === 'pointerup') {
+    if (dragRange) setLoopLimits(dragRange[0], dragRange[1]);   // a plain click on a limit bar changes nothing
+  } else if (s && e.type === 'pointerup' && !gestureHadPinch) {
     const t = timeAtX(e.clientX), lo = Math.min(s.t0, t), hi = Math.max(s.t0, t);
     if (s.mode === 'loop' && s.active) {
       if (hi - lo >= MIN_LOOP) setLoopRegion(lo, hi);   // drag: loop region
@@ -741,7 +782,7 @@ function endPointer(e) {
     } else if (!(s.mode === 'pan' && s.active)) seekAtX(e.clientX);   // click / tap / scrub end: start mark (a pan drag only moves the view)
   }
   sel = dragRange = null;
-  box.classList.remove('panning');
+  box.classList.remove('panning', 'dragging-limit');
   interacting = false;
   drawWave();
 }
@@ -750,7 +791,12 @@ const setShiftCursor = (on) => box.classList.toggle('shift-select', on);
 window.addEventListener('keydown', (e) => { if (e.key === 'Shift') setShiftCursor(true); });
 window.addEventListener('keyup', (e) => { if (e.key === 'Shift') setShiftCursor(false); });
 window.addEventListener('blur', () => setShiftCursor(false));
-box.addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch') setShiftCursor(e.shiftKey); });   // stays right even if the key event went elsewhere
+box.addEventListener('pointermove', (e) => {
+  if (e.pointerType === 'touch') return;
+  setShiftCursor(e.shiftKey);
+  if (!sel) box.classList.toggle('over-limit', !!hitLimit(e.clientX));   // resize cursor while hovering a loop limit bar
+});
+box.addEventListener('pointerleave', () => box.classList.remove('over-limit'));   // stays right even if the key event went elsewhere
 // The Select button only makes sense with a touch screen.
 el.armLoop.hidden = !matchMedia('(any-pointer: coarse)').matches;
 el.armLoop.addEventListener('click', () => setArm(!armLoop));
@@ -834,6 +880,7 @@ function fillInfo() {
   const both = fine === coarse;
   for (const dd of el.infoDialog.querySelectorAll('dd')) {
     dd.textContent = [(fine || both) && dd.dataset.mouse, (coarse || both) && dd.dataset.touch].filter(Boolean).join(' / ');
+    dd.hidden = dd.previousElementSibling.hidden = !dd.textContent;   // rows that don't apply to this device
   }
 }
 el.infoBtn.addEventListener('click', () => { fillInfo(); el.infoDialog.showModal(); el.infoClose.focus(); });
