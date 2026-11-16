@@ -45,7 +45,7 @@ const state = {
   normalMidi: 50,   // D3
   accentMidi: 38,   // D2
   mode: 'click',      // 'click' (plain sine tick) | 'instrument' (see settings dialog) | 'percussion' (WAV samples, see `perc`)
-  timbre: 'brass',  // 'brass' (sustained) | 'string' (plucked)
+  timbre: 'brass',  // 'brass' = labelled "sustain" in the UI (sustained) | 'string' = labelled "pluck" (plucked); the stored values keep their old names
   denom: 3,         // note length = 1/denom of a beat
   perc: 'bass-snare', // percussion set: a folder in sounds/ (see PERC_SETS)
 };
