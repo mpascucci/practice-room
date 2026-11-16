@@ -153,10 +153,12 @@ function drawWave() {
   const mid = h / 2;
   const xOf = (t) => (t / d - viewStart) / viewSpan * w;   // seconds -> pixel in the current view
 
-  // loop region
-  if (loopA != null && d) {
-    const xa = Math.max(0, xOf(loopA)), xb = Math.min(w, xOf(loopB ?? loopA));
-    g.fillStyle = state.loop ? 'rgba(95, 201, 160, 0.14)' : 'rgba(143, 160, 155, 0.12)';   // gray when the loop is off
+  // loop region (the live drag selection while dragging, else the A-B loop)
+  const [la, lb] = dragRange ?? [loopA, loopB];
+  const live = !!dragRange || state.loop;   // gray when the loop is off
+  if (la != null && d) {
+    const xa = Math.max(0, xOf(la)), xb = Math.min(w, xOf(lb ?? la));
+    g.fillStyle = live ? 'rgba(95, 201, 160, 0.14)' : 'rgba(143, 160, 155, 0.12)';
     if (xb > xa) g.fillRect(xa, 0, xb - xa, h);
   }
 
@@ -181,12 +183,12 @@ function drawWave() {
   // A / B bars (only when inside the view)
   g.font = '700 11px system-ui, sans-serif';
   g.textBaseline = 'top';
-  for (const [t, label, left] of [[loopA, 'A', true], [loopB, 'B', false]]) {
+  for (const [t, label, left] of [[la, 'A', true], [lb, 'B', false]]) {
     if (t == null || !d) continue;
     const x = xOf(t);
     if (x < -1 || x > w + 1) continue;
     const cx = Math.min(w - 1, Math.max(1, x));
-    g.fillStyle = state.loop ? colors.text : '#6f7c78';
+    g.fillStyle = live ? colors.text : '#6f7c78';
     g.fillRect(cx - 1, 0, 2, h);
     g.fillText(label, left ? cx + 4 : cx - 4 - g.measureText(label).width, 3);
   }
@@ -608,18 +610,33 @@ el.back.addEventListener('click', () => seekTo(audio.currentTime - SEEK_STEP));
 el.fwd.addEventListener('click', () => seekTo(audio.currentTime + SEEK_STEP));
 
 
-// Waveform gestures. One finger / mouse: tap or drag to seek. Two fingers: pinch to zoom the time
+// Waveform gestures. One finger / mouse: tap or click sets the start mark, drag-and-drop sets the A-B loop. Two fingers: pinch to zoom the time
 // axis (and pan with the midpoint). Mouse wheel (or Ctrl+wheel / trackpad pinch) zooms around the pointer, Shift+wheel pans, double-click resets.
 const box = el.wave.parentElement;
 const ptrs = new Map();
 let pan = null;   // Shift+drag: {x, start} while translating the view
-let pinch = null, scrub = false, tapPending = false, tapX = 0, gestureHadPinch = false;
+let pinch = null, gestureHadPinch = false;
+let sel = null;          // drag in progress: {x0, t0, active}
+let dragRange = null;    // [lo, hi] seconds while dragging out a loop region (preview only, applied on release)
+const MIN_LOOP = 0.2, DRAG_PX = 6;
 
-function seekAtX(clientX) {
-  const d = audio.duration;
-  if (!loaded || !d) return;
+function timeAtX(clientX) {
   const r = box.getBoundingClientRect();
-  seekTo((viewStart + (clientX - r.left) / r.width * viewSpan) * d, true);
+  const f = viewStart + Math.min(1, Math.max(0, (clientX - r.left) / r.width)) * viewSpan;
+  return Math.min(1, Math.max(0, f)) * (audio.duration || 0);
+}
+function seekAtX(clientX) {
+  if (!loaded || !audio.duration) return;
+  seekTo(timeAtX(clientX), true);
+}
+// Click-drag-drop on the waveform: the dragged region becomes the A-B loop (and the loop is switched on).
+function setLoopRegion(lo, hi) {
+  loopA = lo;
+  loopB = hi;
+  state.loop = true;
+  save();
+  seekTo(lo, true);   // play starts at A (and jumps there if already playing)
+  renderLoop();
 }
 function startPinch() {
   const [a, b] = [...ptrs.values()];
@@ -627,7 +644,8 @@ function startPinch() {
   const midX = (a + b) / 2;
   pinch = { dist: Math.max(10, Math.abs(a - b)), span: viewSpan, anchor: viewStart + (midX - r.left) / r.width * viewSpan };
   gestureHadPinch = true;
-  scrub = tapPending = false;
+  sel = dragRange = null;   // a second finger turns the gesture into a pinch
+  drawWave();
 }
 function applyPinch() {
   const [a, b] = [...ptrs.values()];
@@ -644,14 +662,12 @@ box.addEventListener('pointerdown', (e) => {
   box.setPointerCapture(e.pointerId);
   ptrs.set(e.pointerId, e.clientX);
   interacting = true;
-  if (ptrs.size === 1 && e.shiftKey) {   // Shift+click/drag translates the waveform instead of seeking
+  if (ptrs.size === 1 && e.shiftKey) {   // Shift+click/drag translates the waveform instead
     pan = { x: e.clientX, start: viewStart };
     box.classList.add('panning');
   } else if (ptrs.size === 1) {
     gestureHadPinch = false;
-    tapX = e.clientX;
-    if (e.pointerType === 'touch') tapPending = true;   // wait: it may become a pinch
-    else { scrub = true; seekAtX(e.clientX); }
+    sel = { x0: e.clientX, t0: timeAtX(e.clientX), active: false };
   } else if (ptrs.size === 2) startPinch();
 });
 box.addEventListener('pointermove', (e) => {
@@ -661,19 +677,30 @@ box.addEventListener('pointermove', (e) => {
     viewStart = pan.start - (e.clientX - pan.x) / box.getBoundingClientRect().width * viewSpan;
     afterZoom();
   } else if (pinch && ptrs.size >= 2) applyPinch();
-  else if (ptrs.size === 1 && !gestureHadPinch) {
-    if (tapPending && Math.abs(e.clientX - tapX) > 6) { tapPending = false; scrub = true; }
-    if (scrub) seekAtX(e.clientX);
+  else if (sel && ptrs.size === 1 && !gestureHadPinch) {
+    if (!sel.active && Math.abs(e.clientX - sel.x0) > DRAG_PX) sel.active = true;
+    if (sel.active) {
+      const t = timeAtX(e.clientX);
+      dragRange = [Math.min(sel.t0, t), Math.max(sel.t0, t)];
+      drawWave();
+    }
   }
 });
 function endPointer(e) {
   if (!ptrs.has(e.pointerId)) return;
-  const wasTap = tapPending && e.type === 'pointerup' && !gestureHadPinch;
+  const s = sel;
   ptrs.delete(e.pointerId);
   if (ptrs.size < 2) pinch = null;
-  if (ptrs.size === 0) { pan = null; box.classList.remove('panning'); }
-  if (wasTap) seekAtX(e.clientX);
-  if (ptrs.size === 0) { scrub = tapPending = false; interacting = false; }
+  if (ptrs.size > 0) return;   // other fingers still down
+  if (s && e.type === 'pointerup' && !gestureHadPinch) {
+    const t = timeAtX(e.clientX), lo = Math.min(s.t0, t), hi = Math.max(s.t0, t);
+    if (s.active && hi - lo >= MIN_LOOP) setLoopRegion(lo, hi);   // drag: loop region
+    else seekAtX(e.clientX);                                       // click / tap: start mark
+  }
+  sel = dragRange = pan = null;
+  box.classList.remove('panning');
+  interacting = false;
+  drawWave();
 }
 box.addEventListener('pointerup', endPointer);
 box.addEventListener('pointercancel', endPointer);
