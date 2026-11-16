@@ -2,6 +2,8 @@
 
 A small, installable web app for music practice: a **metronome**, a harmonic **drone** and an audio **player**, side by side. They can run at the same time, and the app works offline.
 
+It completely free and fully open sourc: you can use it online or install it on your device.
+
 <p align="center">
   <a href="screenshots/metronome.png"><img src="screenshots/metronome.png" alt="Metronome" width="150"></a>
   &nbsp;&nbsp;
@@ -10,7 +12,7 @@ A small, installable web app for music practice: a **metronome**, a harmonic **d
   <a href="screenshots/player.png"><img src="screenshots/player.png" alt="Player" width="150"></a>
 </p>
 
-Try it online: <https://mpascucci.github.io/practice-room/app>
+Use it online or install: <https://mpascucci.github.io/practice-room/app>
 
 ## Features
 
