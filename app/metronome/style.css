@@ -40,7 +40,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;   /* the stage below takes all spare height, so the controls sit at the bottom */
   gap: clamp(12px, 3.5dvh, 32px);
   padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
            max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
@@ -59,8 +59,9 @@ body {
 .app > * { flex-shrink: 0; }
 
 /* ---------- Beats panel ---------- */
-/* The stage takes the vertical space left by the other controls (up to what the
-   panel needs at full 50px disks); the disks are sized to fit inside it. */
+/* The stage takes all the vertical space left by the other controls, which stay at
+   the bottom; the beats panel is centred in it and the disks are sized to fit inside it,
+   so adding measures never moves the controls. */
 .stage {
   --n: 4;                              /* beats per measure (set by JS) */
   --m: 1;                              /* number of measures (set by JS) */
@@ -68,7 +69,6 @@ body {
   --row-gap: clamp(10px, 2.2dvh, 18px);
   flex: 1 1 0;
   min-height: 0;
-  max-height: calc(2 * var(--pad-y) + var(--m) * 50px + (var(--m) - 1) * var(--row-gap));
   width: 100%;
   container-type: size;
   display: flex;
@@ -166,6 +166,10 @@ body {
   place-items: center;
   box-shadow: 0 6px 18px #0007;
   transition: background-color 150ms, transform 80ms;
+}
+/* small devices (phones, portrait or landscape): 30% smaller, but never below a 44px touch target */
+@media (max-width: 600px), (max-height: 480px) {
+  .play { --size: max(44px, calc(clamp(56px, 12dvh, 84px) * 0.7)); }
 }
 .play:active { transform: scale(.95); }
 .play:focus-visible { outline: 3px solid #6aa8ff; outline-offset: 3px; }
