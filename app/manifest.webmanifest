@@ -1,7 +1,7 @@
 {
   "id": "./",
   "name": "Practice Room",
-  "short_name": "Practice",
+  "short_name": "Practice Room",
   "description": "Metronome, harmonic drone and audio player for music practice.",
   "start_url": "./",
   "scope": "./",
