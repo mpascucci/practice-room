@@ -147,7 +147,9 @@ const clearMarkers = () => { markers = []; markerSeq = 1; };
 // The bookmark button / M key opens a dialog to name the marker; the default name is an increasing integer.
 function addMarker() {
   if (!loaded) return;
-  const t = startMark ?? audio.currentTime;   // markers go at the playback start position (the yellow line)
+  // Stopped: the marker goes at the start position (the yellow line). Playing: at the current position (the start
+  // mark doesn't move during playback, so using it would put every marker on the same spot).
+  const t = playing ? audio.currentTime : (startMark ?? audio.currentTime);
   if (markers.some((m) => Math.abs(m.t - t) < 0.1)) return;   // already marked here
   markerAt = t;
   markerEditing = null;
@@ -156,7 +158,7 @@ function addMarker() {
   el.markerRemove.hidden = true;
   el.markerName.value = String(markerSeq);
   el.markerDialog.showModal();
-  el.markerName.select();
+  el.markerOk.focus();   // not the text field: on touch devices that would pop the keyboard up straight away
 }
 // Clicking a label opens the same dialog for that marker: rename it, or remove it.
 function editMarker(i) {
@@ -166,7 +168,7 @@ function editMarker(i) {
   el.markerRemove.hidden = false;
   el.markerName.value = markers[i].name;
   el.markerDialog.showModal();
-  el.markerName.select();
+  el.markerOk.focus();   // not the text field: on touch devices that would pop the keyboard up straight away
 }
 function confirmMarker() {
   if (markerEditing != null) {
