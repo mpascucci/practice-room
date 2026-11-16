@@ -3,7 +3,7 @@
 // background, so edits show up on the next launch. Bump VERSION to force a clean re-cache
 // (e.g. after adding or removing files).
 
-const VERSION = 'v4.45';
+const VERSION = 'v4.46';
 const CACHE = `practice-room-${VERSION}`;
 
 const FILES = [
@@ -24,8 +24,8 @@ const FILES = [
   'metronome/sounds/machine/high.wav',
   'metronome/sounds/bass-snare/low.wav',
   'metronome/sounds/bass-snare/high.wav',
-  'metronome/sounds/darabouka/low.wav',
-  'metronome/sounds/darabouka/high.wav',
+  'metronome/sounds/darabuka/low.wav',
+  'metronome/sounds/darabuka/high.wav',
   'metronome/sounds/tapan/low.wav',
   'metronome/sounds/tapan/high.wav',
   'metronome/sounds/pier/pier_PAN.wav',

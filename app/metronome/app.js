@@ -50,7 +50,7 @@ const state = {
   perc: 'bass-snare', // percussion set: a folder in sounds/ (see PERC_SETS)
 };
 const MODES = ['click', 'instrument', 'percussion'];
-const PERC_SETS = ['machine', 'bass-snare', 'darabouka', 'tapan', 'pier'];
+const PERC_SETS = ['machine', 'bass-snare', 'darabuka', 'tapan', 'pier'];
 const PERC_FILES = { pier: { low: 'pier_PAN.wav', high: 'pier_TA.wav' } };   // sets not using low.wav / high.wav
 const beatCount = () => state.measures[0].length;
 load();
@@ -80,6 +80,7 @@ function load() {
     if (Number.isInteger(s.accentMidi)) state.accentMidi = clamp(s.accentMidi, MIN_MIDI, MAX_MIDI);
     if (MODES.includes(s.mode)) state.mode = s.mode;
     if (s.mode === 'drum') state.mode = 'percussion';   // legacy name
+    if (s.perc === 'darabouka') s.perc = 'darabuka';   // old spelling in saved settings
     if (PERC_SETS.includes(s.perc)) state.perc = s.perc;
     if (TIMBRES.includes(s.timbre)) state.timbre = s.timbre;
     if (Number.isInteger(s.denom)) state.denom = clamp(s.denom, MIN_DENOM, MAX_DENOM);

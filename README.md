@@ -36,7 +36,7 @@ Try it online: <https://mpascucci.github.io/practice-room/app>
 
 ## Credits
 
-The Tapan sounds are CC0 davul recordings from Freesound, and the Darabouka sounds are from Freesound under CC BY-NC 3.0; see [CREDITS.md](CREDITS.md).
+The Tapan sounds are CC0 davul recordings from Freesound, and the Darabuka sounds are from Freesound under CC BY-NC 3.0; see [CREDITS.md](CREDITS.md).
 
 ## AI disclaimer
 
@@ -46,4 +46,4 @@ This project was built with the help of AI coding tools (Claude Code). The code 
 
 Copyright &copy; 2026 Marco Pascucci.
 
-This software is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE): you are free to use, modify and share it for any non-commercial purpose. Commercial use requires a separate licence from the author. The Darabouka sounds are under their own non-commercial licence; see [CREDITS.md](CREDITS.md).
+This software is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE): you are free to use, modify and share it for any non-commercial purpose. Commercial use requires a separate licence from the author. The Darabuka sounds are under their own non-commercial licence; see [CREDITS.md](CREDITS.md).
