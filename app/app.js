@@ -212,6 +212,33 @@ document.getElementById('creditsBtn').addEventListener('click', openCredits);
 document.getElementById('creditsClose').addEventListener('click', () => creditsDialog.close());
 creditsDialog.addEventListener('click', (e) => { if (e.target === creditsDialog) creditsDialog.close(); });   // backdrop
 
+// ---------- PWA: install button ----------
+// Always visible (hidden only in the installed app). Uses the native prompt when the browser offered one,
+// otherwise explains how to install manually, so a click is never a no-op.
+let deferredInstall = null;
+const installBtn = document.getElementById('installBtn');
+window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; });
+window.addEventListener('appinstalled', () => {
+  deferredInstall = null;
+  installBtn.hidden = true;
+  installBtn.previousElementSibling.hidden = true;
+});
+installBtn.addEventListener('click', async () => {
+  if (deferredInstall) {
+    const ev = deferredInstall;
+    deferredInstall = null;
+    ev.prompt();
+    await ev.userChoice;
+    return;
+  }
+  const ua = navigator.userAgent;
+  const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  alert(ios ? 'To install: tap the Share button, then "Add to Home Screen".'
+    : /Firefox/.test(ua) ? 'Firefox on desktop can\'t install web apps. Use Chrome or Edge, or Firefox on Android (menu → Install).'
+    : /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua) ? 'To install: File → Add to Dock.'
+    : 'To install: use the browser menu → "Install app" (or "Add to Home screen"). If the app is already installed, open it from your apps.');
+});
+
 // ---------- PWA: offline support ----------
 // Service workers need http(s); skip when opened as a local file.
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
