@@ -640,12 +640,11 @@ el.fwd.addEventListener('click', () => seekTo(audio.currentTime + SEEK_STEP));
 
 
 // Waveform gestures. One finger / mouse: tap or click sets the start mark, drag-and-drop sets the A-B loop. Two fingers: pinch to zoom the time
-// axis (and pan with the midpoint). Mouse wheel (or Ctrl+wheel / trackpad pinch) zooms around the pointer, Shift+wheel pans, double-click resets.
+// axis (and pan with the midpoint). Mouse wheel (or Ctrl+wheel / trackpad pinch) zooms around the pointer, Shift+wheel pans, double-click resets. With a mouse, drag pans and Shift+drag selects the loop.
 const box = el.wave.parentElement;
 const ptrs = new Map();
-let pan = null;   // Shift+drag: {x, start} while translating the view
 let pinch = null, gestureHadPinch = false;
-let sel = null;          // drag in progress: {x0, t0, active, mode}  mode: 'loop' (select a region) or 'scrub' (move the start mark)
+let sel = null;          // drag in progress: {x0, t0, active, mode, start}  mode: 'loop' (select a region), 'scrub' (touch: move the start mark) or 'pan' (mouse: translate the view)
 let armLoop = false;     // touch devices: the Select button is on, so the next drag selects a loop region
 let dragRange = null;    // [lo, hi] seconds while dragging out a loop region (preview only, applied on release)
 const MIN_LOOP = 0.2, DRAG_PX = 6;
@@ -699,24 +698,27 @@ box.addEventListener('pointerdown', (e) => {
   box.setPointerCapture(e.pointerId);
   ptrs.set(e.pointerId, e.clientX);
   interacting = true;
-  if (ptrs.size === 1 && e.shiftKey) {   // Shift+click/drag translates the waveform instead
-    pan = { x: e.clientX, start: viewStart };
-    box.classList.add('panning');
-  } else if (ptrs.size === 1) {
+  if (ptrs.size === 1) {
     gestureHadPinch = false;
-    sel = { x0: e.clientX, t0: timeAtX(e.clientX), active: false, mode: e.pointerType === 'touch' && !armLoop ? 'scrub' : 'loop' };
+    // Mouse: drag = translate the view, Shift+drag = select a loop region. Touch: drag = move the start mark,
+    // or select a loop region when the Select button is on.
+    const mode = e.pointerType === 'touch' ? (armLoop ? 'loop' : 'scrub') : (e.shiftKey ? 'loop' : 'pan');
+    sel = { x0: e.clientX, t0: timeAtX(e.clientX), active: false, mode, start: viewStart };
   } else if (ptrs.size === 2) startPinch();
 });
 box.addEventListener('pointermove', (e) => {
   if (!ptrs.has(e.pointerId)) return;
   ptrs.set(e.pointerId, e.clientX);
-  if (pan) {
-    viewStart = pan.start - (e.clientX - pan.x) / box.getBoundingClientRect().width * viewSpan;
-    afterZoom();
-  } else if (pinch && ptrs.size >= 2) applyPinch();
+  if (pinch && ptrs.size >= 2) applyPinch();
   else if (sel && ptrs.size === 1 && !gestureHadPinch) {
-    if (!sel.active && Math.abs(e.clientX - sel.x0) > DRAG_PX) sel.active = true;
-    if (sel.active && sel.mode === 'scrub') seekAtX(e.clientX);   // not armed on touch: move the start mark
+    if (!sel.active && Math.abs(e.clientX - sel.x0) > DRAG_PX) {
+      sel.active = true;
+      if (sel.mode === 'pan') box.classList.add('panning');
+    }
+    if (sel.active && sel.mode === 'pan') {
+      viewStart = sel.start - (e.clientX - sel.x0) / box.getBoundingClientRect().width * viewSpan;
+      afterZoom();
+    } else if (sel.active && sel.mode === 'scrub') seekAtX(e.clientX);   // not armed on touch: move the start mark
     else if (sel.active) {
       const t = timeAtX(e.clientX);
       dragRange = [Math.min(sel.t0, t), Math.max(sel.t0, t)];
@@ -736,13 +738,19 @@ function endPointer(e) {
       if (hi - lo >= MIN_LOOP) setLoopRegion(lo, hi);   // drag: loop region
       else seekAtX(e.clientX);
       setArm(false);                                     // the drop releases the Select button
-    } else seekAtX(e.clientX);                           // click / tap / scrub end: start mark
+    } else if (!(s.mode === 'pan' && s.active)) seekAtX(e.clientX);   // click / tap / scrub end: start mark (a pan drag only moves the view)
   }
-  sel = dragRange = pan = null;
+  sel = dragRange = null;
   box.classList.remove('panning');
   interacting = false;
   drawWave();
 }
+// While Shift is held over the waveform (mouse), the pointer becomes a vertical line selector: Shift+drag selects a loop.
+const setShiftCursor = (on) => box.classList.toggle('shift-select', on);
+window.addEventListener('keydown', (e) => { if (e.key === 'Shift') setShiftCursor(true); });
+window.addEventListener('keyup', (e) => { if (e.key === 'Shift') setShiftCursor(false); });
+window.addEventListener('blur', () => setShiftCursor(false));
+box.addEventListener('pointermove', (e) => { if (e.pointerType !== 'touch') setShiftCursor(e.shiftKey); });   // stays right even if the key event went elsewhere
 // The Select button only makes sense with a touch screen.
 el.armLoop.hidden = !matchMedia('(any-pointer: coarse)').matches;
 el.armLoop.addEventListener('click', () => setArm(!armLoop));

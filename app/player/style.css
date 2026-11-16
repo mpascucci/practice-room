@@ -247,3 +247,7 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
   .play { grid-template: minmax(0, 1fr) / minmax(0, 1fr); }
   .play svg { width: 92.4%; height: 92.4%; pointer-events: none; }
 }
+
+/* Shift held: the pointer is a capital I with serifs (loop selector). Panning (grabbing) still wins while dragging the view. */
+.wave.shift-select { cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cpath d='M12 3V21M7.5 3H16.5M7.5 21H16.5' fill='none' stroke='black' stroke-opacity='.75' stroke-width='4.5' stroke-linecap='square'/%3E%3Cpath d='M12 3V21M7.5 3H16.5M7.5 21H16.5' fill='none' stroke='white' stroke-width='2' stroke-linecap='square'/%3E%3C/svg%3E") 12 12, text; }
+.wave.panning { cursor: grabbing; }
