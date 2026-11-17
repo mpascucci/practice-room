@@ -181,10 +181,10 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
   #speedPanel .steps button:not(.reset) { display: none; }
   #speedPanel input[type="range"] { grid-column: 1 / -1; grid-row: 2; }
   #speedPanel .reset { display: none; }   /* tap the value instead */
-  /* the 100% tick under the slider is a button that resets the speed */
-  #speedPanel .ticks { height: 30px; }
-  #speedPanel .tick-reset { cursor: pointer; pointer-events: auto; top: -4px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); }
-  #speedPanel .tick-reset::before { display: none; }
+  /* the 100% tick under the slider is a button that resets the speed; the text stays aligned with the other ticks
+     and the pill is drawn around it with the ::before (instead of the usual tick mark) */
+  #speedPanel .tick-reset { cursor: pointer; pointer-events: auto; color: var(--text); }
+  #speedPanel .tick-reset::before { left: -9px; right: -9px; top: 2px; bottom: -3px; width: auto; height: auto; background: none; border: 1px solid var(--line); border-radius: 8px; }
   #speedPanel .tick-reset:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #speedPanel .ticks span:is(:nth-child(2), :nth-child(3), :nth-child(5)) { display: none; }   /* fewer labels: the panel is narrow */
   #speedPanel .ticks { grid-column: 1 / -1; grid-row: 3; margin-top: -2px; }   /* under the slider, not under the reset button */
