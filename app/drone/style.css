@@ -410,7 +410,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
   --d: min(46px, calc((100vw - 64px) / 11)); gap: calc(var(--d) * .25);
 }
 .tuner-disks .disk {
-  --i: 0; --dim: #3a2a0c; --lit: #ffb020;
+  --i: 0; --dim: #6b4a12; --lit: #ffc83d;
   flex: 0 0 auto; width: var(--d); height: var(--d); border-radius: 50%;
   background: color-mix(in srgb, var(--lit) calc(var(--i) * 100%), var(--dim));
   box-shadow: 0 0 calc(var(--d) * .5) color-mix(in srgb, var(--lit) calc(var(--i) * 45%), transparent);
@@ -418,4 +418,4 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
   transition: background-color 250ms linear, box-shadow 250ms linear, outline-color 150ms;
 }
 .tuner-disks .disk.top { outline-color: #fff; }
-.tuner-disks .disk.mid { --dim: #16273f; --lit: #6aa8ff; }
+.tuner-disks .disk.mid { --dim: #27487a; --lit: #8cc0ff; }
