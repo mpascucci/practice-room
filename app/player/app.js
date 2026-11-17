@@ -11,7 +11,7 @@ const el = {
   app: $('app'), file: $('file'), name: $('trackName'), seek: $('seek'), cur: $('cur'), dur: $('dur'),
   rewind: $('rewind'), play: $('play'), addMarker: $('addMarker'), markerStrip: $('markerStrip'), markerDialog: $('markerDialog'), markerName: $('markerName'), markerCancel: $('markerCancel'), markerTitle: $('markerTitle'), markerOk: $('markerOk'), markerRemove: $('markerRemove'),
   speed: $('speed'), speedOut: $('speedOut'), speedDown: $('speedDown'), speedUp: $('speedUp'), speedReset: $('speedReset'), speedTick: $('speedTick'),
-  transpose: $('transpose'), transposeOut: $('transposeOut'), transposeInt: $('transposeInt'), transposeDown: $('transposeDown'), transposeUp: $('transposeUp'), transposeReset: $('transposeReset'),
+  transpose: $('transpose'), transposeOut: $('transposeOut'), transposeInt: $('transposeInt'), transposeDown: $('transposeDown'), transposeUp: $('transposeUp'), transposeReset: $('transposeReset'), transposeFine: $('transposeFine'),
   loopOn: $('loopOn'), loopOut: $('loopOut'), setA: $('setA'), setB: $('setB'), clearLoop: $('clearLoop'),
   wave: $('wave'), armLoop: $('armLoop'), loopPause: $('loopPause'), loopPauseOut: $('loopPauseOut'), zoomReset: $('zoomReset'),
   rec: $('rec'), recLabel: $('recLabel'), recMsg: $('recMsg'), takeDownload: $('takeDownload'),
@@ -21,7 +21,7 @@ const el = {
   recDialog: $('recDialog'), recTime: $('recTime'), recStop: $('recStop'),
 };
 
-const state = { speed: 100, transpose: 0, loop: true, loopPause: 0 };   // loop = the A-B loop toggle; remembered even when no A-B is set
+const state = { speed: 100, transpose: 0, transposeFine: false, loop: true, loopPause: 0 };   // loop = the A-B loop toggle; remembered even when no A-B is set
 let trackName = '';
 let url = null;
 let loaded = false;
@@ -47,7 +47,8 @@ function load() {
     if (s && typeof s.loop === 'boolean') state.loop = s.loop;
     if (s && Number.isFinite(s.loopPause)) state.loopPause = Math.min(10, Math.max(0, Math.round(s.loopPause * 2) / 2));
     if (s && Number.isFinite(s.speed)) state.speed = Math.min(SPEED_MAX, Math.max(SPEED_MIN, Math.round(s.speed)));
-    if (s && Number.isFinite(s.transpose)) state.transpose = Math.min(TRANSPOSE_MAX, Math.max(TRANSPOSE_MIN, Math.round(s.transpose)));
+    if (s && Number.isFinite(s.transpose)) state.transpose = Math.min(TRANSPOSE_MAX, Math.max(TRANSPOSE_MIN, Math.round(s.transpose * 2) / 2));
+    if (s && typeof s.transposeFine === 'boolean') state.transposeFine = s.transposeFine;
   } catch {}
 }
 function save() {
@@ -486,7 +487,7 @@ function ensurePitch() {
       console.warn('Transpose unavailable:', err);
       pitchFailed = true;
       try { ctx && ctx.close(); } catch {}
-      for (const b of [el.transpose, el.transposeDown, el.transposeUp, el.transposeReset]) { b.disabled = true; b.title = 'Transpose is not supported on this device'; }
+      for (const b of [el.transpose, el.transposeDown, el.transposeUp, el.transposeReset, el.transposeFine]) { b.disabled = true; b.title = 'Transpose is not supported on this device'; }
       return false;
     } finally { pitchBuilding = null; }
   })();
@@ -496,11 +497,15 @@ document.addEventListener('visibilitychange', () => { if (pitchNode && !document
 
 const INTERVALS = ['', '2m', '2', '3m', '3', '4', '5b', '5', '6m', '6', '7m', '7', '8'];   // by number of semitones
 function renderTranspose() {
+  el.transpose.step = state.transposeFine ? 0.5 : 1;
+  el.transposeFine.setAttribute('aria-pressed', String(state.transposeFine));
   el.transpose.value = state.transpose;
   fill(el.transpose, state.transpose, TRANSPOSE_MIN, TRANSPOSE_MAX);
   const sign = state.transpose > 0 ? '+' : state.transpose < 0 ? '−' : '';
-  el.transposeOut.textContent = `${sign}${Math.abs(state.transpose)} st`;
-  el.transposeInt.textContent = state.transpose ? `${sign}${INTERVALS[Math.abs(state.transpose)]}` : '';
+  el.transposeOut.textContent = `${sign}${Math.abs(state.transpose)}`;
+  el.transposeOut.dataset.unit = Math.abs(state.transpose) === 1 ? 'semitone' : 'semitones';   // the unit is added in CSS (short "st" in the compact box)
+  const abs = Math.abs(state.transpose);   // a quarter tone (half a semitone) is shown as a trailing ¼
+  el.transposeInt.textContent = state.transpose ? `${sign}${INTERVALS[Math.floor(abs)]}${abs % 1 ? '¼' : ''}` : '';
 }
 function renderLoop() {
   drawWave();
@@ -907,7 +912,8 @@ function setSpeed(v) {
   report();
 }
 function setTranspose(v) {
-  state.transpose = Math.min(TRANSPOSE_MAX, Math.max(TRANSPOSE_MIN, Math.round(v)));
+  const q = state.transposeFine ? 2 : 1;   // steps per semitone
+  state.transpose = Math.min(TRANSPOSE_MAX, Math.max(TRANSPOSE_MIN, Math.round(v * q) / q));
   renderTranspose();
   save();
   applyPitch();
@@ -943,8 +949,12 @@ el.speedDown.addEventListener('click', () => setSpeed(state.speed - 5));
 el.speedUp.addEventListener('click', () => setSpeed(state.speed + 5));
 el.speedReset.addEventListener('click', () => setSpeed(100));
 el.transpose.addEventListener('input', () => setTranspose(+el.transpose.value));
-el.transposeDown.addEventListener('click', () => setTranspose(state.transpose - 1));
-el.transposeUp.addEventListener('click', () => setTranspose(state.transpose + 1));
+// small screens: tap the compact transpose box to expand it (speed collapses to a tab), tap the speed tab to go back
+for (const b of document.querySelectorAll('.tab-open')) b.addEventListener('click', () => { $('tune').dataset.open = b.dataset.tune; });
+const transposeStep = () => state.transposeFine ? 0.5 : 1;
+el.transposeDown.addEventListener('click', () => setTranspose(state.transpose - transposeStep()));
+el.transposeUp.addEventListener('click', () => setTranspose(state.transpose + transposeStep()));
+el.transposeFine.addEventListener('click', () => { state.transposeFine = !state.transposeFine; setTranspose(state.transpose); });   // back to semitones: rounds
 el.transposeReset.addEventListener('click', () => setTranspose(0));
 
 el.play.addEventListener('click', toggle);

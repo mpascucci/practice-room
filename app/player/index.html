@@ -54,8 +54,9 @@
     <p class="hint" id="recMsg" aria-live="polite"></p>
 
     <div class="controls">
-    <div class="tune">
+    <div class="tune" id="tune" data-open="speed">
     <section class="panel" id="speedPanel" aria-label="Speed">
+      <button type="button" class="tab-open" data-tune="speed" aria-label="Show speed"></button>
       <div class="row-head">
         <label for="speed"><span class="lt">Speed</span> <output id="speedOut"></output></label>
         <div class="steps">
@@ -70,9 +71,11 @@
     </section>
 
     <section class="panel" id="transposePanel" aria-label="Transpose">
+      <button type="button" class="tab-open" data-tune="transpose" aria-label="Expand transpose"></button>
       <div class="row-head">
         <label for="transpose"><span class="lt"><span class="full">Transpose</span><span class="abbr">Trans.</span></span> <output id="transposeInt" class="interval"></output> <output id="transposeOut"></output></label>
         <div class="steps">
+          <button type="button" class="fine" id="transposeFine" aria-pressed="false" aria-label="Quarter-tone steps" title="Quarter-tone steps (half a semitone)">¼</button>
           <button type="button" id="transposeDown" aria-label="Down one semitone">−</button>
           <button type="button" id="transposeUp" aria-label="Up one semitone">+</button>
           <button type="button" class="reset" id="transposeReset" aria-label="Reset transpose to 0" title="Reset transpose to 0"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.700-6M4 4v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">0</span></button>
