@@ -8,6 +8,8 @@ const pane = (app) => document.querySelector(`iframe[data-app="${app}"]`);
 function select(app, focus = false) {
   for (const a of APPS) {
     const on = a === app;
+    // Tell the app we are leaving (e.g. the drone's tuner stops listening to the microphone).
+    if (!on && pane(a).classList.contains('active')) pane(a).contentWindow?.postMessage({ type: 'cmd', action: 'leave' }, '*');
     slot(a).classList.toggle('active', on);
     const tab = slot(a).querySelector('.tab');
     tab.setAttribute('aria-selected', on);

@@ -913,6 +913,7 @@ window.addEventListener('message', (e) => {
   else if (a === 'play' && !playing) start();
   else if (a === 'stop' && playing) stop();
   else if (a === 'ping') report();
+  else if (a === 'leave') setTunerOpen(false);   // the user switched to another tab: close the tuner, release the mic
   else if (a === 'volume' && Number.isFinite(e.data.value)) {
     shellVol = Math.min(1, Math.max(0, e.data.value));
     if (trim) trim.gain.setTargetAtTime(shellVol, ctx.currentTime, 0.02);
