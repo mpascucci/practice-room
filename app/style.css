@@ -182,10 +182,10 @@ body {
 .vol {
   position: relative; z-index: 1; flex: 0 0 auto;
   width: 34px; height: 34px; padding: 0; border: 0; border-radius: 50%;
-  background: transparent; color: var(--muted); cursor: pointer;
+  background: #ffffff14; color: var(--muted); cursor: pointer;   /* disk background */
   display: grid; place-items: center;
 }
-.vol:hover, .vol[aria-expanded="true"] { color: var(--text); background: #ffffff14; }
+.vol:hover, .vol[aria-expanded="true"] { color: var(--text); background: #ffffff26; }
 .vol:focus-visible { outline: 2px solid #6aa8ff; outline-offset: 2px; }
 .vol svg { width: 20px; height: 20px; }
 .slot.muted .vol .waves { display: none; }
