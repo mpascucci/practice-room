@@ -463,3 +463,32 @@ input[type="range"] {
 .seg-opts.stack label + label { border-left: 0; border-top: 1px solid var(--field-border); }
 .seq-dialog .oct-label { color: var(--muted); font-size: .85rem; }
 
+
+/* ---------- Presets dialog ---------- */
+/* Fixed size: the list scrolls inside it. */
+#presetsDialog { height: fit-content; max-height: none; overflow: hidden; }
+#presetsDialog form { height: min(460px, calc(100dvh - 32px)); box-sizing: border-box; }
+#presetsDialog .seq-actions { margin-top: auto; }
+.dlg-title small { color: var(--muted); font-weight: 400; font-size: .8rem; margin-left: .4em; }
+.preset-save { display: flex; gap: 8px; }
+.preset-save input { flex: 1 1 auto; min-width: 0; }
+.preset-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; flex: 1 1 0; min-height: 0; overflow-y: auto; }
+.preset-list[hidden] { display: none; }
+.preset-list li { display: flex; gap: 6px; }
+.preset-load {
+  flex: 1 1 auto; min-width: 0; min-height: 44px; padding: 6px 12px;
+  display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px;
+  border-radius: 10px; border: 1px solid var(--field-border); background: var(--field);
+  color: var(--text); font: inherit; text-align: left; cursor: pointer;
+}
+.preset-load:hover { background: #3a3a3a; }
+.preset-load:focus-visible { outline: 3px solid #6aa8ff; outline-offset: 2px; }
+/* label, then the tempo summary to its right when it fits, otherwise below it */
+.preset-head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; row-gap: 0; max-width: 100%; }
+.preset-name { font-weight: 600; overflow-wrap: anywhere; }
+.preset-load small { color: var(--muted); }
+.preset-dots { display: flex; flex-wrap: wrap; gap: 3px; }
+.preset-dots .dot { width: 8px; height: 8px; }
+.preset-del svg { width: 18px; height: 18px; }
+.preset-empty { margin: 0; color: var(--muted); font-size: .9rem; }
+.preset-empty[hidden] { display: none; }

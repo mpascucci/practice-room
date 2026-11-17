@@ -33,6 +33,9 @@
       <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
       <svg class="icon-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
       </button>
+      <button class="icon-btn" id="presetsBtn" type="button" aria-haspopup="dialog" aria-label="Presets" title="Presets: save or load tempo, beats and sound">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg>
+      </button>
     </div>
 
     <div class="controls">
@@ -173,6 +176,21 @@
       </fieldset>
       <div class="seq-actions">
         <button type="submit" class="btn primary">Done</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog class="seq-dialog" id="presetsDialog" aria-labelledby="presetsLabel">
+    <form method="dialog" id="presetsForm">
+      <p id="presetsLabel" class="dlg-title">Presets <small>tempo, beats and sound</small></p>
+      <div class="preset-save">
+        <input id="presetName" type="text" maxlength="20" autocomplete="off" aria-label="Preset label">
+        <button type="button" class="btn primary" id="presetSave">Save</button>
+      </div>
+      <ul class="preset-list" id="presetList" aria-label="Saved presets"></ul>
+      <p class="preset-empty" id="presetEmpty">No presets yet. Set up the metronome, edit the label if you like and press Save.</p>
+      <div class="seq-actions">
+        <button type="submit" class="btn">Close</button>
       </div>
     </form>
   </dialog>

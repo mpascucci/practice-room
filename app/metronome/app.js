@@ -472,7 +472,7 @@ document.querySelectorAll('[data-step]').forEach((btn) => {
 
 // Keyboard: Space = play/stop, T = tap, ←/→ = tempo ∓1 (Shift: ∓10), ↑/↓ = beats.
 document.addEventListener('keydown', (e) => {
-  if (seqDialog.open || settingsDialog.open) return;          // dialog handles its own keys
+  if (seqDialog.open || settingsDialog.open || presetsDialog.open) return;          // dialog handles its own keys
   if (e.target instanceof HTMLInputElement && e.target.type !== 'range') return;
   if (e.target instanceof HTMLInputElement && e.key !== ' ' && e.key.toLowerCase() !== 't') return;
   const big = e.shiftKey ? 10 : 1;
@@ -677,6 +677,159 @@ modeInst.addEventListener('click', () => {
 settingsDialog.addEventListener('click', (e) => { if (e.target === settingsDialog) settingsDialog.close(); });
 
 syncMode();
+
+// ---------- Presets ----------
+// A preset stores the rhythm (tempo, multiplier, state of every beat of every measure) and the
+// sound (mode, percussion set, instrument notes / length / timbre). Presets saved by an earlier
+// version have no sound: loading them leaves the current sound unchanged.
+const PRESETS_KEY = 'metronome:presets:v1';
+const MAX_PRESETS = 50;
+const MAX_LABEL = 20;
+const presetsDialog = $('presetsDialog');
+const presetName = $('presetName');
+const presetList = $('presetList');
+const presetEmpty = $('presetEmpty');
+let presets = loadPresets();
+
+function loadPresets() {
+  try {
+    const list = JSON.parse(localStorage.getItem(PRESETS_KEY));
+    if (!Array.isArray(list)) return [];
+    return list.flatMap((p) => {
+      if (!p || typeof p.name !== 'string' || !Number.isInteger(p.bpm) || !Array.isArray(p.measures) || !p.measures.length) return [];
+      const n = clamp(p.measures[0]?.length || 4, MIN_BEATS, MAX_BEATS);
+      const q = {
+        name: p.name.slice(0, MAX_LABEL),
+        bpm: clamp(p.bpm, MIN_BPM, MAX_BPM),
+        mult: Number.isInteger(p.mult) ? clamp(p.mult, 1, 4) : 1,
+        measures: p.measures.slice(0, MAX_MEASURES).map((m) =>
+          Array.from({ length: n }, (_, i) => (STATES.includes(m?.[i]) ? m[i] : 'normal'))),
+      };
+      if (MODES.includes(p.mode) && PERC_SETS.includes(p.perc) && TIMBRES.includes(p.timbre)
+          && [p.normalMidi, p.accentMidi, p.denom].every(Number.isInteger)) {
+        Object.assign(q, {
+          mode: p.mode, perc: p.perc, timbre: p.timbre,
+          normalMidi: clamp(p.normalMidi, MIN_MIDI, MAX_MIDI),
+          accentMidi: clamp(p.accentMidi, MIN_MIDI, MAX_MIDI),
+          denom: clamp(p.denom, MIN_DENOM, MAX_DENOM),
+        });
+      }
+      return [q];
+    }).slice(0, MAX_PRESETS);
+  } catch { return []; }
+}
+function storePresets() {
+  try { localStorage.setItem(PRESETS_KEY, JSON.stringify(presets)); } catch {}
+}
+
+// Name of the current sound, used as the default label prefix and in the list.
+const PERC_NAMES = { machine: 'Machine', 'bass-snare': 'Bass-Snare', darabuka: 'Darabuka', tapan: 'Tapan', pier: 'Pier' };
+const soundName = (p) => (p.mode === 'percussion' ? PERC_NAMES[p.perc]
+  : p.mode === 'instrument' ? (p.timbre === 'string' ? 'Pluck' : 'Sustain') : 'Click');
+
+// Default label: <Sound> 01, <Sound> 02, … the smallest number not used yet (e.g. Darabuka 01).
+function nextPresetName() {
+  const base = soundName(state);
+  const used = new Set(presets.map((p) => p.name.toLowerCase()));
+  let k = 1;
+  while (used.has(`${base} ${String(k).padStart(2, '0')}`.toLowerCase())) k++;
+  return `${base} ${String(k).padStart(2, '0')}`;
+}
+
+// "120 BPM · 4 beats · Darabuka" / "90 × 2 BPM · 7 × 3 beats"
+function presetSummary(p) {
+  const tempo = p.mult === 1 ? `${p.bpm}` : `${p.bpm} × ${p.mult}`;
+  const meas = p.measures.length > 1 ? ` × ${p.measures.length}` : '';
+  return `${tempo} BPM · ${p.measures[0].length}${meas} beats${p.mode ? ` · ${soundName(p)}` : ''}`;
+}
+
+// Small row of disks showing the beat states of the first measure.
+function presetDots(p) {
+  const wrap = document.createElement('span');
+  wrap.className = 'preset-dots';
+  wrap.setAttribute('aria-hidden', 'true');
+  for (const st of p.measures[0]) {
+    const d = document.createElement('i');
+    d.className = `dot ${st}`;
+    wrap.append(d);
+  }
+  return wrap;
+}
+
+function renderPresets() {
+  presetEmpty.hidden = presets.length > 0;
+  presetList.hidden = presets.length === 0;
+  presetList.replaceChildren(...presets.map((p, i) => {
+    const li = document.createElement('li');
+    const load = document.createElement('button');
+    load.type = 'button';
+    load.className = 'preset-load';
+    load.dataset.load = i;
+    const name = document.createElement('span');
+    name.className = 'preset-name';
+    name.textContent = p.name;
+    const info = document.createElement('small');
+    info.textContent = presetSummary(p);
+    const head = document.createElement('span');
+    head.className = 'preset-head';
+    head.append(name, info);
+    load.append(head, presetDots(p));
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'icon-btn preset-del';
+    del.dataset.del = i;
+    del.setAttribute('aria-label', `Delete preset ${p.name}`);
+    del.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>';
+    li.append(load, del);
+    return li;
+  }));
+  presetName.value = nextPresetName();
+}
+
+function savePreset() {
+  const name = presetName.value.trim().slice(0, MAX_LABEL) || nextPresetName();
+  const p = {
+    name, bpm: state.bpm, mult: state.mult, measures: state.measures.map((m) => [...m]),
+    mode: state.mode, perc: state.perc, timbre: state.timbre,
+    normalMidi: state.normalMidi, accentMidi: state.accentMidi, denom: state.denom,
+  };
+  const at = presets.findIndex((x) => x.name.toLowerCase() === name.toLowerCase());
+  if (at >= 0) presets[at] = p;                       // same label: overwrite
+  else if (presets.length < MAX_PRESETS) presets.push(p);
+  else { presetEmpty.textContent = `Too many presets (max ${MAX_PRESETS}): delete one first.`; presetEmpty.hidden = false; return; }
+  storePresets();
+  renderPresets();
+}
+
+function applyPreset(p) {
+  state.bpm = p.bpm;
+  state.mult = p.mult;
+  state.measures = p.measures.map((m) => [...m]);
+  if (p.mode) {
+    Object.assign(state, { mode: p.mode, perc: p.perc, timbre: p.timbre, normalMidi: p.normalMidi, accentMidi: p.accentMidi, denom: p.denom });
+    syncMode();
+    if (ctx && state.mode === 'percussion') loadPerc();   // samples of a set not used yet load now (silent until decoded)
+  }
+  renderBeats();
+  syncInputs();
+  save();
+}
+
+$('presetsBtn').addEventListener('click', () => {
+  presetEmpty.textContent = 'No presets yet. Set up the metronome, edit the label if you like and press Save.';
+  renderPresets();
+  presetsDialog.showModal();
+  $('presetSave').focus();   // not the text field: no virtual keyboard on touch devices
+});
+$('presetSave').addEventListener('click', savePreset);
+presetName.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); savePreset(); } });
+presetList.addEventListener('click', (e) => {
+  const del = e.target.closest('[data-del]');
+  if (del) { presets.splice(+del.dataset.del, 1); storePresets(); renderPresets(); return; }
+  const load = e.target.closest('[data-load]');
+  if (load) { applyPreset(presets[+load.dataset.load]); presetsDialog.close(); }
+});
+presetsDialog.addEventListener('click', (e) => { if (e.target === presetsDialog) presetsDialog.close(); });
 
 // ---------- Touch screens: display-only numbers ----------
 // Tapping a number field (or near it) would open the virtual keyboard. On touch devices
