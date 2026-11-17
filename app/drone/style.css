@@ -397,7 +397,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 .tuner-handle .chev { width: 16px; height: 16px; transition: transform 280ms; transform: rotate(180deg); }
 .tuner.collapsed .tuner-handle .chev { transform: none; }
 .tuner-row { display: flex; flex-direction: column; align-items: center; gap: 16px; width: min(100%, 520px); }
-.tuner-id { display: flex; align-items: baseline; justify-content: center; gap: 10px; }
+.tuner-id { display: flex; align-items: center; justify-content: center; height: 2.5rem; }   /* fixed: same height for the big note and the small "listening..." */
 .tuner-note { font-size: 2.2rem; font-weight: 600; line-height: 1.1; }
 .tuner-note.idle { font-size: 1.1rem; font-weight: 400; color: var(--muted); }
 .tuner-hz { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 1.1em; }
