@@ -405,8 +405,9 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 .tuner-msg.warn { color: var(--amber); }
 /* Nine disks = nine 10-cent bins (-40…+40). Intensity falls off linearly with the distance from the bin centre. */
 .tuner-disks {
-  container-type: inline-size; width: 100%; display: flex; justify-content: center;
-  --d: min(46px, 100cqw / 9.5); gap: calc(var(--d) * .25);
+  width: 100%; display: flex; justify-content: center;
+  /* 9 disks + 8 gaps (.25 d) = 11 d must fit the width left by the page (2×14px) and curtain (2×12px) padding, plus the outline ring */
+  --d: min(46px, calc((100vw - 64px) / 11)); gap: calc(var(--d) * .25);
 }
 .tuner-disks .disk {
   --i: 0; --dim: #3a2a0c; --lit: #ffb020;
