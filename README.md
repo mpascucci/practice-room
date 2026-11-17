@@ -27,6 +27,7 @@ Use it online or install: <https://mpascucci.github.io/practice-room/app>
 - **Player**: open or record an audio file.
   - Waveform you can zoom (pinch or mouse wheel)
   - Change speed without changing the pitch
+  - Transpose up or down by up to an octave (±12 semitones) without changing the speed
   - A–B loop
   - Record a take with the microphone
   - Files stay on your device.

@@ -3,6 +3,7 @@
 
 const KEY = 'player:v1';
 const SPEED_MIN = 25, SPEED_MAX = 150;
+const TRANSPOSE_MIN = -12, TRANSPOSE_MAX = 12;   // semitones
 const SEEK_STEP = 5;     // seconds, arrow keys
 const $ = (id) => document.getElementById(id);
 
@@ -10,6 +11,7 @@ const el = {
   app: $('app'), file: $('file'), name: $('trackName'), seek: $('seek'), cur: $('cur'), dur: $('dur'),
   rewind: $('rewind'), play: $('play'), addMarker: $('addMarker'), markerStrip: $('markerStrip'), markerDialog: $('markerDialog'), markerName: $('markerName'), markerCancel: $('markerCancel'), markerTitle: $('markerTitle'), markerOk: $('markerOk'), markerRemove: $('markerRemove'),
   speed: $('speed'), speedOut: $('speedOut'), speedDown: $('speedDown'), speedUp: $('speedUp'), speedReset: $('speedReset'),
+  transpose: $('transpose'), transposeOut: $('transposeOut'), transposeInt: $('transposeInt'), transposeDown: $('transposeDown'), transposeUp: $('transposeUp'), transposeReset: $('transposeReset'),
   loopOn: $('loopOn'), loopOut: $('loopOut'), setA: $('setA'), setB: $('setB'), clearLoop: $('clearLoop'),
   wave: $('wave'), armLoop: $('armLoop'), loopPause: $('loopPause'), loopPauseOut: $('loopPauseOut'), zoomReset: $('zoomReset'),
   rec: $('rec'), recLabel: $('recLabel'), recMsg: $('recMsg'), takeDownload: $('takeDownload'),
@@ -19,7 +21,7 @@ const el = {
   recDialog: $('recDialog'), recTime: $('recTime'), recStop: $('recStop'),
 };
 
-const state = { speed: 100, loop: true, loopPause: 0 };   // loop = the A-B loop toggle; remembered even when no A-B is set
+const state = { speed: 100, transpose: 0, loop: true, loopPause: 0 };   // loop = the A-B loop toggle; remembered even when no A-B is set
 let trackName = '';
 let url = null;
 let loaded = false;
@@ -45,6 +47,7 @@ function load() {
     if (s && typeof s.loop === 'boolean') state.loop = s.loop;
     if (s && Number.isFinite(s.loopPause)) state.loopPause = Math.min(10, Math.max(0, Math.round(s.loopPause * 2) / 2));
     if (s && Number.isFinite(s.speed)) state.speed = Math.min(SPEED_MAX, Math.max(SPEED_MIN, Math.round(s.speed)));
+    if (s && Number.isFinite(s.transpose)) state.transpose = Math.min(TRANSPOSE_MAX, Math.max(TRANSPOSE_MIN, Math.round(s.transpose)));
   } catch {}
 }
 function save() {
@@ -456,6 +459,49 @@ function renderSpeed() {
   el.speedOut.textContent = `${state.speed}%`;
   audio.defaultPlaybackRate = audio.playbackRate = state.speed / 100;
 }
+// ---------- Transpose (pitch shift) ----------
+// The <audio> element keeps doing the speed (preservesPitch). To shift the pitch it is routed through an
+// AudioWorklet (pitchshift.js). The graph is built lazily, the first time a non-zero transpose is needed, and only
+// once the AudioContext is really running: createMediaElementSource() is irreversible, so on a suspended context
+// (no user gesture yet) the audio would stay silent. The element's own volume still applies before the worklet.
+let pitchNode = null, pitchBuilding = null, pitchFailed = false;
+function applyPitch() {
+  if (pitchNode) pitchNode.parameters.get('pitch').value = 2 ** (state.transpose / 12);
+}
+function ensurePitch() {
+  if (pitchNode || pitchFailed) return Promise.resolve(!!pitchNode);
+  if (!pitchBuilding) pitchBuilding = (async () => {
+    let ctx;
+    try {
+      ctx = new AudioContext();
+      await ctx.resume();
+      if (ctx.state !== 'running') { ctx.close(); return false; }   // no gesture yet: try again on the next one
+      await ctx.audioWorklet.addModule('pitchshift.js');
+      const node = new AudioWorkletNode(ctx, 'pitch-shifter', { numberOfInputs: 1, numberOfOutputs: 1, outputChannelCount: [2], channelCount: 2, channelCountMode: 'explicit' });
+      ctx.createMediaElementSource(audio).connect(node).connect(ctx.destination);
+      pitchNode = node;
+      applyPitch();
+      return true;
+    } catch (err) {
+      console.warn('Transpose unavailable:', err);
+      pitchFailed = true;
+      try { ctx && ctx.close(); } catch {}
+      for (const b of [el.transpose, el.transposeDown, el.transposeUp, el.transposeReset]) { b.disabled = true; b.title = 'Transpose is not supported on this device'; }
+      return false;
+    } finally { pitchBuilding = null; }
+  })();
+  return pitchBuilding;
+}
+document.addEventListener('visibilitychange', () => { if (pitchNode && !document.hidden && pitchNode.context.state === 'suspended' && playing) pitchNode.context.resume(); });
+
+const INTERVALS = ['', '2m', '2', '3m', '3', '4', '5b', '5', '6m', '6', '7m', '7', '8'];   // by number of semitones
+function renderTranspose() {
+  el.transpose.value = state.transpose;
+  fill(el.transpose, state.transpose, TRANSPOSE_MIN, TRANSPOSE_MAX);
+  const sign = state.transpose > 0 ? '+' : state.transpose < 0 ? '−' : '';
+  el.transposeOut.textContent = `${sign}${Math.abs(state.transpose)} st`;
+  el.transposeInt.textContent = state.transpose ? `${sign}${INTERVALS[Math.abs(state.transpose)]}` : '';
+}
 function renderLoop() {
   drawWave();
   // the button names the action it will do: "Start Loop" when off, "Stop Loop" when on
@@ -514,6 +560,7 @@ async function start() {
   if (startMark != null) audio.currentTime = startMark;
   else startMark = audio.currentTime;
   try {
+    if (state.transpose !== 0) await ensurePitch();
     await audio.play();
   } catch (err) {
     if (err.name === 'NotAllowedError') blocked();
@@ -859,6 +906,14 @@ function setSpeed(v) {
   save();
   report();
 }
+function setTranspose(v) {
+  state.transpose = Math.min(TRANSPOSE_MAX, Math.max(TRANSPOSE_MIN, Math.round(v)));
+  renderTranspose();
+  save();
+  applyPitch();
+  if (state.transpose !== 0) ensurePitch().then(applyPitch);   // first use: build the graph (we are inside a user gesture)
+  report();
+}
 function renderLoopPause() {
   el.loopPause.value = state.loopPause;
   fill(el.loopPause, state.loopPause, 0, 10);
@@ -869,10 +924,18 @@ el.loopPause.addEventListener('input', () => {
   renderLoopPause();
   save();
 });
+// small screens: the speed slider moves in 5% steps (1% on wide screens)
+const smallScreen = matchMedia('(max-width: 600px)');
+const speedStep = () => { el.speed.step = smallScreen.matches ? 5 : 1; renderSpeed(); };
+smallScreen.addEventListener('change', speedStep);
 el.speed.addEventListener('input', () => setSpeed(+el.speed.value));
 el.speedDown.addEventListener('click', () => setSpeed(state.speed - 5));
 el.speedUp.addEventListener('click', () => setSpeed(state.speed + 5));
 el.speedReset.addEventListener('click', () => setSpeed(100));
+el.transpose.addEventListener('input', () => setTranspose(+el.transpose.value));
+el.transposeDown.addEventListener('click', () => setTranspose(state.transpose - 1));
+el.transposeUp.addEventListener('click', () => setTranspose(state.transpose + 1));
+el.transposeReset.addEventListener('click', () => setTranspose(0));
 
 el.play.addEventListener('click', toggle);
 el.rewind.addEventListener('click', () => {
@@ -1145,7 +1208,7 @@ if (EMBEDDED) document.documentElement.classList.add('embedded');
 
 function report() {
   if (!EMBEDDED) return;
-  const info = loaded || trackName ? `${trackName}${state.speed !== 100 ? ` · ${state.speed}%` : ''}` : 'No file';
+  const info = loaded || trackName ? `${trackName}${state.speed !== 100 ? ` · ${state.speed}%` : ''}${state.transpose ? ` · ${state.transpose > 0 ? '+' : '−'}${Math.abs(state.transpose)} st` : ''}` : 'No file';
   parent.postMessage({ type: 'status', app: 'player', playing, info: recording ? `● rec · ${info}` : info }, '*');
 }
 function blocked() {
@@ -1164,7 +1227,8 @@ window.addEventListener('message', (e) => {
 
 // ---------- Init ----------
 load();
-renderSpeed();
+speedStep();
+renderTranspose();
 renderLoopPause();
 renderEnabled();
 renderTime();

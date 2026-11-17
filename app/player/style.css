@@ -165,18 +165,39 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 
 /* Speed and loop panels: stacked on wide screens, one line on small ones */
 .controls { display: flex; flex-direction: column; gap: inherit; }
+.tune { display: contents; }   /* wide screens: panels stacked like any other */
 @media (max-width: 600px) {
   .controls { display: flex; flex-direction: column; gap: inherit; }
   .controls .panel { padding: 10px; min-width: 0; }
   .controls .row-head { flex-wrap: wrap; gap: 6px; min-height: 0; }
   .controls .hint { display: none; }
-  /* speed: label on top, then slider and the 100% button on one line (- and + are hidden) */
-  .speed-panel { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 10px; row-gap: 6px; }
-  .speed-panel .row-head, .speed-panel .steps { display: contents; }
-  .speed-panel label { grid-column: 1 / -1; grid-row: 1; }
-  .speed-panel #speedDown, .speed-panel #speedUp { display: none; }
-  .speed-panel #speed { grid-column: 1; grid-row: 2; }
-  .speed-panel #speedReset { grid-column: 2; grid-row: 2; }
+  /* speed / transpose: side by side, one open (slider) and one collapsed to a tab showing its value */
+  /* speed (slider) and transpose (compact fixed-width box) side by side */
+  .tune { display: flex; gap: 8px; }
+  .tune .panel { min-height: 109px; }   /* = the speed panel, so both boxes are the same height */
+  #speedPanel { flex: 1 1 0; display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 10px; row-gap: 6px; }
+  #speedPanel .row-head, #speedPanel .steps { display: contents; }
+  #speedPanel label { grid-column: 1 / -1; grid-row: 1; }
+  #speedPanel .steps button:not(.reset) { display: none; }
+  #speedPanel input[type="range"] { grid-column: 1; grid-row: 2; }
+  #speedPanel .reset { grid-column: 2; grid-row: 2; }
+  #speedPanel .ticks span:is(:nth-child(2), :nth-child(3), :nth-child(5)) { display: none; }   /* fewer labels: the panel is narrow */
+  #speedPanel .ticks { grid-column: 1; grid-row: 3; margin-top: -2px; }   /* under the slider, not under the reset button */
+  /* transpose: value on the left (room for "+12"), + above - on the right; no slider, no label */
+  #transposePanel { flex: 0 0 124px; display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 6px; row-gap: 6px; }
+  #transposePanel .row-head, #transposePanel .steps { display: contents; }
+  #transposePanel label { grid-column: 1; grid-row: 1 / 3; text-align: center; }
+  #transposePanel .interval { display: block; font-size: 1.4rem; font-weight: 600; }   /* the interval is the big label */
+  #transposePanel .interval:empty::before { content: "0"; }
+  #transposePanel #transposeOut { display: block; font-size: .8rem; font-weight: 400; color: var(--muted); }
+  #transposePanel { position: relative; }
+  #transposePanel .lt { display: block; position: absolute; top: 10px; left: 10px; }   /* "TR." in the corner, like the SPEED label */
+  #transposePanel .lt .full { display: none; }
+  #transposePanel .lt .abbr { display: inline; }
+  #transposePanel .hint, #transposePanel input[type="range"], #transposePanel .ticks, #transposePanel .reset { display: none; }
+  #transposePanel .steps button { min-width: 40px; min-height: 36px; padding: 0; grid-column: 2; }
+  #transposePanel #transposeUp { grid-row: 1; }
+  #transposePanel #transposeDown { grid-row: 2; }
   .controls .loop-btns { flex-wrap: wrap; gap: 6px; }
   .controls .loop-btns button { flex: 1 1 0; padding: 0 6px; }
 }
@@ -212,18 +233,19 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 #infoDialog { border-color: var(--line); }
 .info-body { align-items: stretch; }
 .info-body .rec-title { justify-content: center; }
-.info-list { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 10px 14px; }
-.info-list dt { font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: .75rem; color: var(--muted); align-self: center; }
+.info-list { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }   /* two equal columns; the labels wrap */
+.info-list dt { overflow-wrap: anywhere; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: .75rem; color: var(--muted); align-self: center; }
 .info-list dd { margin: 0; }
 #infoDialog { width: min(92vw, 420px); }
 
+
 /* Speed markers under the slider (--f is the position 0..1 along 25..150%) */
+.lt .abbr { display: none; }
+.interval { text-transform: none; color: var(--accent); font-variant-numeric: tabular-nums; }
+.interval:empty::before { content: "\00a0"; }
 .ticks { display: block; position: relative; height: 22px; margin-top: -4px; font-size: .7rem; color: var(--muted); font-variant-numeric: tabular-nums; }
 .ticks span { position: absolute; top: 0; left: calc(9px + (100% - 18px) * var(--f)); transform: translateX(-50%); padding-top: 6px; }
 .ticks span::before { content: ""; position: absolute; top: 0; left: 50%; width: 1px; height: 4px; background: var(--line); }
-@media (max-width: 600px) {
-  .speed-panel .ticks { grid-column: 1; grid-row: 3; margin-top: -2px; }   /* under the slider, not under the reset button */
-}
 
 /* Layout: the controls sit at the bottom; the waveform takes the height left above them, up to 300px, and is
    centred vertically in that space. */

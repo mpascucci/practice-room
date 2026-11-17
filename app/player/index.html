@@ -54,19 +54,36 @@
     <p class="hint" id="recMsg" aria-live="polite"></p>
 
     <div class="controls">
-    <section class="panel speed-panel" aria-label="Speed">
+    <div class="tune">
+    <section class="panel" id="speedPanel" aria-label="Speed">
       <div class="row-head">
         <label for="speed"><span class="lt">Speed</span> <output id="speedOut"></output></label>
         <div class="steps">
           <button type="button" id="speedDown" aria-label="Slower">−</button>
           <button type="button" id="speedUp" aria-label="Faster">+</button>
-          <button type="button" id="speedReset" aria-label="Reset speed to 100%" title="Reset speed to 100%"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.700-6M4 4v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">100%</span></button>
+          <button type="button" class="reset" id="speedReset" aria-label="Reset speed to 100%" title="Reset speed to 100%"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.700-6M4 4v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">100%</span></button>
         </div>
       </div>
       <input id="speed" type="range" min="25" max="150" step="1" value="100">
       <div class="ticks" aria-hidden="true"><span style="--f:0">25%</span><span style="--f:0.2">50%</span><span style="--f:0.4">75%</span><span style="--f:0.6">100%</span><span style="--f:0.8">125%</span><span style="--f:1">150%</span></div>
       <p class="hint">Pitch stays the same when the speed changes.</p>
     </section>
+
+    <section class="panel" id="transposePanel" aria-label="Transpose">
+      <div class="row-head">
+        <label for="transpose"><span class="lt"><span class="full">Transpose</span><span class="abbr">Trans.</span></span> <output id="transposeInt" class="interval"></output> <output id="transposeOut"></output></label>
+        <div class="steps">
+          <button type="button" id="transposeDown" aria-label="Down one semitone">−</button>
+          <button type="button" id="transposeUp" aria-label="Up one semitone">+</button>
+          <button type="button" class="reset" id="transposeReset" aria-label="Reset transpose to 0" title="Reset transpose to 0"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.700-6M4 4v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">0</span></button>
+        </div>
+      </div>
+      <input id="transpose" type="range" min="-12" max="12" step="1" value="0">
+      <div class="ticks" aria-hidden="true"><span style="--f:0">−12</span><span style="--f:0.25">−6</span><span style="--f:0.5">0</span><span style="--f:0.75">+6</span><span style="--f:1">+12</span></div>
+      <p class="hint">Changes the pitch in semitones; the speed stays the same.</p>
+    </section>
+
+    </div>
 
     <section class="panel" aria-label="Loop">
       <div class="row-head">
