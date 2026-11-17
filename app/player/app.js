@@ -51,6 +51,108 @@ function save() {
   try { localStorage.setItem(KEY, JSON.stringify(state)); } catch {}
 }
 
+// ---------- Per-file memory ----------
+// Markers, the A-B loop and the start mark are remembered for every file that is opened, keyed by a fingerprint of the
+// file (size + hash of its first and last 64 KB, so a renamed or copied file is recognised). Small: kept in localStorage,
+// for the MAX_FILES most recently used files (older ones are dropped silently, so the stored data cannot grow forever).
+// The audio itself is kept for the current track only (one IndexedDB slot, replaced by the next file or take), so it is
+// restored when the app is reopened.
+const FILES_KEY = 'player:files:v1';
+const MAX_FILES = 100;
+const CHUNK = 65536;
+let trackKey = null;        // fingerprint of the loaded track (null until computed)
+let trackSynced = false;    // the saved state has been applied (or there was none): only then are changes written back
+let lastSnap = '';
+
+function readFiles() {
+  try {
+    const f = JSON.parse(localStorage.getItem(FILES_KEY));
+    return f && typeof f === 'object' && !Array.isArray(f) ? f : {};
+  } catch { return {}; }
+}
+function writeFiles(f) {
+  const keys = Object.keys(f);
+  if (keys.length > MAX_FILES) for (const k of keys.sort((a, b) => (f[a].used || 0) - (f[b].used || 0)).slice(0, keys.length - MAX_FILES)) delete f[k];
+  try { localStorage.setItem(FILES_KEY, JSON.stringify(f)); } catch {}
+}
+
+function fnv(bytes) {
+  let h = 2166136261;
+  for (const b of bytes) { h ^= b; h = Math.imul(h, 16777619); }
+  return (h >>> 0).toString(36);
+}
+async function fingerprint(file) {
+  const head = new Uint8Array(await file.slice(0, CHUNK).arrayBuffer());
+  const tail = file.size > CHUNK ? new Uint8Array(await file.slice(Math.max(CHUNK, file.size - CHUNK)).arrayBuffer()) : head;
+  return `${file.size}-${fnv(head)}-${fnv(tail)}`;
+}
+
+function trackSnapshot() {
+  const num = (v) => (Number.isFinite(v) ? Math.round(v * 1000) / 1000 : null);
+  return { markers: markers.map((m) => ({ t: num(m.t), name: m.name })), seq: markerSeq, a: num(loopA), b: num(loopB), start: startMark > 0 ? num(startMark) : null };
+}
+// Called every second, when the page is hidden and before the track is replaced: writes only if something changed.
+function persistTrack() {
+  if (!trackKey || !trackSynced) return;
+  const s = trackSnapshot();
+  const json = JSON.stringify(s);
+  if (json === lastSnap) return;
+  lastSnap = json;
+  const files = readFiles();
+  if (!s.markers.length && s.a == null && s.start == null) delete files[trackKey];
+  else files[trackKey] = { ...s, name: trackName, used: Date.now() };
+  writeFiles(files);
+}
+// Once both the fingerprint and the duration are known: restore what was saved for this file.
+function syncTrack() {
+  if (!trackKey || !loaded || trackSynced) return;
+  trackSynced = true;
+  const files = readFiles(), r = files[trackKey];
+  if (r && !markers.length && loopA == null) {
+    const ok = (t) => Number.isFinite(t) && t >= 0 && t <= audio.duration;
+    markers = (Array.isArray(r.markers) ? r.markers : [])
+      .filter((m) => m && ok(m.t) && typeof m.name === 'string')
+      .map((m) => ({ t: m.t, name: m.name.slice(0, 24) }))
+      .sort((a, b) => a.t - b.t);
+    markerSeq = Number.isInteger(r.seq) && r.seq >= 1 ? r.seq : markers.length + 1;
+    markerKey = '';
+    if (ok(r.a) && ok(r.b) && r.b > r.a) { loopA = r.a; loopB = r.b; }
+    if (ok(r.start) && r.start > 0) seekTo(r.start, true);
+    r.used = Date.now();   // opening a file counts as using it
+    writeFiles(files);
+    renderLoop();
+    drawWave();
+  }
+  lastSnap = JSON.stringify(trackSnapshot());
+}
+setInterval(persistTrack, 1000);
+addEventListener('pagehide', persistTrack);
+document.addEventListener('visibilitychange', () => { if (document.hidden) persistTrack(); });
+
+// The current audio, one slot in IndexedDB (a Blob is stored on disk by the browser, not in memory).
+const MAX_KEEP_BYTES = 50 * 1024 * 1024;   // bigger files are not stored (their markers and loops still are)
+const IDB_NAME = 'practice-room-player', IDB_STORE = 'audio', IDB_SLOT = 'current';
+function idb(mode, fn) {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open(IDB_NAME, 1);
+    open.onupgradeneeded = () => open.result.createObjectStore(IDB_STORE);
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const db = open.result;
+      const tx = db.transaction(IDB_STORE, mode);
+      const req = fn(tx.objectStore(IDB_STORE));
+      tx.oncomplete = () => { db.close(); resolve(req.result); };
+      tx.onerror = tx.onabort = () => { db.close(); reject(tx.error); };
+    };
+  });
+}
+// Replaces the stored audio with this file; a file over the limit just empties the slot, so the next launch does not
+// reopen an older file instead. Quota errors or private mode: silently not kept.
+const keepAudio = (file, isTake) => idb('readwrite', (st) => (file.size > MAX_KEEP_BYTES
+  ? st.delete(IDB_SLOT)
+  : st.put({ blob: file, name: file.name, type: file.type, isTake }, IDB_SLOT))).catch(() => {});
+const recallAudio = () => idb('readonly', (st) => st.get(IDB_SLOT)).catch(() => null);
+
 // ---------- Helpers ----------
 function fmt(t) {
   if (!Number.isFinite(t)) return '0:00';
@@ -566,6 +668,8 @@ function meterStop() {
 // Recording starts from a clean slate: drop the loaded track (stopped, waveform and markers cleared).
 const PLACEHOLDER = el.name.textContent;
 function unloadTrack() {
+  persistTrack();
+  trackKey = null; trackSynced = false; lastSnap = '';
   if (playing) stop();
   if (url) URL.revokeObjectURL(url);
   url = null;
@@ -675,7 +779,7 @@ function okToReplace() {
 }
 
 // ---------- Files ----------
-function openFile(file, isTake = false) {
+function openFile(file, isTake = false, restored = false) {
   if (!file) return;
   el.name.classList.remove('placeholder');
   if (!(file.type.startsWith('audio/') || /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|webm)$/i.test(file.name))) {
@@ -683,6 +787,8 @@ function openFile(file, isTake = false) {
     el.name.textContent = `"${file.name}" doesn't look like an audio file.`;
     return;
   }
+  persistTrack();   // the track being replaced
+  trackKey = null; trackSynced = false; lastSnap = '';
   if (playing) stop();
   if (url) URL.revokeObjectURL(url);
   url = URL.createObjectURL(file);
@@ -695,6 +801,9 @@ function openFile(file, isTake = false) {
   viewStart = 0; viewSpan = 1;
   el.zoomReset.hidden = true;
   computePeaks(file, ++loadToken);
+  const token = loadToken;
+  if (!restored) keepAudio(file, isTake);   // replaces the previous file / take in the one storage slot
+  fingerprint(file).then((k) => { if (token === loadToken) { trackKey = k; syncTrack(); } }).catch(() => {});
   el.name.classList.add('loaded');
   el.name.textContent = trackName;
   takeUnsaved = isTake;
@@ -716,6 +825,7 @@ function ready() {
     navigator.mediaSession.metadata = new MediaMetadata({ title: trackName, artist: 'Practice Room' });
   }
   report();
+  syncTrack();
 }
 audio.addEventListener('loadedmetadata', () => {
   if (isFinite(audio.duration)) return ready();
@@ -1060,3 +1170,7 @@ renderEnabled();
 renderTime();
 renderPlay();
 report();
+// Reopen the audio that was loaded last time (unless something was opened in the meantime).
+recallAudio().then((r) => {
+  if (r?.blob && !trackName && !recording) openFile(new File([r.blob], r.name || 'audio', { type: r.type || r.blob.type }), !!r.isTake, true);
+}).catch(() => {});
