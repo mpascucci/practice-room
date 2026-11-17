@@ -9,6 +9,26 @@
 </head>
 <body>
   <main class="app">
+    <section class="tuner collapsed" id="tuner" aria-label="Tuner">
+      <div class="curtain" id="tunerBody">
+        <div class="curtain-inner">
+          <div class="tuner-row">
+            <div class="tuner-id">
+              <p class="tuner-note" id="tunerNote" aria-live="off">—</p>
+              <p class="tuner-hz" id="tunerHz">&nbsp;</p>
+            </div>
+            <div class="tuner-disks" id="tunerDisks" aria-hidden="true"><span class="disk"></span><span class="disk"></span><span class="disk"></span><span class="disk"></span><span class="disk mid"></span><span class="disk"></span><span class="disk"></span><span class="disk"></span><span class="disk"></span></div>
+          </div>
+          <p class="tuner-msg" id="tunerMsg" role="status" hidden></p>
+        </div>
+      </div>
+      <button type="button" class="tuner-handle" id="tunerToggle" aria-expanded="false" aria-controls="tunerBody" title="Pull down the tuner">
+        <svg class="fork" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 3v8a3.5 3.5 0 0 0 7 0V3M12 14.5V21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Tuner</span>
+        <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </section>
+
     <header class="top">
       <h1 class="title">Drone</h1>
 
@@ -37,6 +57,7 @@
 
       <p class="freq" id="freq" aria-live="polite"></p>
     </header>
+
 
     <section class="harmonics" aria-label="Harmonics">
       <div class="harmonics-head">

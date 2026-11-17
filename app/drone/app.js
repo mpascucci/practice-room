@@ -597,6 +597,143 @@ function setHarmonicsOpen(open, remember = true) {
 harmToggle.addEventListener('click', () => setHarmonicsOpen(harmToggle.getAttribute('aria-expanded') !== 'true'));
 try { if (localStorage.getItem(HARM_OPEN_KEY) === '0') setHarmonicsOpen(false, false); } catch {}
 
+// ---------- Tuner ----------
+// Microphone → AnalyserNode (not routed to the output, so no feedback) → YIN pitch detection →
+// nearest equal-tempered note + cents deviation. Uses its own AudioContext, independent of the drone's.
+const tunerSection = $('tuner');
+const tunerToggle = $('tunerToggle');
+const TUNER_MIN_HZ = 50, TUNER_MAX_HZ = 2000;
+const TUNER_RMS_GATE = 0.01;       // below this the input is treated as silence
+const TUNER_YIN_THRESHOLD = 0.12;
+const TUNER_SMOOTH_S = 0.45;       // integration time constant of the pitch display (higher = steadier, slower)
+const TUNER_HOLD_MS = 600;          // keep showing the last note briefly after the signal drops
+let tunerCtx = null, tunerStream = null, tunerAnalyser = null, tunerBuf = null, tunerRaf = 0;
+let tunerMidi = null, tunerLastAt = 0;
+
+function tunerMsg(text = '') {   // error text only; hidden when empty
+  $('tunerMsg').textContent = text;
+  $('tunerMsg').hidden = !text;
+  $('tunerMsg').classList.add('warn');
+}
+
+const tunerDisks = [...document.querySelectorAll('#tunerDisks .disk')];
+function tunerReadout(f) {
+  const note = $('tunerNote');
+  if (!f) {
+    note.textContent = '—';
+    $('tunerHz').innerHTML = '&nbsp;';
+    tunerDisks.forEach((d) => d.style.setProperty('--i', 0));
+    return;
+  }
+  const midi = 69 + 12 * Math.log2(f / 440);
+  const n = Math.round(midi);
+  const pc = ((n % 12) + 12) % 12;
+  note.textContent = `${SOLFEGE[pc]} - ${LETTERS[pc]}${Math.floor(n / 12) - 1}`;
+  $('tunerHz').textContent = `${f.toFixed(1)} Hz`;
+  // Disk k (k = -4…4) is the bin centred on k·10 cents; lit by how close the pitch is to that centre.
+  const c = Math.max(-40, Math.min(40, (midi - n) * 100));
+  tunerDisks.forEach((d, k) => d.style.setProperty('--i', Math.max(0, 1 - Math.abs(c - (k - 4) * 10) / 10).toFixed(2)));
+}
+
+// YIN (de Cheveigné & Kawahara 2002): difference function → cumulative mean normalisation →
+// first dip under the threshold → parabolic interpolation. Returns Hz or 0.
+function yinPitch(buf, sampleRate) {
+  const half = buf.length >> 1;
+  const minTau = Math.max(2, Math.floor(sampleRate / TUNER_MAX_HZ));
+  const maxTau = Math.min(half - 1, Math.floor(sampleRate / TUNER_MIN_HZ));
+  const d = new Float32Array(maxTau + 1);
+  for (let tau = 1; tau <= maxTau; tau++) {
+    let sum = 0;
+    for (let i = 0; i < half; i++) { const x = buf[i] - buf[i + tau]; sum += x * x; }
+    d[tau] = sum;
+  }
+  let run = 0;
+  for (let tau = 1; tau <= maxTau; tau++) { run += d[tau]; d[tau] = run ? (d[tau] * tau) / run : 1; }
+  let tau = -1;
+  for (let t = minTau; t <= maxTau; t++) {
+    if (d[t] < TUNER_YIN_THRESHOLD) {
+      while (t + 1 <= maxTau && d[t + 1] < d[t]) t++;
+      tau = t; break;
+    }
+  }
+  if (tau < 0) return 0;
+  let better = tau;
+  if (tau > 1 && tau < maxTau) {
+    const a = d[tau - 1], b = d[tau], c = d[tau + 1];
+    const den = a - 2 * b + c;
+    if (den) better = tau + (a - c) / (2 * den);
+  }
+  return sampleRate / better;
+}
+
+function tunerLoop() {
+  tunerRaf = requestAnimationFrame(tunerLoop);
+  tunerAnalyser.getFloatTimeDomainData(tunerBuf);
+  let sq = 0;
+  for (let i = 0; i < tunerBuf.length; i++) sq += tunerBuf[i] * tunerBuf[i];
+  const now = performance.now();
+  const f = Math.sqrt(sq / tunerBuf.length) >= TUNER_RMS_GATE ? yinPitch(tunerBuf, tunerCtx.sampleRate) : 0;
+  if (f) {
+    const midi = 69 + 12 * Math.log2(f / 440);
+    // Light smoothing, but jump straight to a new note instead of gliding through the semitones in between.
+    const dt = Math.min(0.1, (now - tunerLastAt) / 1000);   // frame-rate independent exponential smoothing
+    tunerMidi = tunerMidi !== null && Math.abs(midi - tunerMidi) < 0.6 ? tunerMidi + (1 - Math.exp(-dt / TUNER_SMOOTH_S)) * (midi - tunerMidi) : midi;
+    tunerLastAt = now;
+    tunerReadout(440 * Math.pow(2, (tunerMidi - 69) / 12));
+  } else if (now - tunerLastAt > TUNER_HOLD_MS) {
+    tunerMidi = null;
+    tunerReadout(0);
+  }
+}
+
+async function tunerMicError(err) {
+  if (err.name === 'NotFoundError') return 'No microphone found.';
+  if (err.name === 'NotReadableError') return 'The microphone is in use by another app or can\'t be opened.';
+  if (err.name !== 'NotAllowedError' && err.name !== 'SecurityError') return `Can't open the microphone (${err.name}).`;
+  if (!window.isSecureContext) return 'Microphone access needs a secure page: open the app over https or on localhost.';
+  return 'Microphone access is blocked. Allow it in the browser\'s site settings for this page, then reload and press Listen again.';
+}
+
+async function tunerStart() {
+  if (tunerStream) return;
+  if (!navigator.mediaDevices?.getUserMedia) { tunerMsg('This browser can\'t access the microphone.'); return; }
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
+  } catch (err) {
+    tunerMsg(await tunerMicError(err));
+    return;
+  }
+  if (tunerSection.classList.contains('collapsed') || tunerStream) { stream.getTracks().forEach((t) => t.stop()); return; }   // folded while the permission prompt was open
+  tunerStream = stream;
+  tunerCtx = new (window.AudioContext || window.webkitAudioContext)();
+  try { await tunerCtx.resume(); } catch {}
+  tunerAnalyser = tunerCtx.createAnalyser();
+  tunerAnalyser.fftSize = 4096;
+  tunerBuf = new Float32Array(tunerAnalyser.fftSize);
+  tunerCtx.createMediaStreamSource(tunerStream).connect(tunerAnalyser);
+  tunerMsg();
+  tunerMidi = null; tunerLastAt = 0;
+  tunerLoop();
+}
+
+function tunerStop() {
+  cancelAnimationFrame(tunerRaf);
+  tunerStream?.getTracks().forEach((t) => t.stop());
+  tunerCtx?.close().catch(() => {});
+  tunerStream = tunerCtx = tunerAnalyser = tunerBuf = null;
+  tunerReadout(0);
+  tunerMsg();
+}
+
+function setTunerOpen(open) {
+  tunerSection.classList.toggle('collapsed', !open);
+  tunerToggle.setAttribute('aria-expanded', open);
+  if (open) tunerStart(); else tunerStop();   // listen while the curtain is down, release the mic when it is folded
+}
+tunerToggle.addEventListener('click', () => setTunerOpen(tunerToggle.getAttribute('aria-expanded') !== 'true'));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') tunerStop(); });
+
 // ---------- Instrument presets ----------
 // Amplitudes are relative linear levels (0 = off). Sliders are perceptual (gain = (v/100)²),
 // so a level a becomes slider value 100·√a. `mod` sets the sweep; static instruments turn it off.

@@ -23,6 +23,7 @@ Use it online or install: <https://mpascucci.github.io/practice-room/app>
 - **Drone**: a sustained pedal note with
   - Selectable note and octave
   - Instrument presets.
+  - Built-in **tuner** (collapsible panel): listens to the microphone and shows the note, octave and how many cents you are off.
 - **Player**: open or record an audio file.
   - Waveform you can zoom (pinch or mouse wheel)
   - Change speed without changing the pitch
