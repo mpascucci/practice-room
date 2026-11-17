@@ -399,6 +399,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 .tuner-row { display: flex; flex-direction: column; align-items: center; gap: 16px; width: min(100%, 520px); }
 .tuner-id { display: flex; align-items: baseline; justify-content: center; gap: 10px; }
 .tuner-note { font-size: 2.2rem; font-weight: 600; line-height: 1.1; }
+.tuner-note.idle { font-size: 1.1rem; font-weight: 400; color: var(--muted); }
 .tuner-hz { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 1.1em; }
 .tuner-msg { font-size: .75rem; color: var(--muted); text-align: center; }
 .tuner-msg.warn { color: var(--amber); }
@@ -412,6 +413,8 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
   flex: 0 0 auto; width: var(--d); height: var(--d); border-radius: 50%;
   background: color-mix(in srgb, var(--lit) calc(var(--i) * 100%), var(--dim));
   box-shadow: 0 0 calc(var(--d) * .5) color-mix(in srgb, var(--lit) calc(var(--i) * 45%), transparent);
-  transition: background-color 250ms linear, box-shadow 250ms linear;
+  outline: 2px solid transparent; outline-offset: 2px;
+  transition: background-color 250ms linear, box-shadow 250ms linear, outline-color 150ms;
 }
+.tuner-disks .disk.top { outline-color: #fff; }
 .tuner-disks .disk.mid { --dim: #16273f; --lit: #6aa8ff; }

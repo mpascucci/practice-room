@@ -620,19 +620,25 @@ const tunerDisks = [...document.querySelectorAll('#tunerDisks .disk')];
 function tunerReadout(f) {
   const note = $('tunerNote');
   if (!f) {
-    note.textContent = '—';
+    note.textContent = 'listening...';
+    note.classList.add('idle');
     $('tunerHz').innerHTML = '&nbsp;';
-    tunerDisks.forEach((d) => d.style.setProperty('--i', 0));
+    tunerDisks.forEach((d) => { d.style.setProperty('--i', 0); d.classList.remove('top'); });
     return;
   }
   const midi = 69 + 12 * Math.log2(f / 440);
   const n = Math.round(midi);
   const pc = ((n % 12) + 12) % 12;
+  note.classList.remove('idle');
   note.textContent = `${SOLFEGE[pc]} - ${LETTERS[pc]}${Math.floor(n / 12) - 1}`;
   $('tunerHz').textContent = `${f.toFixed(1)} Hz`;
   // Disk k (k = -4…4) is the bin centred on k·10 cents; lit by how close the pitch is to that centre.
   const c = Math.max(-40, Math.min(40, (midi - n) * 100));
-  tunerDisks.forEach((d, k) => d.style.setProperty('--i', Math.max(0, 1 - Math.abs(c - (k - 4) * 10) / 10).toFixed(2)));
+  const top = Math.round(c / 10) + 4;   // nearest bin = most intense disk, outlined in white
+  tunerDisks.forEach((d, k) => {
+    d.style.setProperty('--i', Math.max(0, 1 - Math.abs(c - (k - 4) * 10) / 10).toFixed(2));
+    d.classList.toggle('top', k === top);
+  });
 }
 
 // YIN (de Cheveigné & Kawahara 2002): difference function → cumulative mean normalisation →
