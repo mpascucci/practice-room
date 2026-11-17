@@ -31,15 +31,25 @@ const tempoInput = $('tempo');
 const tempoRange = $('tempoRange');
 const tapBtn = $('tap');
 const tapInfo = $('tapInfo');
+const multSelect = $('tempoMult');
+const tempoEff = $('tempoEff');
 const denomInput = $('denom');
 
 const defaultMeasure = (n) => Array.from({ length: n }, (_, i) => (i === 0 ? 'accent' : 'normal'));
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+const effBpm = () => state.bpm * state.mult;
+// Effective tempo in the label; highlighted (blue) only when the multiplier is not 1.
+function showEff() {
+  tempoEff.textContent = effBpm();
+  tempoEff.classList.toggle('multiplied', state.mult !== 1);
+  multSelect.classList.toggle('multiplied', state.mult !== 1);
+}
 
 // ---------- State ----------
 // measures: array of measures, each an array of beat states; all share the same beat count.
 const state = {
   bpm: 120,
+  mult: 1,          // tempo multiplier 1–4; the effective tempo is bpm × mult
   measures: [defaultMeasure(4)],
   playing: false,
   normalMidi: 50,   // D3
@@ -74,6 +84,7 @@ function load() {
     if (!s || !Number.isInteger(s.bpm) || !Array.isArray(s.measures) || !s.measures.length) return;
     const n = clamp(s.measures[0].length || 4, MIN_BEATS, MAX_BEATS);
     state.bpm = clamp(s.bpm, MIN_BPM, MAX_BPM);
+    if (Number.isInteger(s.mult)) state.mult = clamp(s.mult, 1, 4);
     state.measures = s.measures.slice(0, MAX_MEASURES).map((m) =>
       Array.from({ length: n }, (_, i) => (STATES.includes(m?.[i]) ? m[i] : 'normal')));
     if (Number.isInteger(s.normalMidi)) state.normalMidi = clamp(s.normalMidi, MIN_MIDI, MAX_MIDI);
@@ -87,7 +98,7 @@ function load() {
   } catch { /* storage unavailable — use defaults */ }
 }
 function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ bpm: state.bpm, measures: state.measures, normalMidi: state.normalMidi, accentMidi: state.accentMidi, denom: state.denom, timbre: state.timbre, mode: state.mode, perc: state.perc })); } catch {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ bpm: state.bpm, mult: state.mult, measures: state.measures, normalMidi: state.normalMidi, accentMidi: state.accentMidi, denom: state.denom, timbre: state.timbre, mode: state.mode, perc: state.perc })); } catch {}
   report();
 }
 
@@ -150,6 +161,8 @@ function syncInputs() {
   measureInput.value = state.measures.length;
   tempoInput.value = state.bpm;
   tempoRange.value = state.bpm;
+  multSelect.value = state.mult;
+  showEff();
   denomInput.value = state.denom === 1 ? '1' : `1/${state.denom}`;
 }
 
@@ -210,7 +223,7 @@ function percHit(time, accent) {
 }
 
 let brassWave = null;
-function click(time, accent, dur = (60 / state.bpm) / state.denom) {
+function click(time, accent, dur = (60 / effBpm()) / state.denom) {
   if (state.mode === 'click') return sineClick(time, accent);
   if (state.mode === 'percussion') return percHit(time, accent);
   if (!brassWave) {
@@ -263,7 +276,7 @@ function scheduler() {
     if (s !== 'silent') click(nextTime, s === 'accent');
     queue.push({ m: nextMeasure, i: nextBeat, t: nextTime });
 
-    nextTime += 60 / state.bpm;
+    nextTime += 60 / effBpm();
     if (++nextBeat >= beatCount()) {
       nextBeat = 0;
       nextMeasure = (nextMeasure + 1) % state.measures.length;
@@ -348,8 +361,19 @@ function setTempo(bpm) {
   if (!Number.isFinite(bpm)) return;
   state.bpm = bpm;
   tempoRange.value = bpm;
+  showEff();
   save();
 }
+
+function setMult(m) {
+  m = clamp(Math.round(m), 1, 4);
+  if (!Number.isFinite(m)) return;
+  state.mult = m;
+  multSelect.value = m;
+  showEff();
+  save();
+}
+multSelect.addEventListener('change', () => setMult(Number(multSelect.value)));
 
 function setDenom(d) {
   d = clamp(Math.round(d), MIN_DENOM, MAX_DENOM);
@@ -371,12 +395,11 @@ function tap() {
 
   if (taps.length >= 2) {
     const avgMs = (taps.at(-1) - taps[0]) / (taps.length - 1);
+    setMult(1);
     setTempo(60000 / avgMs);
     syncInputs();
-    tapInfo.textContent = `avg ${Math.round(avgMs)} ms`;
-  } else {
-    tapInfo.textContent = 'tap again';
   }
+  tapInfo.textContent = 'tap again';
 
   tapBtn.classList.add('hit');
   clearTimeout(tapFlashTimer);
@@ -473,7 +496,7 @@ if (EMBEDDED) document.documentElement.classList.add('embedded');
 
 function report() {
   if (!EMBEDDED) return;
-  parent.postMessage({ type: 'status', app: 'metronome', playing: state.playing, info: `${state.bpm} BPM · ${beatCount()}${state.measures.length > 1 ? ` × ${state.measures.length}` : ''} beats` }, '*');
+  parent.postMessage({ type: 'status', app: 'metronome', playing: state.playing, info: `${effBpm()} BPM · ${beatCount()}${state.measures.length > 1 ? ` × ${state.measures.length}` : ''} beats` }, '*');
 }
 
 // If the browser refused to start audio (autoplay policy), tell the home page.

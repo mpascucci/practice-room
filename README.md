@@ -36,6 +36,9 @@ Use it online or install: <https://mpascucci.github.io/practice-room/app>
 
 - **Responsive design**: works on phones, tablets and desktops. The metronome, drone and player can be used together or separately.
 
+## Installation
+Click the install button in the footer of the application, or add it to your home screen from the browser menu.
+
 ## Credits
 
 Some of the precussion sounds are taken from [Freesound](https://freesound.org/), and each has his own licence; see [CREDITS.md](app/CREDITS.md).

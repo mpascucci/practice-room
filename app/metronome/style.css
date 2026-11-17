@@ -210,6 +210,7 @@ label {
   color: var(--muted);
 }
 .unit { opacity: .7; }
+.tempo-val.multiplied, .mult select.multiplied { color: var(--accent-lit); }
 
 .stepper {
   display: flex;
@@ -253,6 +254,18 @@ label {
   gap: 10px;
   align-items: stretch;
 }
+
+.mult { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 1.1rem; }
+.mult select {
+  height: 44px;
+  padding: 0 8px;
+  border-radius: 10px;
+  border: 1px solid var(--field-border);
+  background: var(--field);
+  color: var(--text);
+  font: 600 1.05rem system-ui, sans-serif;
+}
+.mult select:focus-visible { outline: 2px solid #6aa8ff; outline-offset: 1px; }
 
 .tap {
   min-width: 76px;
