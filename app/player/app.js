@@ -10,7 +10,7 @@ const $ = (id) => document.getElementById(id);
 const el = {
   app: $('app'), file: $('file'), name: $('trackName'), seek: $('seek'), cur: $('cur'), dur: $('dur'),
   rewind: $('rewind'), play: $('play'), addMarker: $('addMarker'), markerStrip: $('markerStrip'), markerDialog: $('markerDialog'), markerName: $('markerName'), markerCancel: $('markerCancel'), markerTitle: $('markerTitle'), markerOk: $('markerOk'), markerRemove: $('markerRemove'),
-  speed: $('speed'), speedOut: $('speedOut'), speedDown: $('speedDown'), speedUp: $('speedUp'), speedReset: $('speedReset'),
+  speed: $('speed'), speedOut: $('speedOut'), speedDown: $('speedDown'), speedUp: $('speedUp'), speedReset: $('speedReset'), speedTick: $('speedTick'),
   transpose: $('transpose'), transposeOut: $('transposeOut'), transposeInt: $('transposeInt'), transposeDown: $('transposeDown'), transposeUp: $('transposeUp'), transposeReset: $('transposeReset'),
   loopOn: $('loopOn'), loopOut: $('loopOut'), setA: $('setA'), setB: $('setB'), clearLoop: $('clearLoop'),
   wave: $('wave'), armLoop: $('armLoop'), loopPause: $('loopPause'), loopPauseOut: $('loopPauseOut'), zoomReset: $('zoomReset'),
@@ -926,7 +926,17 @@ el.loopPause.addEventListener('input', () => {
 });
 // small screens: the speed slider moves in 5% steps (1% on wide screens)
 const smallScreen = matchMedia('(max-width: 600px)');
-const speedStep = () => { el.speed.step = smallScreen.matches ? 5 : 1; renderSpeed(); };
+const speedStep = () => {
+  const small = smallScreen.matches;
+  el.speed.step = small ? 5 : 1;
+  // small screens: the 100% tick under the slider is a button that resets the speed (the reset button is hidden there)
+  if (small) { el.speedTick.setAttribute('role', 'button'); el.speedTick.tabIndex = 0; el.speedTick.title = 'Reset speed to 100%'; }
+  else { el.speedTick.removeAttribute('role'); el.speedTick.removeAttribute('tabindex'); el.speedTick.removeAttribute('title'); el.speedTick.setAttribute('aria-hidden', 'true'); }
+  if (small) el.speedTick.removeAttribute('aria-hidden');
+  renderSpeed();
+};
+el.speedTick.addEventListener('click', () => { if (smallScreen.matches) setSpeed(100); });
+el.speedTick.addEventListener('keydown', (e) => { if (smallScreen.matches && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); setSpeed(100); } });
 smallScreen.addEventListener('change', speedStep);
 el.speed.addEventListener('input', () => setSpeed(+el.speed.value));
 el.speedDown.addEventListener('click', () => setSpeed(state.speed - 5));

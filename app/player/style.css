@@ -179,10 +179,15 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
   #speedPanel .row-head, #speedPanel .steps { display: contents; }
   #speedPanel label { grid-column: 1 / -1; grid-row: 1; }
   #speedPanel .steps button:not(.reset) { display: none; }
-  #speedPanel input[type="range"] { grid-column: 1; grid-row: 2; }
-  #speedPanel .reset { grid-column: 2; grid-row: 2; }
+  #speedPanel input[type="range"] { grid-column: 1 / -1; grid-row: 2; }
+  #speedPanel .reset { display: none; }   /* tap the value instead */
+  /* the 100% tick under the slider is a button that resets the speed */
+  #speedPanel .ticks { height: 30px; }
+  #speedPanel .tick-reset { cursor: pointer; pointer-events: auto; top: -4px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 8px; color: var(--text); }
+  #speedPanel .tick-reset::before { display: none; }
+  #speedPanel .tick-reset:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   #speedPanel .ticks span:is(:nth-child(2), :nth-child(3), :nth-child(5)) { display: none; }   /* fewer labels: the panel is narrow */
-  #speedPanel .ticks { grid-column: 1; grid-row: 3; margin-top: -2px; }   /* under the slider, not under the reset button */
+  #speedPanel .ticks { grid-column: 1 / -1; grid-row: 3; margin-top: -2px; }   /* under the slider, not under the reset button */
   /* transpose: value on the left (room for "+12"), + above - on the right; no slider, no label */
   #transposePanel { flex: 0 0 124px; display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 6px; row-gap: 6px; }
   #transposePanel .row-head, #transposePanel .steps { display: contents; }
