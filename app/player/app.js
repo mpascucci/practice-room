@@ -13,7 +13,7 @@ const el = {
   speed: $('speed'), speedOut: $('speedOut'), speedDown: $('speedDown'), speedUp: $('speedUp'), speedReset: $('speedReset'), speedTick: $('speedTick'),
   transpose: $('transpose'), transposeOut: $('transposeOut'), transposeInt: $('transposeInt'), transposeDown: $('transposeDown'), transposeUp: $('transposeUp'), transposeReset: $('transposeReset'), transposeFine: $('transposeFine'),
   loopOn: $('loopOn'), loopOut: $('loopOut'), setA: $('setA'), setB: $('setB'), clearLoop: $('clearLoop'),
-  wave: $('wave'), armLoop: $('armLoop'), loopPause: $('loopPause'), loopPauseOut: $('loopPauseOut'), zoomReset: $('zoomReset'),
+  wave: $('wave'), armLoop: $('armLoop'), loopPause: $('loopPause'), loopPauseOut: $('loopPauseOut'), zoomReset: $('zoomReset'), progressView: $('progressView'), progress: $('progress'), progressHandle: $('progressHandle'), progressWave: $('progressWave'), progressMarks: $('progressMarks'),
   rec: $('rec'), recLabel: $('recLabel'), recMsg: $('recMsg'), takeDownload: $('takeDownload'),
   meter: $('meter'), meterFill: $('meterFill'), meterPeak: $('meterPeak'),
   confirmDialog: $('confirmDialog'), confirmOk: $('confirmOk'), confirmCancel: $('confirmCancel'),
@@ -449,7 +449,81 @@ function drawWave() {
     }
   }
   renderMarkerLabels(w);
+  renderProgress();
 }
+// Full-track progress bar: visible window (zoom) + playback position
+function renderProgress() {
+  const d = audio.duration;
+  el.progressView.style.left = (viewStart * 100) + '%';
+  el.progressView.style.width = (viewSpan * 100) + '%';
+  const pct = d > 0 && isFinite(d) ? Math.min(100, (playing ? audio.currentTime : (startMark ?? audio.currentTime)) / d * 100) : 0;
+  el.progressHandle.style.left = pct + '%';
+  drawProgressWave();
+  renderProgressMarks();
+}
+// Mini-map of the whole waveform (large displays only: the canvas is hidden by CSS otherwise). Redrawn only when the peaks or the size change.
+let pwKey = '';
+function drawProgressWave() {
+  const cv = el.progressWave, w = cv.clientWidth, h = cv.clientHeight;
+  const key = `${w}x${h}:${peaks ? PEAK_BUCKETS : 0}:${peaks ? peaks[0] + peaks[PEAK_BUCKETS >> 1] : 0}`;
+  if (key === pwKey) return;
+  pwKey = key;
+  if (!w || !h) return;
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  const g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  if (!peaks) return;
+  g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-dim').trim();
+  const bw = 2, gap = 1, n = Math.floor(w / (bw + gap));
+  for (let i = 0; i < n; i++) {
+    const a = Math.floor(i / n * PEAK_BUCKETS), b = Math.max(a + 1, Math.floor((i + 1) / n * PEAK_BUCKETS));
+    let p = 0;
+    for (let k = a; k < b && k < PEAK_BUCKETS; k++) if (peaks[k] > p) p = peaks[k];
+    const bh = Math.max(1, p * (h - 6));
+    g.fillRect(i * (bw + gap), (h - bh) / 2, bw, bh);
+  }
+}
+// Loop ends and markers on the bar (dots, or vertical lines on large displays); rebuilt only when something changed
+let pmKey = '';
+function renderProgressMarks() {
+  const d = audio.duration;
+  const ok = d > 0 && isFinite(d);
+  const items = [];
+  if (ok) {
+    shownMarkers().forEach((t) => items.push(['', t]));
+    if (hasLoop()) { const c = state.loop ? 'loop' : 'loop off'; items.push([c, loopA], [c, loopB]); }
+  }
+  const key = items.map((i) => i.join('@')).join('|') + '/' + d;
+  if (key === pmKey) return;
+  pmKey = key;
+  el.progressMarks.replaceChildren(...items.map(([c, t]) => {
+    const e = document.createElement('i');
+    e.className = ('pm ' + c).trim();
+    e.style.left = (t / d * 100) + '%';
+    return e;
+  }));
+}
+// Click or drag on the progress bar to move the position (zoom is kept, the window is centred on it)
+let progressDrag = false;
+const progressSeek = (e) => {
+  const r = el.progress.getBoundingClientRect();
+  const f = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+  viewStart = f - viewSpan / 2;   // keep the zoom, centre the window on the new position
+  clampView();
+  seekTo(f * (audio.duration || 0));
+};
+el.progress.addEventListener('pointerdown', (e) => {
+  if (!loaded) return;
+  progressDrag = true;
+  el.progress.setPointerCapture(e.pointerId);
+  progressSeek(e);
+});
+el.progress.addEventListener('pointermove', (e) => { if (progressDrag) progressSeek(e); });
+const progressEnd = () => { progressDrag = false; };
+el.progress.addEventListener('pointerup', progressEnd);
+el.progress.addEventListener('pointercancel', progressEnd);
 window.addEventListener('resize', drawWave);
 new ResizeObserver(drawWave).observe(el.wave.parentElement);   // the waveform height follows the available space
 

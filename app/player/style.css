@@ -112,6 +112,26 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 .wave { touch-action: pan-y; user-select: none; -webkit-user-select: none; position: relative; height: 96px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); overflow: hidden; }
 .wave canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .wave input[type="range"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; pointer-events: none; }   /* keyboard only; pointer input is handled in JS */
+/* Full-track progress under the waveform: accent band = visible (zoomed) window, round handle = playback position */
+.progress { position: relative; height: 16px; margin-top: 2px; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }   /* tall hit area around the thin track */
+.progress-track { position: absolute; left: 0; right: 0; top: 6px; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; }
+.progress-handle { position: absolute; top: 2px; left: 0; width: 12px; height: 12px; margin-left: -6px; border-radius: 50%; background: var(--accent); border: 2px solid var(--bg); box-sizing: border-box; box-shadow: 0 0 0 1px var(--accent-dim); }
+.progress-track canvas { display: none; position: absolute; inset: 0; width: 100%; height: 100%; }
+.progress-marks { position: absolute; left: 0; right: 0; top: 6px; height: 4px; pointer-events: none; }   /* same box as the track, so the dots are centred on it */
+.pm { position: absolute; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; background: #e040fb; clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }   /* diamond */
+.pm.loop { background: var(--accent); }
+.pm.off { background: #6f7c78; }
+.progress-view { position: absolute; top: 0; bottom: 0; left: 0; width: 100%; background: var(--accent); }
+/* Large displays: the bar is a mini-map of the whole waveform; markers and loop ends become vertical lines */
+@media (min-width: 900px) and (min-height: 700px) {
+  .progress { height: 44px; margin-top: 6px; }
+  .progress-track { top: 0; height: 100%; border-radius: 6px; background: var(--panel); border: 1px solid var(--line); }
+  .progress-track canvas { display: block; }
+  .progress-view { background: color-mix(in srgb, var(--accent) 28%, transparent); border-left: 1px solid var(--accent); border-right: 1px solid var(--accent); box-sizing: border-box; }
+  .progress-marks { top: 0; height: 100%; }
+  .pm { top: 0; width: 2px; height: 100%; margin: 0 0 0 -1px; clip-path: none; }
+  .progress-handle { top: 0; width: 2px; height: 100%; margin-left: -1px; border: 0; border-radius: 0; background: var(--text); box-shadow: none; }
+}
 .wave:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Recording */
