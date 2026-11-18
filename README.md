@@ -1,6 +1,6 @@
 # Practice Room
 
-A small, installable web app for music practice: a **metronome**, a harmonic **drone** and an audio **player**, side by side. They can run at the same time, and the app works offline.
+A small, installable web app for music practice: a **metronome**, a **tuner**, a harmonic **drone** and an audio **player**, side by side. They can run at the same time, and the app works offline.
 
 It completely free and fully open sourc: you can use it online or install it on your device.
 
