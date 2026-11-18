@@ -360,6 +360,16 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
   min-width: 20px; height: 20px; min-height: 0; padding: 0 6px; border: 0; border-radius: 10px;
   background: #e040fb; color: #1a0620; font: 700 .72rem system-ui, sans-serif; cursor: pointer;
 }
+.marker-tools { position: absolute; top: -26px; transform: translateX(-50%); z-index: 3; display: flex; gap: 4px; }
+.marker-tools[hidden] { display: none; }
+.marker-tool {
+  width: 24px; height: 24px; min-height: 0; padding: 0; display: grid; place-items: center;
+  border-radius: 50%; border: 0; background: #e040fb; color: #1a0620; cursor: pointer;
+}
+.marker-tool.edit { background: #3b82f6; color: #fff; }
+.marker-tool.trash { background: #ff6b5a; color: #fff; }
+.marker-tool svg { width: 14px; height: 14px; }
+.marker-tool:hover { filter: brightness(1.2); }
 .marker-label:hover { background: #ee82ff; }
 .marker-label:focus-visible { outline: 2px solid #fff; outline-offset: 1px; }
 .seek { min-height: 146px; }   /* the label strip adds 22px */

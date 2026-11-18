@@ -9,7 +9,7 @@ const $ = (id) => document.getElementById(id);
 
 const el = {
   app: $('app'), file: $('file'), name: $('trackName'), seek: $('seek'), cur: $('cur'), dur: $('dur'),
-  rewind: $('rewind'), play: $('play'), addMarker: $('addMarker'), markerStrip: $('markerStrip'), markerDialog: $('markerDialog'), markerName: $('markerName'), markerCancel: $('markerCancel'), markerTitle: $('markerTitle'), markerOk: $('markerOk'), markerRemove: $('markerRemove'),
+  rewind: $('rewind'), pause: $('pause'), play: $('play'), addMarker: $('addMarker'), markerStrip: $('markerStrip'), markerDialog: $('markerDialog'), markerName: $('markerName'), markerCancel: $('markerCancel'), markerTitle: $('markerTitle'), markerOk: $('markerOk'), markerRemove: $('markerRemove'),
   speed: $('speed'), speedOut: $('speedOut'), speedDown: $('speedDown'), speedUp: $('speedUp'), speedReset: $('speedReset'), speedTick: $('speedTick'),
   transpose: $('transpose'), transposeOut: $('transposeOut'), transposeInt: $('transposeInt'), transposeDown: $('transposeDown'), transposeUp: $('transposeUp'), transposeReset: $('transposeReset'), transposeFine: $('transposeFine'),
   loopOn: $('loopOn'), loopOut: $('loopOut'), setA: $('setA'), setB: $('setB'), clearLoop: $('clearLoop'),
@@ -297,26 +297,22 @@ let markers = [];      // [{t: seconds, name}], sorted by t
 let markerSeq = 1;     // the next default name: an increasing integer, per loaded track
 let markerKey = '';    // what the labels were last laid out for
 let markerDrag = null; // {index, t} while a marker is being dragged with the mouse (preview, applied on release)
-let markerAt = 0;      // where the marker being named will go (captured when the dialog opens)
 let markerEditing = null;   // index of the marker being renamed / removed, or null when adding a new one
 const shownMarkers = () => markers.map((m, i) => (markerDrag && markerDrag.index === i ? markerDrag.t : m.t));
 const clearMarkers = () => { markers = []; markerSeq = 1; };
 
-// The bookmark button / M key opens a dialog to name the marker; the default name is an increasing integer.
+// The bookmark button / M key places a marker named with an increasing integer. Clicking its label opens a dialog to rename or remove it.
 function addMarker() {
   if (!loaded) return;
   // Stopped: the marker goes at the start position (the yellow line). Playing: at the current position (the start
   // mark doesn't move during playback, so using it would put every marker on the same spot).
   const t = playing ? audio.currentTime : (startMark ?? audio.currentTime);
   if (markers.some((m) => Math.abs(m.t - t) < 0.1)) return;   // already marked here
-  markerAt = t;
-  markerEditing = null;
-  el.markerTitle.textContent = 'New marker';
-  el.markerOk.textContent = 'Add';
-  el.markerRemove.hidden = true;
-  el.markerName.value = String(markerSeq);
-  el.markerDialog.showModal();
-  el.markerOk.focus();   // not the text field: on touch devices that would pop the keyboard up straight away
+  markers.push({ t, name: String(markerSeq) });
+  markerSeq++;
+  markers.sort((x, y) => x.t - y.t);
+  markerKey = '';
+  drawWave();
 }
 // Clicking a label opens the same dialog for that marker: rename it, or remove it.
 function editMarker(i) {
@@ -333,11 +329,6 @@ function confirmMarker() {
     markers[markerEditing].name = el.markerName.value.trim() || markers[markerEditing].name;   // empty keeps the old name
     markerEditing = null;
     markerKey = '';
-  } else {
-    const name = el.markerName.value.trim() || String(markerSeq);   // an empty name falls back to the default
-    markers.push({ t: markerAt, name });
-    markers.sort((a, b) => a.t - b.t);
-    markerSeq++;
   }
   el.markerDialog.close();
   drawWave();
@@ -358,6 +349,7 @@ function renderMarkerLabels(w) {
   markerKey = key;
   el.markerStrip.replaceChildren();
   labelEls = [];
+  trashFor = null;
   markers.forEach((m, i) => {
     const b = document.createElement('button');
     b.type = 'button';
@@ -366,8 +358,11 @@ function renderMarkerLabels(w) {
     b.title = `Marker "${m.name}" at ${fmt(m.t)}: click to rename or remove, drag to move`;
     b.setAttribute('aria-label', `Marker ${m.name} at ${fmt(m.t)}`);
     let x0 = 0, moved = false;
+    b.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && !markerDrag) showTrash(i); });
+    b.addEventListener('pointerleave', hideTrashSoon);
     b.addEventListener('pointerdown', (e) => {
       if (e.button !== 0) return;
+      hideTrash();
       b.setPointerCapture(e.pointerId);
       x0 = e.clientX;
       moved = false;
@@ -402,15 +397,57 @@ function renderMarkerLabels(w) {
     el.markerStrip.append(b);
     labelEls.push(b);
   });
+  el.markerStrip.append(markerTrash());
   placeMarkerLabels(d);
 }
 let labelEls = [];   // the marker label buttons, same order as markers
+
+// Hovering a label (mouse) shows a row with round edit and trash buttons just above it. One shared row.
+let trashEl = null, trashFor = null, trashTimer = 0;
+function markerTrash() {
+  if (trashEl) return trashEl;
+  trashEl = document.createElement('div');   // the tools row: edit and trash side by side
+  trashEl.className = 'marker-tools';
+  trashEl.hidden = true;
+  const tool = (cls, label, path, fn) => {
+    const t = document.createElement('button');
+    t.type = 'button';
+    t.className = `marker-tool ${cls}`;
+    t.title = label;
+    t.setAttribute('aria-label', label);
+    t.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+    t.addEventListener('click', () => { const i = trashFor; hideTrash(); if (i != null) fn(i); });
+    return t;
+  };
+  trashEl.append(
+    tool('edit', 'Edit marker', '<path d="M4 20h4L19 9l-4-4L4 16z"/>', editMarker),
+    tool('trash', 'Delete marker', '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>', removeMarker),
+  );
+  trashEl.addEventListener('pointerenter', () => clearTimeout(trashTimer));
+  trashEl.addEventListener('pointerleave', hideTrashSoon);
+  return trashEl;
+}
+function showTrash(i) {
+  clearTimeout(trashTimer);
+  trashFor = i;
+  markerTrash().hidden = false;
+  placeTrash();
+}
+function hideTrash() { clearTimeout(trashTimer); trashFor = null; if (trashEl) trashEl.hidden = true; }
+function hideTrashSoon() { clearTimeout(trashTimer); trashTimer = setTimeout(hideTrash, 200); }   // time to move from the label to the button
+function placeTrash() {
+  if (trashFor == null || !labelEls[trashFor]) return;
+  const b = labelEls[trashFor];
+  trashEl.style.left = b.style.left;
+  trashEl.style.display = b.style.display === 'none' ? 'none' : '';
+}
 function placeMarkerLabels(d) {
   labelEls.forEach((b, i) => {
     const f = d ? (markers[i].t / d - viewStart) / viewSpan : -1;
     b.style.display = f < -0.01 || f > 1.01 ? 'none' : '';   // outside the zoomed view
     b.style.left = `${f * 100}%`;
   });
+  placeTrash();
 }
 
 function drawWave() {
@@ -668,6 +705,7 @@ function renderTime() {
 }
 function renderPlay() {
   el.play.setAttribute('aria-pressed', playing);
+  el.pause.disabled = !playing || recording;
   el.play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
 }
 function renderEnabled() {
@@ -717,12 +755,14 @@ async function start() {
   report();
 }
 
-function stop() {
+// pause = true: stay where the audio is and make that position the new start, instead of going back to the old one.
+function stop(pause = false) {
   if (recording) { stopRec(); return; }
   if (!playing) return;
   loopWaitCancel();
   audio.pause();
-  if (startMark != null) audio.currentTime = startMark;   // back to where playback started
+  if (pause) startMark = audio.currentTime;
+  else if (startMark != null) audio.currentTime = startMark;   // back to where playback started
   viewToMark();
   playing = false;
   clearInterval(timer);
@@ -1099,6 +1139,7 @@ el.transposeFine.addEventListener('click', () => { state.transposeFine = !state.
 el.transposeReset.addEventListener('click', () => setTranspose(0));
 
 el.play.addEventListener('click', toggle);
+el.pause.addEventListener('click', () => stop(true));
 el.rewind.addEventListener('click', () => {
   seekTo(0, true);   // the start mark goes back to the beginning too
   if (viewSpan < 0.999) { viewStart = 0; afterZoom(); }
