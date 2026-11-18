@@ -2,7 +2,7 @@
 
 A small, installable web app for music practice: a **metronome**, a **tuner**, a harmonic **drone** and an audio **player**, side by side. They can run at the same time, and the app works offline.
 
-It completely free and fully open source: you can use online or install it on your device. No ads, no tracking, no cookies.
+It completely free and fully open source: you can use online or install it on your device. No ads, no tracking, no cookies. Settings are stored locally on your device.
 
 Use it online or install: <https://mpascucci.github.io/practice-room/app>
 
