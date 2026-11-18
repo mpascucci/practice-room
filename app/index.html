@@ -72,12 +72,22 @@
               src="player/index.html" title="Player" allow="autoplay; microphone; screen-wake-lock"></iframe>
     </main>
 
-    <footer class="copyright"><button type="button" class="linklike" id="creditsBtn" aria-haspopup="dialog">Credits</button> &middot; <a href="https://github.com/mpascucci/practice-room" target="_blank" rel="noopener">GitHub</a> &middot; <a href="https://buymeacoffee.com/mpascucci" target="_blank" rel="noopener">&#9749; Buy me a coffee</a> <span class="install-sep">&middot;</span> <button type="button" class="linklike" id="installBtn">&#10515; Install</button></footer>
+    <footer class="copyright"><button type="button" class="linklike" id="shareBtn" aria-haspopup="dialog">Share<svg class="share-ico" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button> &middot; <button type="button" class="linklike" id="creditsBtn" aria-haspopup="dialog">Credits</button> &middot; <a href="https://github.com/mpascucci/practice-room" target="_blank" rel="noopener">GitHub</a> &middot; <a href="https://buymeacoffee.com/mpascucci" target="_blank" rel="noopener">&#9749; Buy me a coffee</a> <span class="install-sep">&middot;</span> <button type="button" class="linklike" id="installBtn">&#10515; Install</button></footer>
   </div>
 
   <dialog id="creditsDialog" aria-labelledby="creditsTitle">
     <div class="credits-body" id="creditsBody" tabindex="0">Loading…</div>
     <button type="button" id="creditsClose">Close</button>
+  </dialog>
+
+  <dialog id="shareDialog" aria-labelledby="shareTitle">
+    <div class="share-body">
+      <h2 id="shareTitle">Share Practice Room</h2>
+      <img src="share-qr.svg" alt="QR code for https://mpascucci.github.io/practice-room/" width="220" height="220">
+      <button type="button" id="shareCopy"><span>Copy link</span><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg></button>
+      <button type="button" id="shareNative" hidden>Share<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
+    </div>
+    <button type="button" id="shareClose">Close</button>
   </dialog>
 
   <script src="app.js" defer></script>

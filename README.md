@@ -4,6 +4,8 @@ A small, installable web app for music practice: a **metronome**, a harmonic **d
 
 It completely free and fully open sourc: you can use it online or install it on your device.
 
+Use it online or install: <https://mpascucci.github.io/practice-room/app>
+
 <p align="center">
   <a href="screenshots/metronome.png"><img src="screenshots/metronome.png" alt="Metronome" width="150"></a>
   &nbsp;&nbsp;
@@ -12,7 +14,6 @@ It completely free and fully open sourc: you can use it online or install it on 
   <a href="screenshots/player.png"><img src="screenshots/player.png" alt="Player" width="150"></a>
 </p>
 
-Use it online or install: <https://mpascucci.github.io/practice-room/app>
 
 ## Features
 

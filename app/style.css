@@ -243,6 +243,9 @@ body {
 
 /* ---------- Credits link + dialog ---------- */
 .linklike { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+#shareBtn { text-decoration: none; background: none; border: 1px solid currentColor; padding: 0 .5rem; border-radius: 4px; }
+#shareBtn:hover { border-color: var(--text); }
+.linklike .share-ico { vertical-align: -.125em; margin-left: .3em; }
 .linklike:hover { color: var(--text); }
 .linklike:focus-visible, .copyright a:focus-visible { outline: 2px solid #6aa8ff; outline-offset: 2px; border-radius: 3px; }
 
@@ -264,3 +267,19 @@ body {
 .credits-body code { font-size: .85em; background: #00000040; padding: 1px 4px; border-radius: 4px; overflow-wrap: anywhere; }
 #creditsClose { flex: none; margin: 8px 20px 16px; min-height: 40px; border-radius: 9px; border: 1px solid var(--line); background: var(--tab); color: var(--text); font: 600 .95rem system-ui, sans-serif; cursor: pointer; }
 
+
+/* ---------- Share dialog (QR code) ---------- */
+#shareDialog {
+  width: min(92vw, 360px); padding: 0; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--tab-active); color: var(--text); box-shadow: 0 20px 60px #000a;
+}
+#shareDialog[open] { display: flex; flex-direction: column; }
+#shareDialog::backdrop { background: rgba(0, 0, 0, .65); }
+.share-body { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 18px 20px 6px; text-align: center; }
+.share-body h2 { margin: 0; font-size: 1.15rem; }
+.share-body img { width: min(220px, 70vw); height: auto; aspect-ratio: 1; border-radius: 8px; image-rendering: pixelated; }
+#shareCopy { display: flex; align-items: center; justify-content: center; gap: .4em; align-self: stretch; min-height: 40px; border-radius: 9px; border: 1px solid var(--line); background: var(--tab); color: var(--text); font: 600 .95rem system-ui, sans-serif; cursor: pointer; }
+#shareCopy.done { color: #6fd08c; border-color: #6fd08c; }
+#shareNative { display: flex; align-items: center; justify-content: center; gap: .4em; align-self: stretch; min-height: 40px; border-radius: 9px; border: 0; background: #6aa8ff; color: #0b1626; font: 600 .95rem system-ui, sans-serif; cursor: pointer; }
+#shareNative[hidden] { display: none; }
+#shareClose { flex: none; margin: 8px 20px 16px; min-height: 40px; border-radius: 9px; border: 1px solid var(--line); background: var(--tab); color: var(--text); font: 600 .95rem system-ui, sans-serif; cursor: pointer; }

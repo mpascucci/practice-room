@@ -609,7 +609,7 @@ settingsForm.addEventListener('change', (e) => {
   state.timbre = e.target.value;
   save();
   ensureAudio();
-  click(ctx.currentTime + 0.02, false);
+  if (!state.playing) click(ctx.currentTime + 0.02, false);
 });
 const noteSels = {
   normal: [$('normalNote'), $('normalOct')],
@@ -635,7 +635,7 @@ for (const kind of ['normal', 'accent']) {
       save();
       // Audition the note (a user gesture, so audio may start).
       ensureAudio();
-      click(ctx.currentTime + 0.02, kind === 'accent');
+      if (!state.playing) click(ctx.currentTime + 0.02, kind === 'accent');
     });
   }
 }
@@ -658,11 +658,17 @@ modePerc.addEventListener('click', () => {
 });
 percForm.addEventListener('change', (e) => {
   if (e.target.name !== 'perc') return;
-  state.perc = e.target.value;
-  save();
+  const set = e.target.value;
   ensureAudio();
-  // Audition: accent sound, then normal sound.
-  loadPerc().then(() => { const t = ctx.currentTime + 0.02; click(t, true); click(t + 0.5, false); });
+  // Switch only once the samples are decoded, so a running metronome keeps its old sound instead of going silent.
+  loadPerc(set).then(() => {
+    if (percForm.elements.perc.value !== set) return;   // another set was picked meanwhile
+    state.perc = set;
+    save();
+    if (state.playing) return;
+    // Audition: accent sound, then normal sound.
+    const t = ctx.currentTime + 0.02; click(t, true); click(t + 0.5, false);
+  });
 });
 percDialog.addEventListener('click', (e) => { if (e.target === percDialog) percDialog.close(); });
 // Selecting Instrument (or tapping it again) opens the settings dialog.

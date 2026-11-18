@@ -214,6 +214,39 @@ document.getElementById('creditsBtn').addEventListener('click', openCredits);
 document.getElementById('creditsClose').addEventListener('click', () => creditsDialog.close());
 creditsDialog.addEventListener('click', (e) => { if (e.target === creditsDialog) creditsDialog.close(); });   // backdrop
 
+// ---------- Share dialog ----------
+// Static QR code (share-qr.svg, generated once for the public URL) plus the link.
+const SHARE_URL = 'https://mpascucci.github.io/practice-room/';
+const shareDialog = document.getElementById('shareDialog');
+document.getElementById('shareBtn').addEventListener('click', () => shareDialog.showModal());
+document.getElementById('shareClose').addEventListener('click', () => shareDialog.close());
+shareDialog.addEventListener('click', (e) => { if (e.target === shareDialog) shareDialog.close(); });   // backdrop
+
+const shareCopy = document.getElementById('shareCopy');
+shareCopy.addEventListener('click', async () => {
+  const url = SHARE_URL;
+  try {
+    await navigator.clipboard.writeText(url);
+    const label = shareCopy.firstElementChild;
+    label.textContent = 'Copied!';
+    shareCopy.classList.add('done');
+    setTimeout(() => { label.textContent = 'Copy link'; shareCopy.classList.remove('done'); }, 1500);
+  } catch (e) {
+    prompt('Copy this link:', url);
+  }
+});
+
+// System share sheet (phones, some desktop browsers); the button stays hidden when the API is missing.
+const shareNative = document.getElementById('shareNative');
+if (navigator.share) {
+  shareNative.hidden = false;
+  shareNative.addEventListener('click', async () => {
+    try {
+      await navigator.share({ title: 'Practice Room', text: 'Metronome, drone and audio player for music practice.', url: SHARE_URL });
+    } catch (e) { /* cancelled */ }
+  });
+}
+
 // ---------- PWA: install button ----------
 // Always visible (hidden only in the installed app). Uses the native prompt when the browser offered one,
 // otherwise explains how to install manually, so a click is never a no-op.
