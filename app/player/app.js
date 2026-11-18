@@ -228,16 +228,68 @@ function viewToMark() {
   afterZoom();
 }
 
-// While playing, scroll the zoomed view so the playhead stays visible.
-function followPlayhead() {
+// Smooth playback position: audio.currentTime can advance in coarse, uneven steps, so while playing the position is a clock of our own: set
+// from audio.currentTime when the audio really starts to move, then advanced by real time x playbackRate, never pulled back by the
+// (stale, stepped) currentTime readings. It is re-synced only when the audio itself jumps (seek, loop wrap, a difference over 0.5 s) or
+// stalls (waiting). Stopped (or before the audio has really started to move) it is audio.currentTime itself.
+let ppCT = -1, ppEst = 0, ppNow = 0, ppRunning = false, ppSync = false;   // ppRunning: audio.currentTime has really started to advance since play began
+let framePos = null;   // the position sampled once per animation frame, so the follow logic and the drawing agree to the pixel
+function playPos() {
+  if (framePos != null) return framePos;
+  const ct = audio.currentTime, now = performance.now();
+  if (!playing || audio.paused || loopWaitTimer) { ppCT = ct; ppEst = ct; ppNow = now; ppRunning = false; return ct; }
+  if (ppRunning) ppEst += Math.min(0.1, (now - ppNow) / 1000) * audio.playbackRate;
+  ppNow = now;
+  if (ppSync) { ppSync = false; ppEst = ct; ppCT = ct; }
+  if (ct !== ppCT) {
+    ppCT = ct;
+    if (!ppRunning) { ppRunning = true; ppEst = ct; }
+    else if (Math.abs(ct - ppEst) > 0.5) ppEst = ct;
+  }
+  if (!ppRunning) return ct;   // the audio pipeline is still starting up: don't run ahead of it
+  let t = ppEst;
+  if (hasLoop() && state.loop) t = Math.min(t, loopB);
+  return Math.min(t, audio.duration || t);
+}
+audio.addEventListener('seeking', () => { ppSync = true; });                                 // a seek (click, arrow keys, loop wrap): take the new position
+audio.addEventListener('waiting', () => { ppRunning = false; });                             // buffering: stand still until the audio moves again
+
+// While playing, the zoomed waveform scrolls at playback speed under a playhead that stays fixed in the middle of the window. p = playhead
+// position in the window (0..1): left of the middle (e.g. a play started at the left edge) the window stays still and the playhead
+// moves alone until it reaches the middle; at the middle or right of it (after a seek, a zoom, a pan, a loop wrap) the window recentres
+// on it at once. Near the ends of the track clampView() keeps the window inside the track, so the playhead leaves the middle and
+// runs to the edge at the end.
+function followPlayhead(dt = 0) {
   const d = audio.duration || 0;
   if (!d || viewSpan >= 0.999 || interacting || !playing) return;
-  const f = audio.currentTime / d;
-  if (f < viewStart || f > viewStart + viewSpan * 0.95) {
-    viewStart = f - viewSpan * 0.1;
-    clampView();
-  }
+  const f = playPos() / d;
+  const p = (f - viewStart) / viewSpan;
+  if (p < 0 || p >= 0.5) { viewStart = f - viewSpan / 2; clampView(); }   // else: left of the middle, only the playhead moves
 }
+
+// Frame loop while playing: smooth scrolling needs more than the 25 Hz tick.
+let raf = 0, rafT = 0;
+function frame(now) {
+  raf = requestAnimationFrame(frame);
+  const dt = Math.min(0.1, (now - rafT) / 1000);
+  rafT = now;
+  framePos = null;
+  framePos = playPos();   // kept until the next frame (or stopFrames), so draws in between agree with the window
+  followPlayhead(dt);
+  drawWave();
+}
+// Start the animation only once the audio really runs (currentTime has moved), so a slow audio start-up is not shown as a hesitation.
+function startFramesWhenRunning() {
+  const t0 = audio.currentTime, since = performance.now();
+  const check = () => {
+    if (!playing) return;
+    if (Math.abs(audio.currentTime - t0) > 0.02 || performance.now() - since > 800) startFrames();   // 800 ms: never wait forever
+    else requestAnimationFrame(check);
+  };
+  check();
+}
+function startFrames() { if (!raf) { rafT = performance.now(); raf = requestAnimationFrame(frame); } }
+function stopFrames() { cancelAnimationFrame(raf); raf = 0; framePos = null; }
 
 // Markers: added at the playback start position. Magenta dashed lines in the waveform, numbered labels above it (outside the waveform). Click a label to go
 // to the marker, double-click to remove it. They belong to the loaded track and are not saved.
@@ -301,18 +353,16 @@ let lastLabelDrag = 0;   // time of the last label drag end, to ignore the click
 function renderMarkerLabels(w) {
   if (markerDrag) return;
   const d = audio.duration || 0;
-  const key = [viewStart, viewSpan, w, d, markers.map((m) => `${m.t}:${m.name}`).join('|')].join('/');
-  if (key === markerKey) return;
+  const key = [w, d, markers.map((m) => `${m.t}:${m.name}`).join('|')].join('/');
+  if (key === markerKey) { placeMarkerLabels(d); return; }   // only the view moved: reposition the existing labels
   markerKey = key;
   el.markerStrip.replaceChildren();
+  labelEls = [];
   markers.forEach((m, i) => {
-    const f = d ? (m.t / d - viewStart) / viewSpan : -1;
-    if (f < -0.01 || f > 1.01) return;   // outside the zoomed view
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'marker-label';
     b.textContent = m.name;
-    b.style.left = `${f * 100}%`;
     b.title = `Marker "${m.name}" at ${fmt(m.t)}: click to rename or remove, drag to move`;
     b.setAttribute('aria-label', `Marker ${m.name} at ${fmt(m.t)}`);
     let x0 = 0, moved = false;
@@ -350,6 +400,16 @@ function renderMarkerLabels(w) {
     b.addEventListener('pointercancel', end);
     b.addEventListener('click', () => { if (performance.now() - lastLabelDrag > 300) editMarker(i); });
     el.markerStrip.append(b);
+    labelEls.push(b);
+  });
+  placeMarkerLabels(d);
+}
+let labelEls = [];   // the marker label buttons, same order as markers
+function placeMarkerLabels(d) {
+  labelEls.forEach((b, i) => {
+    const f = d ? (markers[i].t / d - viewStart) / viewSpan : -1;
+    b.style.display = f < -0.01 || f > 1.01 ? 'none' : '';   // outside the zoomed view
+    b.style.left = `${f * 100}%`;
   });
 }
 
@@ -370,7 +430,8 @@ function drawWave() {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, w, h);
   const d = audio.duration || 0;
-  const frac = d ? audio.currentTime / d : 0;
+  const pos = playPos();
+  const frac = d ? pos / d : 0;
   const mid = h / 2;
   const xOf = (t) => (t / d - viewStart) / viewSpan * w;   // seconds -> pixel in the current view
 
@@ -385,10 +446,11 @@ function drawWave() {
 
   // waveform: bright before the playhead, dim after
   if (peaks) {
-    const bw = 2, gap = 1, n = Math.floor(w / (bw + gap));
-    for (let i = 0; i < n; i++) {
-      const x = i * (bw + gap);
-      const f0 = viewStart + i / n * viewSpan, f1 = viewStart + (i + 1) / n * viewSpan;
+    // fixed bar grid over the whole track, so scrolling only translates the bars (no shimmer)
+    const bw = 2, gap = 1, nTot = w / (bw + gap) / viewSpan;
+    for (let i = Math.floor(viewStart * nTot), iEnd = Math.ceil((viewStart + viewSpan) * nTot); i < iEnd; i++) {
+      const x = (i - viewStart * nTot) * (bw + gap);
+      const f0 = i / nTot, f1 = (i + 1) / nTot;
       const a = Math.floor(f0 * PEAK_BUCKETS), b = Math.max(a + 1, Math.floor(f1 * PEAK_BUCKETS));
       let p = 0;
       for (let k = a; k < b && k < PEAK_BUCKETS; k++) if (peaks[k] > p) p = peaks[k];
@@ -442,7 +504,7 @@ function drawWave() {
 
   // playhead
   if (d) {
-    const x = xOf(audio.currentTime);
+    const x = xOf(pos);
     if (x >= 0 && x <= w) {
       g.fillStyle = '#fff';
       g.fillRect(Math.min(w - 1, x), 0, 1, h);
@@ -456,7 +518,7 @@ function renderProgress() {
   const d = audio.duration;
   el.progressView.style.left = (viewStart * 100) + '%';
   el.progressView.style.width = (viewSpan * 100) + '%';
-  const pct = d > 0 && isFinite(d) ? Math.min(100, (playing ? audio.currentTime : (startMark ?? audio.currentTime)) / d * 100) : 0;
+  const pct = d > 0 && isFinite(d) ? Math.min(100, (playing ? playPos() : (startMark ?? audio.currentTime)) / d * 100) : 0;
   el.progressHandle.style.left = pct + '%';
   drawProgressWave();
   renderProgressMarks();
@@ -516,6 +578,7 @@ const progressSeek = (e) => {
 };
 el.progress.addEventListener('pointerdown', (e) => {
   if (!loaded) return;
+  if (playing) stop();   // any use of the bar stops playback
   progressDrag = true;
   el.progress.setPointerCapture(e.pointerId);
   progressSeek(e);
@@ -601,8 +664,7 @@ function renderTime() {
     el.seek.value = d ? Math.round(audio.currentTime / d * 1000) : 0;
     fill(el.seek, el.seek.value, 0, 1000);
   }
-  followPlayhead();
-  drawWave();
+  if (!raf) { followPlayhead(); drawWave(); }   // while playing, the frame loop does this
 }
 function renderPlay() {
   el.play.setAttribute('aria-pressed', playing);
@@ -636,7 +698,8 @@ function tick() {
 
 async function start() {
   if (!loaded || playing) return;
-  if (startMark != null) audio.currentTime = startMark;
+  // Only seek when needed: assigning currentTime, even to the same value, flushes the media pipeline and delays the start.
+  if (startMark != null) { if (Math.abs(audio.currentTime - startMark) > 0.01) audio.currentTime = startMark; }
   else startMark = audio.currentTime;
   try {
     if (state.transpose !== 0) await ensurePitch();
@@ -645,8 +708,10 @@ async function start() {
     if (err.name === 'NotAllowedError') blocked();
     return;
   }
+  ppCT = audio.currentTime; ppRunning = false;   // wait for the audio to really move before extrapolating
   playing = true;
   timer = setInterval(tick, 40);
+  startFramesWhenRunning();
   acquireWake();
   renderPlay();
   report();
@@ -661,6 +726,7 @@ function stop() {
   viewToMark();
   playing = false;
   clearInterval(timer);
+  stopFrames();
   releaseWake();
   renderPlay();
   renderTime();
@@ -695,6 +761,7 @@ audio.addEventListener('ended', () => {
   viewToMark();
   playing = false;
   clearInterval(timer);
+  stopFrames();
   releaseWake();
   renderPlay();
   renderTime();
@@ -1123,6 +1190,7 @@ function applyPinch() {
 
 box.addEventListener('pointerdown', (e) => {
   if (!loaded || e.target.closest('.zoom-reset')) return;
+  if (e.pointerType === 'mouse' && e.button !== 0) return;   // a right-click opens a menu and may never send pointerup
   box.setPointerCapture(e.pointerId);
   ptrs.set(e.pointerId, e.clientX);
   interacting = true;
@@ -1202,6 +1270,7 @@ el.armLoop.hidden = !matchMedia('(any-pointer: coarse)').matches;
 el.armLoop.addEventListener('click', () => setArm(!armLoop));
 box.addEventListener('pointerup', endPointer);
 box.addEventListener('pointercancel', endPointer);
+box.addEventListener('lostpointercapture', endPointer);   // safety net: never leave `interacting` stuck on
 box.addEventListener('wheel', (e) => {
   if (!loaded) return;
   e.preventDefault();

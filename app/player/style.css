@@ -80,7 +80,9 @@ output { font-variant-numeric: tabular-nums; color: var(--text); margin-left: 6p
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 .row-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 40px; }
 .steps, .loop-btns { display: flex; gap: 8px; }
-.loop-btns button { flex: 1; }
+.loop-btns button { flex: 1; white-space: nowrap; }
+.loop-btns .toggle { flex: 0 0 auto; }   /* "Start Loop" / "Stop Loop": natural width, label never wraps */
+@media (min-width: 601px) { .loop-btns .toggle .txt { display: inline-block; min-width: 10ch; text-align: center; } }   /* room for the longer label, so the button keeps its size when it toggles (text shown only above 600 px) */
 .steps button { min-width: 44px; }
 .hint { margin: 0; font-size: .78rem; color: var(--muted); }
 
@@ -123,8 +125,8 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 .pm.off { background: #6f7c78; }
 .progress-view { position: absolute; top: 0; bottom: 0; left: 0; width: 100%; background: var(--accent); }
 /* Large displays: the bar is a mini-map of the whole waveform; markers and loop ends become vertical lines */
-@media (min-width: 900px) and (min-height: 700px) {
-  .progress { height: 44px; margin-top: 6px; }
+@media (min-width: 601px) and (min-height: 560px) {
+  .progress { height: 36px; margin-top: 6px; }
   .progress-track { top: 0; height: 100%; border-radius: 6px; background: var(--panel); border: 1px solid var(--line); }
   .progress-track canvas { display: block; }
   .progress-view { background: color-mix(in srgb, var(--accent) 28%, transparent); border-left: 1px solid var(--accent); border-right: 1px solid var(--accent); box-sizing: border-box; }
@@ -132,6 +134,7 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
   .pm { top: 0; width: 2px; height: 100%; margin: 0 0 0 -1px; clip-path: none; }
   .progress-handle { top: 0; width: 2px; height: 100%; margin-left: -1px; border: 0; border-radius: 0; background: var(--text); box-shadow: none; }
 }
+@media (min-width: 601px) and (min-height: 700px) { .progress { height: 44px; } }
 .wave:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Recording */
@@ -194,6 +197,12 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
   .tune .hint { display: none; }
   .app > .controls { width: max(min(100%, 720px), calc(100% - 172px)); }   /* same width as the waveform */
   .controls > .panel { width: min(100%, 720px); margin-inline: auto; }   /* loop: keeps the column width, centred */
+}
+/* tablets, portrait or landscape: the loop label sits on the same row as the buttons (saves a row of height); the pause slider takes the row below */
+@media (min-width: 601px) {
+  .controls > .panel[aria-label="Loop"] { display: grid; grid-template-columns: auto 1fr; align-items: center; column-gap: 12px; }
+  .controls > .panel[aria-label="Loop"] .row-head { min-height: 0; }
+  .controls > .panel[aria-label="Loop"] .loop-pause { grid-column: 1 / -1; }
 }
 @media (max-width: 600px) {
   .controls { display: flex; flex-direction: column; gap: inherit; }
