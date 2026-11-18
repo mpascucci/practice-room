@@ -218,6 +218,14 @@ body {
 
 @media (display-mode: standalone) { #installBtn, .install-sep { display: none; } }
 
+/* Small screens, only while the Install button is shown: "☕ Buy me a coffee" shrinks to "☕ coffee?" */
+@media (max-width: 600px) {
+  @media not (display-mode: standalone) {
+    .copyright:has(#installBtn:not([hidden])) .cof-long { display: none; }
+    .copyright:has(#installBtn:not([hidden])) .cof-q { display: inline; }
+  }
+}
+
 #installBtn { text-decoration: none; background: var(--muted); color: var(--bar); padding: 0 .5rem; border-radius: 4px; }
 /* On load: slide in from the right, then a quick wiggle, then a pulse ring for ~5s (4 x 1.25s). */
 @keyframes install-slide { from { opacity: 0; transform: translateX(4rem); } to { opacity: 1; transform: none; } }
