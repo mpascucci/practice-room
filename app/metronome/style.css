@@ -302,6 +302,12 @@ label {
 .icon-btn:hover { background: #3a3a3a; }
 .icon-btn:focus-visible { outline: 3px solid #6aa8ff; outline-offset: 2px; }
 .icon-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.icon-btn .lbl { display: none; }
+/* PC and large displays: icon + text label (the complement of the compact breakpoint above). */
+@media (min-width: 601px) and (min-height: 481px) {
+  .icon-btn:has(.lbl) { width: auto; padding: 0 14px; grid-auto-flow: column; gap: 8px; font: 600 .85rem system-ui, sans-serif; white-space: nowrap; }
+  .icon-btn .lbl { display: inline; }
+}
 .tap.hit { background: var(--normal); transition: none; }
 .tap:focus-visible { outline: 3px solid #6aa8ff; outline-offset: 2px; }
 .tap-label { font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: .85rem; }
