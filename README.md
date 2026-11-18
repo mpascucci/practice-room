@@ -57,4 +57,4 @@ This project was built with the help of AI coding tools (Claude Code). The code 
 
 Copyright &copy; 2026 Marco Pascucci.
 
-This software is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE): you are free to use, modify and share it for any non-commercial purpose. Commercial use requires a separate license from the author. The Darabuka sounds are under their own non-commercial license; see [CREDITS.md](app/CREDITS.md).
+This software is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE): you are free to use, modify and share it for any non-commercial purpose. Commercial use requires a separate license from the author. The sound samples are under their own licenses; see [CREDITS.md](app/CREDITS.md).

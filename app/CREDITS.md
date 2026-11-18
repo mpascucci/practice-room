@@ -19,7 +19,7 @@ I created Practice Room with the help of Claude Code. Almost all the code was AI
 If you want, you can support my work in at least three ways:
 
 - Share the app
-- Contribute to the project. Read the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information.
+- Contribute to the project. Read the [CONTRIBUTING.md](../CONTRIBUTING.md) file for more information.
 - [Buy me a coffee](https://buymeacoffee.com/mpascucci)
 
 ## Sounds and samples
@@ -31,7 +31,10 @@ The **Tapan** percussion sounds (`app/metronome/sounds/tapan/`) are davul record
 
 Both were recorded at IEK Delta studios. For this app they were converted to mono WAV, trimmed and normalised. Thank you to the authors.
 
-The **Darabuka** percussion sounds (`app/metronome/sounds/darabuka/`) are taken from [Drum Mixed Wave 20200823 Darabuka 8 Takte 120 BPM](https://freesound.org/people/KlangRaumWort/sounds/533287/) by KlangRaumWort on [Freesound](https://freesound.org), licensed under [Creative Commons Attribution-NonCommercial 3.0](https://creativecommons.org/licenses/by-nc/3.0/) (CC BY-NC 3.0). They were adapted for this app. This licence does not allow commercial use of these sounds.
+The **Darabuka** percussion sounds (`app/metronome/sounds/darabuka/`) are taken from [Freesound](https://freesound.org). Both were converted to mono, trimmed, faded out and normalised for this app:
+
+- Low drum: [doumbek ka3](https://freesound.org/people/pjcohen/sounds/413785/) by pjcohen, licensed under [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/) (CC BY 4.0).
+- High drum: [darbuka nut dum](https://freesound.org/people/volkoaudio/sounds/252806/) by volkoaudio, licensed under [Creative Commons Attribution 3.0](https://creativecommons.org/licenses/by/3.0/) (CC BY 3.0).
 
 The **Bass-Snare** percussion sounds (`app/metronome/sounds/bass-snare/`) are taken from:
 - [DNB SNARE 008](https://freesound.org/people/sandyrb/sounds/41163/) by sandyrb on [Freesound](https://freesound.org), licensed under [Attribution 4.0](https://creativecommons.org/licenses/by/4.0/)
