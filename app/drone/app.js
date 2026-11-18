@@ -902,6 +902,7 @@ function recFrame() {
 async function recStart() {
   if (recStream) return;
   recBtn.classList.add('on'); recBtn.setAttribute('aria-pressed', 'true');
+  setHarmonicsOpen(true, false);   // show the sliders and the spectrogram; the remembered open/closed preference is left alone
   recMsg();
   const { stream, error } = await openMic();
   if (error || !recBtn.classList.contains('on') || recStream) {   // failed, or stopped while the permission prompt was open
