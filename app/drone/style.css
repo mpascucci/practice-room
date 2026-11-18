@@ -192,7 +192,13 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 .sweep.swell { grid-template-columns: auto 1fr 1fr; }
 
 /* ---------- Harmonics grid ---------- */
+.harm-wrap { flex: 1 1 auto; display: flex; gap: 8px; align-items: stretch; }
+.harm-wrap:has(.harmonics.collapsed) { flex: 0 0 auto; }
+.harm-wrap:has(.harmonics.collapsed) .spectro { display: none !important; }
+.spectro { display: none; flex: 0 0 auto; width: 84px; background: var(--row-off); border-radius: 14px; box-shadow: inset 0 0 0 1px #ffffff0a; }
+.harm-wrap.listening .spectro { display: block; }
 .harmonics {
+  min-width: 0;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
@@ -221,6 +227,12 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
   cursor: pointer;
 }
 .bulk button:hover { color: var(--text); border-color: var(--muted); }
+.play.rec { background: var(--rec, #b8372f); }
+.play.rec .icon-rec { width: 70.71%; height: 70.71%; }   /* circle d = 16.97/24 like the stop square, so it is half the button's diameter */
+.play.rec[aria-pressed="true"] { background: var(--rec, #b8372f); animation: recpulse 1.4s ease-in-out infinite; }
+.play.rec[aria-pressed="true"] .icon-rec { display: none; }
+@keyframes recpulse { 50% { filter: brightness(1.35); } }
+@media (prefers-reduced-motion: reduce) { .play.rec[aria-pressed="true"] { animation: none; } }
 .bulk select.instrument {
   height: auto;
   padding: 4px 22px 4px 9px;
@@ -331,6 +343,8 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
   .harmonics-head { gap: 8px 5px; }
   .bulk { display: contents; }
   .bulk select.instrument { order: 2; margin-left: auto; padding-left: 7px; }
+  .bulk select.preset { margin-left: 0; }
+  .spectro { width: 44px; }
   .harmonics-head::after { content: ""; order: 3; flex-basis: 100%; height: 0; }
   .bulk button { order: 4; padding: 4px 8px; }
   .sweep { grid-template-columns: 1fr 1fr; }
@@ -420,3 +434,48 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 }
 .tuner-disks .disk.top { outline-color: #fff; }
 .tuner-disks .disk.mid { --dim: #233e6a; --lit: #a8d2ff; }
+
+/* ---------- Presets dialog (same layout as the metronome's) ---------- */
+.pdlg {
+  width: min(420px, calc(100vw - 24px));
+  max-height: none; height: fit-content; overflow: hidden;
+  padding: 0; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--panel); color: var(--text);
+}
+.pdlg::backdrop { background: #000a; }
+.pdlg form { display: flex; flex-direction: column; gap: 10px; padding: 18px; height: min(460px, calc(100dvh - 32px)); }
+.pdlg .dlg-title { margin: 0; font-weight: 600; font-size: 1.05rem; }
+.pdlg .dlg-title small { color: var(--muted); font-weight: 400; font-size: .8rem; margin-left: .4em; }
+.preset-save { display: flex; gap: 8px; }
+.preset-save input {
+  flex: 1 1 auto; min-width: 0; height: 40px; padding: 0 10px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--row); color: var(--text); font: 1rem system-ui, sans-serif;
+}
+.preset-save input:focus-visible { outline: 2px solid var(--amber); outline-offset: 1px; }
+.btn {
+  height: 40px; padding: 0 16px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--row); color: var(--text); font: 600 .9rem system-ui, sans-serif; cursor: pointer;
+}
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--play); border-color: transparent; color: #fff; }
+.btn:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+.pdlg-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: auto; }
+.preset-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; flex: 1 1 0; min-height: 0; overflow-y: auto; }
+.preset-list[hidden], .preset-empty[hidden] { display: none; }
+.preset-list li { display: flex; gap: 6px; }
+.preset-load {
+  flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 5px; align-items: flex-start; text-align: left;
+  padding: 8px 10px; border: 0; border-radius: 8px; background: var(--row); color: var(--text); font: .95rem system-ui, sans-serif; cursor: pointer;
+}
+.preset-load:hover { background: #2a2620; }
+.preset-load:focus-visible, .preset-del:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+.preset-head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; max-width: 100%; }
+.preset-name { font-weight: 600; overflow-wrap: anywhere; }
+.preset-load small { color: var(--muted); }
+.preset-bars { display: flex; align-items: flex-end; gap: 3px; height: 18px; }
+.preset-bars i { width: 8px; background: var(--line); border-radius: 1px; }
+.preset-bars i.on { background: var(--amber); }
+.preset-del { flex: 0 0 auto; width: 40px; border: 0; border-radius: 8px; background: var(--row); color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+.preset-del:hover { color: var(--text); background: #2a2620; }
+.preset-del svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.preset-empty { margin: 0; color: var(--muted); font-size: .9rem; }

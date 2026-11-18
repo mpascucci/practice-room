@@ -23,7 +23,8 @@ Use it online or install: <https://mpascucci.github.io/practice-room/app>
   - Click/Instrument/Percussion sounds
 - **Drone**: a sustained pedal note with
   - Selectable note and octave
-  - Instrument presets
+  - Instrument presets, and your own saved presets
+  - Spectrometer to visualize the sound harmonics.
 - **Tuner** (in the Drone tab)
 - **Player**: open or record an audio file.
   - Waveform you can zoom (pinch or mouse wheel)

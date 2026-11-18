@@ -357,6 +357,7 @@ function applyMaster(target = playing ? volToGain(MASTER_VOL) : 0, tc = 0.05) {
 
 // ---------- Transport ----------
 function start() {
+  recStop();   // starting or stopping the drone ends a recording
   if (!ctx) buildGraph();
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   playing = true;
@@ -370,6 +371,7 @@ function start() {
 }
 
 function stop() {
+  recStop();
   playing = false;
   applyMaster(0, RELEASE / 3);
   playBtn.setAttribute('aria-pressed', 'false');
@@ -700,16 +702,20 @@ async function tunerMicError(err) {
   return 'Microphone access is blocked. Allow it in the browser\'s site settings for this page, then reload and press Listen again.';
 }
 
+// Raw microphone stream (no echo-cancel/noise-suppression/AGC). Resolves to {stream} or {error: text}; shared by the tuner and the harmonics recorder.
+async function openMic() {
+  if (!navigator.mediaDevices?.getUserMedia) return { error: 'This browser can\'t access the microphone.' };
+  try {
+    return { stream: await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }) };
+  } catch (err) {
+    return { error: await tunerMicError(err) };
+  }
+}
+
 async function tunerStart() {
   if (tunerStream) return;
-  if (!navigator.mediaDevices?.getUserMedia) { tunerMsg('This browser can\'t access the microphone.'); return; }
-  let stream;
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } });
-  } catch (err) {
-    tunerMsg(await tunerMicError(err));
-    return;
-  }
+  const { stream, error } = await openMic();
+  if (error) { tunerMsg(error); return; }
   if (tunerSection.classList.contains('collapsed') || tunerStream) { stream.getTracks().forEach((t) => t.stop()); return; }   // folded while the permission prompt was open
   tunerStream = stream;
   tunerCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -739,6 +745,157 @@ function setTunerOpen(open) {
 }
 tunerToggle.addEventListener('click', () => setTunerOpen(tunerToggle.getAttribute('aria-expanded') !== 'true'));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') tunerStop(); });
+
+// ---------- Harmonics recorder ----------
+// The rec button listens to the microphone and sets the harmonic sliders to the heard spectrum: YIN (shared with
+// the tuner) finds the fundamental, then the FFT peak near each multiple k·f0 gives that harmonic's amplitude.
+// Amplitudes are smoothed over time, normalised to the strongest harmonic and mapped to the perceptual sliders (v = 100·√a).
+const recBtn = $('harmRec');
+const REC_FFT = 8192;
+const REC_YIN_LEN = 4096;          // YIN only needs the latest samples; keeps its cost like the tuner's
+const REC_SMOOTH_S = 0.5;          // time constant of the per-harmonic amplitude average
+const REC_OFF_BELOW = 0.02;        // relative amplitude (−34 dB) under which a harmonic is switched off
+const REC_WINDOW_CENTS = 45;       // search window around each multiple of f0
+let recCtx = null, recStream = null, recAnalyser = null, recTime = null, recSpec = null, recRaf = 0;
+let recAmps = null, recLastAt = 0, recSavedAt = 0;
+
+// Spectrogram strip right of the harmonics panel (visible while listening). Time runs right → left (newest column at the
+// right edge); the vertical axis is frequency in units of f0, laid out so harmonic k sits at the vertical centre of its row.
+const spectro = $('spectro'), spectroCtx = spectro.getContext('2d');
+const harmWrap = $('harmWrap');
+const SPECTRO_RANGE_DB = 60;
+let spY0 = 0, spPitch = 1;   // device px: centre of the H0 row and distance between row centres
+function spectroLayout() {
+  const dpr = devicePixelRatio || 1;
+  const w = Math.round(spectro.clientWidth * dpr), h = Math.round(spectro.clientHeight * dpr);
+  if (!w || !h) return;
+  if (spectro.width !== w || spectro.height !== h) { spectro.width = w; spectro.height = h; }   // resizing clears it
+  const top = spectro.getBoundingClientRect().top;
+  const r0 = rowEls[0].li.getBoundingClientRect(), r1 = rowEls[1].li.getBoundingClientRect();
+  spY0 = (r0.top + r0.height / 2 - top) * dpr;
+  spPitch = (r1.top - r0.top) * dpr;
+}
+new ResizeObserver(spectroLayout).observe(spectro);
+function spectroColor(t, out, o) {   // t 0..1 → dark brown → amber → pale yellow
+  const a = t < 0.6 ? [20, 18, 16] : [224, 164, 58], b = t < 0.6 ? [224, 164, 58] : [255, 240, 200];
+  const u = t < 0.6 ? t / 0.6 : (t - 0.6) / 0.4;
+  out[o] = a[0] + (b[0] - a[0]) * u; out[o + 1] = a[1] + (b[1] - a[1]) * u; out[o + 2] = a[2] + (b[2] - a[2]) * u; out[o + 3] = 255;
+}
+// Scroll left by one step and paint the newest column; f0 = 0 paints silence.
+function spectroColumn(f0, binHz) {
+  const W = spectro.width, H = spectro.height;
+  if (!W || !H) return;
+  const step = Math.max(1, Math.round(devicePixelRatio || 1));
+  spectroCtx.drawImage(spectro, -step, 0);
+  const img = spectroCtx.createImageData(step, H);
+  const db = new Float32Array(H);
+  let ref = -Infinity;
+  if (f0) {
+    for (let y = 0; y < H; y++) {
+      const h = 1 + (y - spY0) / spPitch;                 // harmonic number at this pixel
+      const b = (h * f0) / binHz;
+      if (h < 0.5 || b < 1 || b >= recSpec.length - 1) { db[y] = -Infinity; continue; }
+      const i = Math.floor(b), fr = b - i;
+      db[y] = recSpec[i] * (1 - fr) + recSpec[i + 1] * fr;
+      if (db[y] > ref) ref = db[y];
+    }
+  }
+  const px = new Float32Array(4);
+  for (let y = 0; y < H; y++) {
+    let t = f0 ? Math.min(1, Math.max(0, (db[y] - (ref - SPECTRO_RANGE_DB)) / SPECTRO_RANGE_DB)) : 0;
+    const fr = (y - spY0) / spPitch;
+    if (Math.abs(fr - Math.round(fr)) * spPitch < 0.5) t = Math.max(t, 0.12);   // faint guide at each row's centre
+    spectroColor(t, px, 0);
+    for (let s = 0; s < step; s++) img.data.set(px, (y * step + s) * 4);
+  }
+  spectroCtx.putImageData(img, W - step, 0);
+}
+
+function recMsg(text = '') {
+  const el = $('harmMsg');
+  el.textContent = text;
+  el.hidden = !text;
+}
+
+function recFrame() {
+  recRaf = requestAnimationFrame(recFrame);
+  recAnalyser.getFloatTimeDomainData(recTime);
+  const win = recTime.subarray(recTime.length - REC_YIN_LEN);
+  let sq = 0;
+  for (let i = 0; i < win.length; i++) sq += win[i] * win[i];
+  if (Math.sqrt(sq / win.length) < TUNER_RMS_GATE) { spectroColumn(0); return; }      // silence: keep the current sliders
+  const sr = recCtx.sampleRate;
+  const f0 = yinPitch(win, sr);
+  if (!f0) { spectroColumn(0); return; }
+  recAnalyser.getFloatFrequencyData(recSpec);
+  const bin = sr / REC_FFT, ratio = Math.pow(2, REC_WINDOW_CENTS / 1200);
+  const now = performance.now();
+  const dt = Math.min(0.1, (now - recLastAt) / 1000);
+  const k = recLastAt ? 1 - Math.exp(-dt / REC_SMOOTH_S) : 1;
+  recLastAt = now;
+  const raw = [];
+  for (let i = 0; i < HARMONICS; i++) {
+    const f = f0 * (i + 1);
+    if (f * ratio >= sr / 2 * 0.95) { raw.push(0); continue; }
+    const lo = Math.max(1, Math.floor((f / ratio) / bin)), hi = Math.min(recSpec.length - 1, Math.ceil((f * ratio) / bin));
+    let peak = -Infinity;
+    for (let b = lo; b <= hi; b++) if (recSpec[b] > peak) peak = recSpec[b];
+    raw.push(Math.pow(10, peak / 20));                          // dB → linear amplitude
+  }
+  spectroColumn(f0, bin);
+  recAmps = recAmps ? recAmps.map((a, i) => a + k * (raw[i] - a)) : raw;
+  const top = Math.max(...recAmps);
+  if (!(top > 0)) return;
+  clearInstrument();
+  recAmps.forEach((a, i) => {
+    const rel = a / top;
+    const h = state.harmonics[i];
+    h.on = rel >= REC_OFF_BELOW;
+    if (h.on) h.vol = Math.round(100 * Math.sqrt(rel));
+    renderRow(i); applyPartial(i);
+  });
+  if (now - recSavedAt > 500) { recSavedAt = now; save(); }
+}
+
+async function recStart() {
+  if (recStream) return;
+  recBtn.classList.add('on'); recBtn.setAttribute('aria-pressed', 'true');
+  recMsg();
+  const { stream, error } = await openMic();
+  if (error || !recBtn.classList.contains('on') || recStream) {   // failed, or stopped while the permission prompt was open
+    stream?.getTracks().forEach((t) => t.stop());
+    if (error) { recMsg(error); recStop(); }
+    return;
+  }
+  recStream = stream;
+  recCtx = new (window.AudioContext || window.webkitAudioContext)();
+  try { await recCtx.resume(); } catch {}
+  recAnalyser = recCtx.createAnalyser();
+  recAnalyser.fftSize = REC_FFT;
+  recAnalyser.smoothingTimeConstant = 0;
+  recTime = new Float32Array(REC_FFT);
+  recSpec = new Float32Array(recAnalyser.frequencyBinCount);
+  recCtx.createMediaStreamSource(recStream).connect(recAnalyser);   // not routed to the output: no feedback
+  recAmps = null; recLastAt = 0;
+  harmWrap.classList.add('listening');
+  spectroLayout();
+  spectroCtx.clearRect(0, 0, spectro.width, spectro.height);
+  recFrame();
+}
+
+function recStop() {
+  cancelAnimationFrame(recRaf);
+  recStream?.getTracks().forEach((t) => t.stop());
+  recCtx?.close().catch(() => {});
+  harmWrap.classList.remove('listening');
+  const wasOn = !!recStream;
+  recStream = recCtx = recAnalyser = recTime = recSpec = recAmps = null;
+  recBtn.classList.remove('on'); recBtn.setAttribute('aria-pressed', 'false');
+  if (wasOn) save();
+}
+
+recBtn.addEventListener('click', () => (recBtn.classList.contains('on') ? recStop() : recStart()));
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') recStop(); });
 
 // ---------- Instrument presets ----------
 // Amplitudes are relative linear levels (0 = off). Sliders are perceptual (gain = (v/100)²),
@@ -791,6 +948,7 @@ function buildInstruments() {
 function clearInstrument() {
   instrumentSel.value = '';
   instrumentSel.classList.remove('chosen');
+  presetSel.value = ''; presetSel.classList.remove('chosen');
 }
 
 function applyInstrument(id) {
@@ -813,6 +971,169 @@ function applyInstrument(id) {
 
 instrumentSel.addEventListener('change', () => applyInstrument(instrumentSel.value));
 
+// ---------- User presets ----------
+// A preset stores the sound: every harmonic's on/volume plus the sweep and swell settings (not the base note).
+// The dropdown lists the saved presets; its last entry opens the dialog to save, overwrite or delete.
+const PRESETS_KEY = 'shrutibox:presets:v1';
+const MAX_PRESETS = 50, MAX_LABEL = 20;
+const presetSel = $('presetSel');
+const presetsDialog = $('presetsDialog');
+const presetName = $('presetName');
+const presetList = $('presetList');
+const presetEmpty = $('presetEmpty');
+const PRESETS_EMPTY_TEXT = presetEmpty.textContent;
+const clampNum = (v, lo, hi, d) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
+let presets = loadPresets();
+
+function loadPresets() {
+  try {
+    const list = JSON.parse(localStorage.getItem(PRESETS_KEY));
+    if (!Array.isArray(list)) return [];
+    const d = defaults();
+    return list.flatMap((p) => {
+      if (!p || typeof p.name !== 'string' || !Array.isArray(p.harmonics)) return [];
+      return [{
+        name: p.name.slice(0, MAX_LABEL),
+        harmonics: d.harmonics.map((h, i) => ({
+          on: typeof p.harmonics[i]?.on === 'boolean' ? p.harmonics[i].on : false,
+          vol: clampNum(p.harmonics[i]?.vol, 0, 100, h.vol),
+        })),
+        mod: {
+          on: p.mod?.on === true,
+          rate: clampNum(p.mod?.rate, RATE_MIN, RATE_MAX, d.mod.rate),
+          depth: clampNum(p.mod?.depth, 0, 100, d.mod.depth),
+          from: Number.isInteger(p.mod?.from) && p.mod.from >= MOD_FROM_MIN && p.mod.from <= MOD_FROM_MAX ? p.mod.from : d.mod.from,
+        },
+        swell: {
+          on: p.swell?.on === true,
+          rate: clampNum(p.swell?.rate, RATE_MIN, RATE_MAX, d.swell.rate),
+          depth: clampNum(p.swell?.depth, 0, 100, d.swell.depth),
+        },
+      }];
+    }).slice(0, MAX_PRESETS);
+  } catch { return []; }
+}
+function storePresets() {
+  try { localStorage.setItem(PRESETS_KEY, JSON.stringify(presets)); } catch {}
+}
+
+// Default label: Preset 01, Preset 02, … the smallest number not used yet.
+function nextPresetName() {
+  const used = new Set(presets.map((p) => p.name.toLowerCase()));
+  let k = 1;
+  while (used.has(`preset ${String(k).padStart(2, '0')}`)) k++;
+  return `Preset ${String(k).padStart(2, '0')}`;
+}
+
+// Dropdown: "presets…" placeholder, the saved presets, then "Save / edit…" last.
+const PRESET_EDIT = 'edit';
+function renderPresetSelect() {
+  presetSel.replaceChildren(new Option('presets…', ''));
+  presets.forEach((p, i) => presetSel.add(new Option(p.name, i)));
+  presetSel.add(new Option('Save / edit…', PRESET_EDIT));
+  presetSel.value = '';
+  presetSel.classList.remove('chosen');
+}
+
+// Small bar graph of the harmonics (bar height = slider position, off = dim).
+function presetBars(p) {
+  const wrap = document.createElement('span');
+  wrap.className = 'preset-bars';
+  wrap.setAttribute('aria-hidden', 'true');
+  for (const h of p.harmonics) {
+    const b = document.createElement('i');
+    b.style.height = `${h.on ? Math.max(8, h.vol) : 8}%`;
+    b.className = h.on ? 'on' : '';
+    wrap.append(b);
+  }
+  return wrap;
+}
+
+function presetSummary(p) {
+  const n = p.harmonics.filter((h) => h.on).length;
+  return `${n} harmonic${n === 1 ? '' : 's'}${p.mod.on ? ' · sweep' : ''}${p.swell.on ? ' · swell' : ''}`;
+}
+
+function renderPresets() {
+  presetEmpty.hidden = presets.length > 0;
+  presetList.hidden = presets.length === 0;
+  presetList.replaceChildren(...presets.map((p, i) => {
+    const li = document.createElement('li');
+    const load = document.createElement('button');
+    load.type = 'button';
+    load.className = 'preset-load';
+    load.dataset.load = i;
+    const name = document.createElement('span');
+    name.className = 'preset-name';
+    name.textContent = p.name;
+    const info = document.createElement('small');
+    info.textContent = presetSummary(p);
+    const head = document.createElement('span');
+    head.className = 'preset-head';
+    head.append(name, info);
+    load.append(head, presetBars(p));
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'preset-del';
+    del.dataset.del = i;
+    del.setAttribute('aria-label', `Delete preset ${p.name}`);
+    del.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>';
+    li.append(load, del);
+    return li;
+  }));
+  presetName.value = nextPresetName();
+  renderPresetSelect();
+}
+
+function savePreset() {
+  const name = presetName.value.trim().slice(0, MAX_LABEL) || nextPresetName();
+  const p = {
+    name,
+    harmonics: state.harmonics.map((h) => ({ on: h.on, vol: h.vol })),
+    mod: { ...state.mod }, swell: { ...state.swell },
+  };
+  const at = presets.findIndex((x) => x.name.toLowerCase() === name.toLowerCase());
+  if (at >= 0) presets[at] = p;                       // same label: overwrite
+  else if (presets.length < MAX_PRESETS) presets.push(p);
+  else { presetEmpty.textContent = `Too many presets (max ${MAX_PRESETS}): delete one first.`; presetEmpty.hidden = false; return; }
+  storePresets();
+  renderPresets();
+}
+
+function applyPreset(p) {
+  clearInstrument();
+  state.harmonics.forEach((h, i) => { Object.assign(h, p.harmonics[i]); applyPartial(i); });
+  Object.assign(state.mod, p.mod);
+  Object.assign(state.swell, p.swell);
+  renderMod(); renderSwell();
+  applyRate(); applyModFrom(); applySwellRate(); applySwell();
+  syncAnimation(); updateLevels(); save();
+}
+
+presetSel.addEventListener('change', () => {
+  const v = presetSel.value;
+  if (v === PRESET_EDIT) {
+    presetEmpty.textContent = PRESETS_EMPTY_TEXT;
+    renderPresets();
+    presetsDialog.showModal();
+    $('presetSave').focus();   // not the text field: no virtual keyboard on touch devices
+  } else if (v !== '' && presets[+v]) {
+    applyPreset(presets[+v]);
+    presetSel.value = v;
+    presetSel.classList.add('chosen');   // stays shown until any manual change (clearInstrument)
+  }
+});
+$('presetSave').addEventListener('click', savePreset);
+presetName.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); savePreset(); } });
+presetList.addEventListener('click', (e) => {
+  const del = e.target.closest('[data-del]');
+  if (del) { presets.splice(+del.dataset.del, 1); storePresets(); renderPresets(); return; }
+  const load = e.target.closest('[data-load]');
+  if (load) { applyPreset(presets[+load.dataset.load]); presetsDialog.close(); }
+});
+presetsDialog.addEventListener('click', (e) => { if (e.target === presetsDialog) presetsDialog.close(); });
+renderPresetSelect();
+
 $('reset').addEventListener('click', () => {
   const d = defaults().harmonics;
   setAll((h, i) => { h.on = d[i].on; h.vol = d[i].vol; });
@@ -822,6 +1143,7 @@ $('reset').addEventListener('click', () => {
 document.addEventListener('keydown', (e) => {
   if (e.key !== ' ' || e.repeat) return;
   const t = e.target;
+  if (presetsDialog.open || (t instanceof HTMLInputElement && t.type === 'text')) return;
   if (t instanceof HTMLButtonElement || t instanceof HTMLSelectElement ||
       (t instanceof HTMLInputElement && t.type === 'checkbox')) return;
   e.preventDefault();
@@ -913,7 +1235,7 @@ window.addEventListener('message', (e) => {
   else if (a === 'play' && !playing) start();
   else if (a === 'stop' && playing) stop();
   else if (a === 'ping') report();
-  else if (a === 'leave') setTunerOpen(false);   // the user switched to another tab: close the tuner, release the mic
+  else if (a === 'leave') { setTunerOpen(false); recStop(); }   // the user switched to another tab: close the tuner, stop the recorder, release the mic
   else if (a === 'volume' && Number.isFinite(e.data.value)) {
     shellVol = Math.min(1, Math.max(0, e.data.value));
     if (trim) trim.gain.setTargetAtTime(shellVol, ctx.currentTime, 0.02);
