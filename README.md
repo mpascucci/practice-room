@@ -2,7 +2,7 @@
 
 A small, installable web app for music practice: a **metronome**, a **tuner**, a harmonic **drone** and an audio **player**, side by side. They can run at the same time, and the app works offline.
 
-It completely free and fully open source: you can use online or install it on your device. No ads, no tracking, no cookies. Settings are stored locally on your device.
+It is completely free and fully open source: you can use it online or install it on your device. No ads, no tracking, no cookies. Settings are stored locally on your device.
 
 Use it online or install: <https://mpascucci.github.io/practice-room/app>
 
@@ -19,11 +19,11 @@ Use it online or install: <https://mpascucci.github.io/practice-room/app>
 
 - **Metronome**: an adjustable click with:
   - Tap tempo
-  - Enter a custom beat sequence (e.g. `2 2 3`).
+  - Enter a custom beat sequence (e.g. `2 2 3`)
   - Click/Instrument/Percussion sounds
 - **Drone**: a sustained pedal note with
   - Selectable note and octave
-  - Instrument presets.
+  - Instrument presets
 - **Tuner** (in the Drone tab)
 - **Player**: open or record an audio file.
   - Waveform you can zoom (pinch or mouse wheel)
@@ -31,7 +31,7 @@ Use it online or install: <https://mpascucci.github.io/practice-room/app>
   - Transpose up or down by up to an octave without changing the speed
   - A–B loop
   - Record a take with the microphone
-  - Files stay on your device.
+  - Files stay on your device
 - **Tabs with transport**: each app has its own play/stop button in the top bar, so you can start and stop either one without switching tabs.
 - **Per-app volume**: a volume button on each tab sets the level of the metronome, drone and player independently.
 
@@ -39,12 +39,15 @@ Use it online or install: <https://mpascucci.github.io/practice-room/app>
 
 - **Responsive design**: works on phones, tablets and desktops. The metronome, drone and player can be used together or separately.
 
-## Installation
-Click the install button in the footer of the application, or add it to your home screen from the browser menu.
+## Install
+1. Open the app: <https://mpascucci.github.io/practice-room/app>
+2. Click the install button in the footer of the application, or add it to your home screen from the browser menu.
+
+Once installed, Practice Room will work offline and you can use it without an internet connection.
 
 ## Credits
 
-Some of the precussion sounds are taken from [Freesound](https://freesound.org/), and each has his own licence; see [CREDITS.md](app/CREDITS.md).
+Some of the percussion sounds are taken from [Freesound](https://freesound.org/), and each has its own license; see [CREDITS.md](app/CREDITS.md).
 
 ## AI disclaimer
 
@@ -54,4 +57,4 @@ This project was built with the help of AI coding tools (Claude Code). The code 
 
 Copyright &copy; 2026 Marco Pascucci.
 
-This software is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE): you are free to use, modify and share it for any non-commercial purpose. Commercial use requires a separate licence from the author. The Darabuka sounds are under their own non-commercial licence; see [CREDITS.md](app/CREDITS.md).
+This software is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE): you are free to use, modify and share it for any non-commercial purpose. Commercial use requires a separate license from the author. The Darabuka sounds are under their own non-commercial license; see [CREDITS.md](app/CREDITS.md).
