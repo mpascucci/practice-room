@@ -4,10 +4,12 @@
 This application is free software; published under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0). You may use, copy, modify, and distribute this software for non-commercial purposes only, as long as you include the required copyright notice and license terms.
 
 ## Ideas and motivations
-This application was created by Marco Pascucci with the help of Claude Code.
-The idea was inspired by years of music practice, an education in physics, my enthusiasm in software development and my passion for pedagody. It was driven by desire to create a simple, yet effective app for musicians that would reunite the most commonly used tools.
+The idea of this app was inspired by years of music practice, an education in physics, my enthusiasm in software development and a passion for pedagody. It was driven by desire to cgeate a simple, yet effective app for my practice sessions, that would reunite the tools I use more often.
+Sharing it with other musicians was a natural consequence, as, in most cases, our society does not reward them enough for their fundamental work.
 
-I do not aim to enrich this application with complex features (I leave that to specialized apps), but rather to keep it simple and effective. I am open to suggestions and contributions, so please feel free to contact me if you have any ideas or feedback.
+I do not aim to enrich this application with complex features, but rather to keep it simple and effective.
+
+I created Practice Room with the help of Claude Code. Almost all the code was AI generated, my contribution comes mainly from my personal human experience, manifested as some design ideas. Highest credit goes to all the developers whose code was used to train the AI model.
 
 ## Special thanks
 - [BalkanLabOrchestra](https://www.instagram.com/balkanlaborchestra/) and its musicians, motivated the collapse of a long standing idea into a real application.

@@ -61,7 +61,7 @@ const state = {
 };
 const MODES = ['click', 'instrument', 'percussion'];
 const PERC_SETS = ['machine', 'bass-snare', 'darabuka', 'tapan', 'pier'];
-const PERC_FILES = { pier: { low: 'pier_PAN.wav', high: 'pier_TA.wav' } };   // sets not using low.wav / high.wav
+const PERC_FILES = { pier: { low: 'pier_PAN.flac', high: 'pier_TA.flac' } };   // sets not using low.flac / high.flac
 const beatCount = () => state.measures[0].length;
 load();
 
@@ -198,14 +198,14 @@ function sineClick(time, accent) {
   osc.stop(time + 0.1);
 }
 
-// Percussion mode: each set is a folder sounds/<set>/ with low.wav (accent beats) and high.wav
+// Percussion mode: each set is a folder sounds/<set>/ with low.flac (accent beats) and high.flac
 // (normal beats). To change a set's sounds, replace its two files (and bump VERSION in sw.js).
 const percBuffers = {};   // set -> {low, high}
 const percLoading = {};   // set -> Promise
 function loadPerc(set = state.perc) {
   percLoading[set] ??= Promise.all(['low', 'high'].map(async (kind) => {
     try {
-      const res = await fetch(`sounds/${set}/${PERC_FILES[set]?.[kind] ?? kind + '.wav'}`);
+      const res = await fetch(`sounds/${set}/${PERC_FILES[set]?.[kind] ?? kind + '.flac'}`);
       (percBuffers[set] ??= {})[kind] = await ctx.decodeAudioData(await res.arrayBuffer());
     } catch { /* missing or undecodable: that drum stays silent */ }
   }));

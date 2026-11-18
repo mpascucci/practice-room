@@ -3,7 +3,7 @@
 // background, so edits show up on the next launch. Bump VERSION to force a clean re-cache
 // (e.g. after adding or removing files).
 
-const VERSION = 'v4.110';
+const VERSION = 'v4.111';
 const CACHE = `practice-room-${VERSION}`;
 
 const FILES = [
@@ -21,16 +21,16 @@ const FILES = [
   'metronome/index.html',
   'metronome/style.css',
   'metronome/app.js',
-  'metronome/sounds/machine/low.wav',
-  'metronome/sounds/machine/high.wav',
-  'metronome/sounds/bass-snare/low.wav',
-  'metronome/sounds/bass-snare/high.wav',
-  'metronome/sounds/darabuka/low.wav',
-  'metronome/sounds/darabuka/high.wav',
-  'metronome/sounds/tapan/low.wav',
-  'metronome/sounds/tapan/high.wav',
-  'metronome/sounds/pier/pier_PAN.wav',
-  'metronome/sounds/pier/pier_TA.wav',
+  'metronome/sounds/machine/low.flac',
+  'metronome/sounds/machine/high.flac',
+  'metronome/sounds/bass-snare/low.flac',
+  'metronome/sounds/bass-snare/high.flac',
+  'metronome/sounds/darabuka/low.flac',
+  'metronome/sounds/darabuka/high.flac',
+  'metronome/sounds/tapan/low.flac',
+  'metronome/sounds/tapan/high.flac',
+  'metronome/sounds/pier/pier_PAN.flac',
+  'metronome/sounds/pier/pier_TA.flac',
   'drone/index.html',
   'drone/style.css',
   'drone/app.js',
