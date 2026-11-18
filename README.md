@@ -48,7 +48,7 @@ Some of the precussion sounds are taken from [Freesound](https://freesound.org/)
 
 ## AI disclaimer
 
-This project was built with the help of AI coding tools (Claude Code). The code has been reviewed and tested by the author, but it comes with no warranty; see the license below.
+This project was built with the help of AI coding tools (Claude Code). The code has been tested by the author, but it comes with no warranty; see the license below.
 
 ## License
 
