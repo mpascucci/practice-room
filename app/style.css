@@ -94,8 +94,7 @@ body {
   background: #444;
   flex: 0 0 auto;
 }
-.slot.playing .led { background: var(--c); box-shadow: 0 0 8px var(--c); animation: pulse 1.6s ease-in-out infinite; }
-@keyframes pulse { 50% { opacity: .45; } }
+.slot.playing .led { background: var(--c); box-shadow: 0 0 8px var(--c); }   /* no pulse animation: a 1.6 s infinite animation here coincided with audio clicks in the installed Safari app */
 
 .info {
   max-width: 100%;
