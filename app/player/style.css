@@ -167,6 +167,14 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 .controls { display: flex; flex-direction: column; gap: inherit; }
 .tune { display: contents; }   /* wide screens: panels stacked like any other */
 .tab-open { display: none; }
+/* tablet landscape: speed and transpose side by side, both fully expanded */
+@media (min-width: 601px) and (orientation: landscape) {
+  .tune { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch; }
+  .tune .panel { min-width: 0; }
+  .tune .hint { display: none; }
+  .app > .controls { width: max(min(100%, 720px), calc(100% - 172px)); }   /* same width as the waveform */
+  .controls > .panel { width: min(100%, 720px); margin-inline: auto; }   /* loop: keeps the column width, centred */
+}
 @media (max-width: 600px) {
   .controls { display: flex; flex-direction: column; gap: inherit; }
   .controls .panel { padding: 10px; min-width: 0; }
