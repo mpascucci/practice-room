@@ -6,7 +6,7 @@ const HARMONICS = 13;
 const STORAGE_KEY = 'shrutibox:v1';
 const ATTACK = 0.6, RELEASE = 0.9, GLIDE = 0.08; // seconds
 
-// Sweep: harmonics from H<state.mod.from> up get a sinusoidal gain modulation,
+// Sweep: harmonics from H(state.mod.from − 1) up get a sinusoidal gain modulation,
 // phase-staggered so the emphasis travels upward through the spectrum.
 const MOD_FROM_MIN = 2, MOD_FROM_MAX = 12;         // selectable starting harmonic
 const modStart = () => state.mod.from - 1;         // index of the first swept harmonic
@@ -222,7 +222,7 @@ function buildGraph() {
 
 // Brass swell: a slow crescendo/decrescendo e(u) = (1 − cos u)/2 ∈ [0, 1] that mostly
 // brightens — upper harmonics drop back when soft and bloom when loud (brass behaviour).
-// Multiplier: mᵢ = 1 − D·wᵢ·(1 − e), with weight wᵢ rising from 0.25 (H1) to 1 (H13).
+// Multiplier: mᵢ = 1 − D·wᵢ·(1 − e), with weight wᵢ rising from 0.25 (H0) to 1 (H12).
 // At the loud peak every harmonic is at its slider level — the swell never exceeds it.
 const swellWeight = (i) => 0.25 + 0.75 * (i / (HARMONICS - 1));
 function swellShape(i) {
@@ -393,7 +393,7 @@ document.addEventListener('visibilitychange', () => {
 
 // ---------- UI ----------
 function buildSelectors() {
-  for (let h = MOD_FROM_MIN; h <= MOD_FROM_MAX; h++) modFrom.add(new Option(`H${h}`, h));
+  for (let h = MOD_FROM_MIN; h <= MOD_FROM_MAX; h++) modFrom.add(new Option(`H${h - 1}`, h));
   noteSel.innerHTML = SOLFEGE.map((s, i) => `<option value="${i}">${s} - ${LETTERS[i]}</option>`).join('');
 }
 
@@ -411,9 +411,9 @@ function buildRows() {
       vol: li.querySelector('.vol'),
       pct: li.querySelector('.pct'),
     };
-    el.h.textContent = `H${i + 1}`;
-    el.on.setAttribute('aria-label', `Harmonic ${i + 1} on/off`);
-    el.vol.setAttribute('aria-label', `Harmonic ${i + 1} volume`);
+    el.h.textContent = `H${i}`;
+    el.on.setAttribute('aria-label', `Harmonic ${i} on/off`);
+    el.vol.setAttribute('aria-label', `Harmonic ${i} volume`);
 
     el.on.addEventListener('change', () => {
       state.harmonics[i].on = el.on.checked;
@@ -482,7 +482,7 @@ function renderMod() {
   setRangeFill(modRate);
   setRangeFill(modDepth);
   modFrom.value = state.mod.from;
-  modRange.textContent = `H${state.mod.from}–H${HARMONICS}`;
+  modRange.textContent = `H${state.mod.from - 1}–H${HARMONICS - 1}`;
 }
 
 function renderSwell() {
@@ -579,8 +579,8 @@ $('allOn').addEventListener('click', () => setAll((h) => { h.on = true; }));
 $('allOff').addEventListener('click', () => setAll((h) => { h.on = false; }));
 // Spectrum presets
 const FLAT_VOL = 60;
-const linearVol = (i) => Math.round((100 * (HARMONICS - i)) / HARMONICS);   // H1 100 → H13 8
-const FLAT_ON = 10;   // flat: H1–H10 on, H11–H13 off (still set to the flat volume, so they sound right if switched on)
+const linearVol = (i) => Math.round((100 * (HARMONICS - i)) / HARMONICS);   // H0 100 → H12 8
+const FLAT_ON = 10;   // flat: H0–H9 on, H10–H12 off (still set to the flat volume, so they sound right if switched on)
 $('presetFlat').addEventListener('click', () => setAll((h, i) => { h.on = i < FLAT_ON; h.vol = FLAT_VOL; }));
 $('presetLinear').addEventListener('click', () => setAll((h, i) => { h.on = true; h.vol = linearVol(i); }));
 
@@ -749,17 +749,17 @@ const INSTRUMENTS = [
     amps: Array.from({ length: HARMONICS }, (_, k) => (hn(k) % 2 ? 1 / Math.pow(hn(k), 1.3) : 0)) },
   { id: 'flute', name: 'Flute', group: 'Steady',
     amps: [1, 0.5, 0.25, 0.12, 0.06, 0.03, 0, 0, 0, 0, 0, 0, 0] },
-  { id: 'organ', name: 'Organ', group: 'Steady',      // drawbar-style: H1 H2 H3 H4 H6 H8
+  { id: 'organ', name: 'Organ', group: 'Steady',      // drawbar-style: H0 H1 H2 H3 H5 H7
     amps: [1, 0.8, 0.7, 0.6, 0, 0.5, 0, 0.45, 0, 0, 0, 0, 0] },
   { id: 'strings', name: 'Strings', group: 'Steady',  // sawtooth-like 1/n
     amps: Array.from({ length: HARMONICS }, (_, k) => 1 / hn(k)) },
-  { id: 'oboe', name: 'Oboe', group: 'Steady',        // weak fundamental, formant around H3
+  { id: 'oboe', name: 'Oboe', group: 'Steady',        // weak fundamental, formant around H2
     amps: [0.5, 0.9, 1, 0.9, 0.7, 0.45, 0.3, 0.2, 0.15, 0.1, 0.08, 0.06, 0.05] },
   { id: 'bagpipe', name: 'Bagpipe', group: 'Steady',
     amps: [1, 0.9, 0.9, 0.85, 0.8, 0.8, 0.75, 0.7, 0.65, 0.6, 0.55, 0.5, 0.45] },
-  { id: 'harmonium', name: 'Harmonium', group: 'Steady',  // reed, slight H3–H6 boost
+  { id: 'harmonium', name: 'Harmonium', group: 'Steady',  // reed, slight H2–H5 boost
     amps: [1, 0.57, 0.58, 0.46, 0.39, 0.33, 0.21, 0.19, 0.17, 0.16, 0.15, 0.14, 0.13] },
-  { id: 'brass', name: 'Brass', group: 'With swell',    // trombone-like: peak at H2, slow fall
+  { id: 'brass', name: 'Brass', group: 'With swell',    // trombone-like: peak at H1, slow fall
     amps: [0.8, 1, 0.9, 0.75, 0.6, 0.5, 0.4, 0.3, 0.22, 0.16, 0.12, 0.09, 0.07],
     swell: { on: true, rate: 0.1, depth: 70 } },
   { id: 'tanpura', name: 'Tanpura', group: 'With sweep',   // shimmering upper band
