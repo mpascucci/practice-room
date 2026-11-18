@@ -579,8 +579,7 @@ $('editSeq').addEventListener('click', () => {
   seqInput.classList.remove('invalid');
   updateSeq();
   seqDialog.showModal();
-  seqInput.focus();
-  seqInput.select();
+  $('seqOk').focus();   // not the text field: on touch devices that would pop the keyboard up straight away
 });
 $('seqCancel').addEventListener('click', () => seqDialog.close());
 // Click on the backdrop = cancel.
