@@ -358,6 +358,7 @@ function applyMaster(target = playing ? volToGain(MASTER_VOL) : 0, tc = 0.05) {
 // ---------- Transport ----------
 function start() {
   recStop();   // starting or stopping the drone ends a recording
+  recBtn.disabled = true;   // and the drone would be heard by the microphone: no recording while it plays
   if (!ctx) buildGraph();
   if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   playing = true;
@@ -372,6 +373,7 @@ function start() {
 
 function stop() {
   recStop();
+  recBtn.disabled = false;
   playing = false;
   applyMaster(0, RELEASE / 3);
   playBtn.setAttribute('aria-pressed', 'false');
@@ -776,39 +778,79 @@ function spectroLayout() {
   spPitch = (r1.top - r0.top) * dpr;
 }
 new ResizeObserver(spectroLayout).observe(spectro);
-function spectroColor(t, out, o) {   // t 0..1 → dark brown → amber → pale yellow
-  const a = t < 0.6 ? [20, 18, 16] : [224, 164, 58], b = t < 0.6 ? [224, 164, 58] : [255, 240, 200];
-  const u = t < 0.6 ? t / 0.6 : (t - 0.6) / 0.4;
-  out[o] = a[0] + (b[0] - a[0]) * u; out[o + 1] = a[1] + (b[1] - a[1]) * u; out[o + 2] = a[2] + (b[2] - a[2]) * u; out[o + 3] = 255;
+// Colour table: t 0..1 → dark brown → amber → pale yellow.
+const SPECTRO_LUT = new Uint8ClampedArray(256 * 3);
+for (let k = 0; k < 256; k++) {
+  const t = k / 255, lo = t < 0.6;
+  const A = lo ? [20, 18, 16] : [224, 164, 58], B = lo ? [224, 164, 58] : [255, 240, 200], u = lo ? t / 0.6 : (t - 0.6) / 0.4;
+  for (let c = 0; c < 3; c++) SPECTRO_LUT[k * 3 + c] = A[c] + (B[c] - A[c]) * u;
 }
-// Scroll left by one step and paint the newest column; f0 = 0 paints silence.
-function spectroColumn(f0, binHz) {
+// History of absolute spectra, newest last (null = silence). Every frame the whole strip is redrawn against the
+// *current* fundamental (`spRef`, lightly smoothed): the newest column has its harmonics on the rows, older columns keep
+// their real frequencies and so appear shifted by how far the pitch has moved since (a glide shows up as a ramp).
+let spHist = [], spRef = 0, spRefAt = 0, spImg = null;
+const spBin = () => recCtx.sampleRate / REC_FFT;
+
+function spectroPush(f0) {   // f0 = 0 for silence
+  const W = spectro.width, step = Math.max(1, Math.round(devicePixelRatio || 1));
+  const max = Math.max(1, Math.floor(W / step));
+  let entry = null;
+  if (f0) {
+    const bin = spBin();
+    const lo = Math.max(1, Math.floor(0.5 * f0 / bin)), hi = Math.min(recSpec.length - 1, Math.ceil(13.5 * f0 / bin));
+    let ref = -Infinity;
+    for (let i = lo; i <= hi; i++) if (recSpec[i] > ref) ref = recSpec[i];
+    const reuse = spHist.length >= max ? spHist.shift() : null;
+    const spec = reuse?.spec ?? new Float32Array(recSpec.length);
+    spec.set(recSpec);
+    entry = { spec, ref, f0 };
+    // Reference fundamental: short exponential smoothing in log-frequency, snapping on jumps over 0.6 semitone.
+    const now = performance.now(), dt = Math.min(0.1, (now - spRefAt) / 1000);
+    spRefAt = now;
+    const d = 12 * Math.log2(f0 / (spRef || f0));
+    spRef = spRef && Math.abs(d) < 0.6 ? spRef * Math.pow(2, (d / 12) * (1 - Math.exp(-dt / 0.08))) : f0;
+  }
+  if (!entry) { if (spHist.length >= max) spHist.shift(); }
+  spHist.push(entry);
+  while (spHist.length > max) spHist.shift();
+}
+
+function spectroDraw() {
   const W = spectro.width, H = spectro.height;
   if (!W || !H) return;
+  if (!spImg || spImg.width !== W || spImg.height !== H) spImg = spectroCtx.createImageData(W, H);
   const step = Math.max(1, Math.round(devicePixelRatio || 1));
-  spectroCtx.drawImage(spectro, -step, 0);
-  const img = spectroCtx.createImageData(step, H);
-  const db = new Float32Array(H);
-  let ref = -Infinity;
-  if (f0) {
+  const d = spImg.data, bin = recCtx ? spBin() : 1;
+  // Per-row harmonic position h (1 = the H0 row's centre) and guide rows.
+  const hRow = new Float32Array(H), guide = new Uint8Array(H);
+  for (let y = 0; y < H; y++) {
+    const h = 1 + (y - spY0) / spPitch;
+    hRow[y] = h;
+    guide[y] = Math.abs(h - Math.round(h)) * spPitch < 0.5 ? 1 : 0;
+  }
+  const n = spHist.length;
+  for (let x = 0; x < W; x++) {
+    const j = n - 1 - Math.floor((W - 1 - x) / step);     // history index of this pixel column (newest at the right edge)
+    const e = j >= 0 && spRef ? spHist[j] : null;
+    const floor = e ? e.ref - SPECTRO_RANGE_DB : 0;
+    // Inverted translation: an older column whose pitch was r = f0/spRef times the current one is stretched by 1/r
+    // (its harmonic k is drawn at row k/r), so a descending pitch slopes down on screen (the rows run H0 at the top).
+    const c = e ? (e.f0 * e.f0) / spRef / bin : 0;
     for (let y = 0; y < H; y++) {
-      const h = 1 + (y - spY0) / spPitch;                 // harmonic number at this pixel
-      const b = (h * f0) / binHz;
-      if (h < 0.5 || b < 1 || b >= recSpec.length - 1) { db[y] = -Infinity; continue; }
-      const i = Math.floor(b), fr = b - i;
-      db[y] = recSpec[i] * (1 - fr) + recSpec[i + 1] * fr;
-      if (db[y] > ref) ref = db[y];
+      let t = 0;
+      if (e && hRow[y] >= 0.5) {
+        const b = hRow[y] * c;
+        if (b >= 1 && b < e.spec.length - 1) {
+          const i = b | 0, fr = b - i;
+          t = Math.min(1, Math.max(0, ((e.spec[i] * (1 - fr) + e.spec[i + 1] * fr) - floor) / SPECTRO_RANGE_DB));
+        }
+      }
+      if (guide[y] && t < 0.12) t = 0.12;
+      const k = ((t * 255) | 0) * 3, o = (y * W + x) * 4;
+      d[o] = SPECTRO_LUT[k]; d[o + 1] = SPECTRO_LUT[k + 1]; d[o + 2] = SPECTRO_LUT[k + 2]; d[o + 3] = 255;
     }
   }
-  const px = new Float32Array(4);
-  for (let y = 0; y < H; y++) {
-    let t = f0 ? Math.min(1, Math.max(0, (db[y] - (ref - SPECTRO_RANGE_DB)) / SPECTRO_RANGE_DB)) : 0;
-    const fr = (y - spY0) / spPitch;
-    if (Math.abs(fr - Math.round(fr)) * spPitch < 0.5) t = Math.max(t, 0.12);   // faint guide at each row's centre
-    spectroColor(t, px, 0);
-    for (let s = 0; s < step; s++) img.data.set(px, (y * step + s) * 4);
-  }
-  spectroCtx.putImageData(img, W - step, 0);
+  spectroCtx.putImageData(spImg, 0, 0);
 }
 
 function recMsg(text = '') {
@@ -823,11 +865,11 @@ function recFrame() {
   const win = recTime.subarray(recTime.length - REC_YIN_LEN);
   let sq = 0;
   for (let i = 0; i < win.length; i++) sq += win[i] * win[i];
-  if (Math.sqrt(sq / win.length) < TUNER_RMS_GATE) { spectroColumn(0); return; }      // silence: keep the current sliders
+  if (Math.sqrt(sq / win.length) < TUNER_RMS_GATE) { spectroPush(0); spectroDraw(); return; }      // silence: keep the current sliders
   const sr = recCtx.sampleRate;
   const f0 = yinPitch(win, sr);
-  if (!f0) { spectroColumn(0); return; }
   recAnalyser.getFloatFrequencyData(recSpec);
+  if (!f0) { spectroPush(0); spectroDraw(); return; }
   const bin = sr / REC_FFT, ratio = Math.pow(2, REC_WINDOW_CENTS / 1200);
   const now = performance.now();
   const dt = Math.min(0.1, (now - recLastAt) / 1000);
@@ -842,7 +884,7 @@ function recFrame() {
     for (let b = lo; b <= hi; b++) if (recSpec[b] > peak) peak = recSpec[b];
     raw.push(Math.pow(10, peak / 20));                          // dB → linear amplitude
   }
-  spectroColumn(f0, bin);
+  spectroPush(f0); spectroDraw();
   recAmps = recAmps ? recAmps.map((a, i) => a + k * (raw[i] - a)) : raw;
   const top = Math.max(...recAmps);
   if (!(top > 0)) return;
@@ -879,7 +921,7 @@ async function recStart() {
   recAmps = null; recLastAt = 0;
   harmWrap.classList.add('listening');
   spectroLayout();
-  spectroCtx.clearRect(0, 0, spectro.width, spectro.height);
+  spHist = []; spRef = 0;
   recFrame();
 }
 

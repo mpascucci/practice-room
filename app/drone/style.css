@@ -228,6 +228,8 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 }
 .bulk button:hover { color: var(--text); border-color: var(--muted); }
 .play.rec { background: var(--rec, #b8372f); }
+.play.rec:disabled { background: #3a3a3a; color: #777; box-shadow: none; cursor: not-allowed; }
+.play.rec:disabled:active { transform: none; }
 .play.rec .icon-rec { width: 70.71%; height: 70.71%; }   /* circle d = 16.97/24 like the stop square, so it is half the button's diameter */
 .play.rec[aria-pressed="true"] { background: var(--rec, #b8372f); animation: recpulse 1.4s ease-in-out infinite; }
 .play.rec[aria-pressed="true"] .icon-rec { display: none; }
@@ -336,17 +338,24 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 
 /* ---------- Narrow screens ---------- */
 @media (max-width: 520px) {
+  /* transport row: Base note, Octave, rec, play must stay on one line, so everything shrinks a little */
+  .transport { gap: 8px; flex-wrap: nowrap; }
+  .transport .field { min-width: 0; }
+  .transport select { height: 36px; padding: 0 24px 0 9px; font-size: .92rem; background-position: right 8px center; background-size: 9px; }
+  .transport .play { width: 46px; height: 46px; }
   .row { grid-template-columns: 66px 74px 1fr 30px; gap: 8px; padding: 0 8px; }
   .hz { display: none; }
   .pitch { font-size: .8rem; }
-  /* row 1: heading + instrument picker; row 2: the buttons */
-  .harmonics-head { gap: 8px 5px; }
+  /* line 1: heading; line 2: all on … reset; line 3: instrument + presets (each line wraps if it must) */
+  .harmonics-head { gap: 8px 5px; justify-content: flex-start; }
+  .harm-toggle { flex: 1 1 100%; order: 0; }
   .bulk { display: contents; }
-  .bulk select.instrument { order: 2; margin-left: auto; padding-left: 7px; }
-  .bulk select.preset { margin-left: 0; }
+  .bulk button { order: 1; }
+  .harmonics-head::after { content: ""; order: 2; flex-basis: 100%; height: 0; }
+  .bulk select.instrument { order: 3; }
+  .bulk select.instrument { padding-left: 7px; }
   .spectro { width: 44px; }
-  .harmonics-head::after { content: ""; order: 3; flex-basis: 100%; height: 0; }
-  .bulk button { order: 4; padding: 4px 8px; }
+  .bulk button { padding: 4px 8px; }
   .sweep { grid-template-columns: 1fr 1fr; }
   .sweep.swell { grid-template-columns: 1fr 1fr; }
   .swell .sweep-toggle { grid-column: 1 / -1; }
