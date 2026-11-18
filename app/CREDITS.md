@@ -1,7 +1,7 @@
 # Credits
-© Marco Pascucci, 2026. All rights reserved.
+Copyright © 2026 Marco Pascucci.
 
-This application is free software; published under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0). You may use, copy, modify, and distribute this software for non-commercial purposes only, as long as you include the required copyright notice and license terms.
+This application is free to use and its source code is available; it is published under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0). You may use, copy, modify, and distribute this software for non-commercial purposes only, as long as you include the required copyright notice and license terms.
 
 ## Ideas and motivations
 The idea of this app was inspired by years of music practice, an education in physics, my enthusiasm in software development and a passion for pedagody. It was driven by desire to cgeate a simple, yet effective app for my practice sessions, that would reunite the tools I use more often.
@@ -16,10 +16,11 @@ I created Practice Room with the help of Claude Code. Almost all the code was AI
 - All my friends and colleagues that have supported me in the development of this application, and provided feedback and suggestions.
 
 ## Contribute
-If you want, you can support my work in at least 3 ways:
-- Contribute to the project on [GitHub](https://github.com/mpascucci/practice-room)
-- [Buy me a coffee](https://buymeacoffee.com/mpascucci)
+If you want, you can support my work in at least three ways:
+
 - Share the app
+- Contribute to the project. Read the [CONTRIBUTING.md](CONTRIBUTING.md) file for more information.
+- [Buy me a coffee](https://buymeacoffee.com/mpascucci)
 
 ## Sounds and samples
 
