@@ -26,8 +26,11 @@
     <div class="transport">
       <div class="mode-toggle" role="group" aria-label="Sound type">
         <button type="button" id="modeClick" aria-pressed="true">Click</button>
-        <button type="button" id="modeInst" aria-pressed="false" aria-haspopup="dialog" title="Instrument (opens settings)">Instrument</button>
-        <button type="button" id="modePerc" aria-pressed="false" aria-haspopup="dialog" title="Percussion (opens settings)">Percussion</button>
+        <button type="button" id="modeInst" aria-pressed="false" aria-haspopup="dialog" title="Instrument (opens settings)"><span class="full">Instrument</span><span class="short">Instr.</span></button>
+        <button type="button" id="modePerc" aria-pressed="false" aria-haspopup="dialog" title="Percussion (opens settings)"><span class="full">Percussion</span><span class="short">Perc.</span></button>
+        <button type="button" id="modeMute" class="mute-btn" aria-pressed="false" aria-label="Mute: light only" title="Mute: no sound, light only">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>
+        </button>
       </div>
       <button class="play" id="play" type="button" aria-pressed="false" aria-label="Play">
       <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>

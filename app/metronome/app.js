@@ -60,7 +60,7 @@ const state = {
   denom: 3,         // note length = 1/denom of a beat
   perc: 'bass-snare', // percussion set: a folder in sounds/ (see PERC_SETS)
 };
-const MODES = ['click', 'instrument', 'percussion'];
+const MODES = ['click', 'instrument', 'percussion', 'mute'];   // 'mute': no sound, light only
 const PERC_SETS = ['machine', 'bass-snare', 'darabuka', 'tapan', 'pier'];
 const PERC_FILES = { pier: { low: 'pier_PAN.flac', high: 'pier_TA.flac' } };   // sets not using low.flac / high.flac
 const beatCount = () => state.measures[0].length;   // grid width N (longest possible measure)
@@ -270,6 +270,7 @@ function percHit(time, accent) {
 
 let brassWave = null;
 function click(time, accent, dur = (60 / effBpm()) / state.denom) {
+  if (state.mode === 'mute') return;
   if (state.mode === 'click') return sineClick(time, accent);
   if (state.mode === 'percussion') return percHit(time, accent);
   if (!brassWave) {
@@ -743,13 +744,15 @@ for (const kind of ['normal', 'accent']) {
     });
   }
 }
-const modeClick = $('modeClick'), modeInst = $('modeInst'), modePerc = $('modePerc');
+const modeClick = $('modeClick'), modeInst = $('modeInst'), modePerc = $('modePerc'), modeMute = $('modeMute');
 const percDialog = $('percDialog'), percForm = $('percForm');
 function syncMode() {
   modeClick.setAttribute('aria-pressed', state.mode === 'click');
   modeInst.setAttribute('aria-pressed', state.mode === 'instrument');
   modePerc.setAttribute('aria-pressed', state.mode === 'percussion');
+  modeMute.setAttribute('aria-pressed', state.mode === 'mute');
 }
+modeMute.addEventListener('click', () => { state.mode = 'mute'; syncMode(); save(); });
 modeClick.addEventListener('click', () => { state.mode = 'click'; syncMode(); save(); });
 // Selecting Percussion (or tapping it again) opens its dialog.
 modePerc.addEventListener('click', () => {
@@ -836,7 +839,7 @@ function storePresets() {
 // Name of the current sound, used as the default label prefix and in the list.
 const PERC_NAMES = { machine: 'Machine', 'bass-snare': 'Bass-Snare', darabuka: 'Darabuka', tapan: 'Tapan', pier: 'Pier' };
 const soundName = (p) => (p.mode === 'percussion' ? PERC_NAMES[p.perc]
-  : p.mode === 'instrument' ? (p.timbre === 'string' ? 'Pluck' : 'Sustain') : 'Click');
+  : p.mode === 'instrument' ? (p.timbre === 'string' ? 'Pluck' : 'Sustain') : p.mode === 'mute' ? 'Mute' : 'Click');
 
 // Default label: <Sound> 01, <Sound> 02, … the smallest number not used yet (e.g. Darabuka 01).
 function nextPresetName() {

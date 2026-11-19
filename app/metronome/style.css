@@ -393,6 +393,27 @@ input[type="range"] {
   .app { gap: clamp(10px, 2.5dvh, 24px); }
 }
 
+/* Very narrow: smaller Beats / pencil / Measures so they stay on one line */
+@media (max-width: 349px) {
+  .controls { gap: 8px; }
+  .controls .field:not(.tempo) .stepper { height: 36px; }
+  .controls .field:not(.tempo) .stepper button { width: 30px; font-size: 1.1rem; }
+  .controls .field:not(.tempo) .stepper input { width: 3ch; font-size: 1.05rem; }
+  .controls .field:not(.tempo) .tempo-row { gap: 6px; }
+  .controls .field:not(.tempo) .icon-btn { width: 36px; height: 36px; }
+  .controls .field:not(.tempo) .icon-btn svg { width: 17px; height: 17px; }
+  /* tempo row: multiplier, stepper, Tap */
+  .controls .field.tempo .tempo-row { gap: 6px; }
+  .controls .field.tempo .stepper { height: 36px; }
+  .controls .field.tempo .stepper button { width: 30px; font-size: 1.1rem; }
+  .controls .field.tempo .stepper input { width: 4.4ch; padding: 0; font-size: .9rem; }   /* room for 3 digits plus borders */
+  .controls .field.tempo > label { font-size: .72rem; }
+  .controls .field.tempo .mult { gap: 4px; font-size: 1rem; }
+  .controls .field.tempo .mult select { height: 36px; padding: 0 4px; font-size: .95rem; }
+  .controls .field.tempo .tap { min-width: 56px; height: 36px; padding: 0 8px; }
+  .controls .field.tempo .tap-label { font-size: .8rem; }
+}
+
 /* Embedded in the home page: the tab already names the app */
 .embedded .title { display: none; }
 
@@ -505,6 +526,16 @@ input[type="range"] {
   letter-spacing: .02em;
   cursor: pointer;
 }
+/* Narrow windows: abbreviated labels */
+.mode-toggle .short { display: none; }
+@media (max-width: 380px) {
+  .mode-toggle .full { display: none; }
+  .mode-toggle .short { display: inline; }
+}
+.mute-btn { display: grid; place-items: center; }
+.mute-btn svg { width: 18px; height: 18px; fill: currentColor; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+.mute-btn svg path:first-child { stroke-width: 1; }
+.mute-btn svg path:last-child { fill: none; }
 .mode-toggle button + button { border-left: 1px solid var(--field-border); }
 .mode-toggle button:hover { background: #ffffff0d; }
 .mode-toggle button[aria-pressed="true"] { background: #ffffff1f; color: var(--text); }
