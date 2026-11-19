@@ -19,6 +19,7 @@ const el = {
   confirmDialog: $('confirmDialog'), confirmOk: $('confirmOk'), confirmCancel: $('confirmCancel'),
   infoBtn: $('infoBtn'), infoDialog: $('infoDialog'), infoClose: $('infoClose'),
   recDialog: $('recDialog'), recTime: $('recTime'), recStop: $('recStop'),
+  normalize: $('normalize'), normDialog: $('normDialog'), normForm: $('normForm'), normCanvas: $('normCanvas'), normLimit: $('normLimit'), normInfo: $('normInfo'), normCancel: $('normCancel'), normOk: $('normOk'),
 };
 
 const state = { speed: 100, transpose: 0, transposeFine: false, loop: true, loopPause: 0 };   // loop = the A-B loop toggle; remembered even when no A-B is set
@@ -33,6 +34,8 @@ let loadToken = 0;
 let wakeLock = null;
 let peaks = null;        // Float32Array of per-bucket peak amplitudes (0..1), null until decoded
 let colors = null;
+let curFile = null;      // the File currently loaded (decoded again by Normalize)
+let rawPeak = 0;         // highest absolute sample of the loaded file (0..1), 0 until decoded
 
 const audio = new Audio();
 audio.preload = 'auto';
@@ -192,6 +195,8 @@ async function computePeaks(file, token) {
     for (const v of out) if (v > max) max = v;
     if (max > 0) for (let i = 0; i < PEAK_BUCKETS; i++) out[i] /= max;   // normalise so quiet files are readable
     peaks = out;
+    rawPeak = max;
+    renderEnabled();
     drawWave();
   } catch {
     // undecodable here (or out of memory): keep the flat line; playback may still work
@@ -711,6 +716,8 @@ function renderPlay() {
 function renderEnabled() {
   for (const b of [el.play, el.rewind, el.addMarker, el.setA, el.setB, el.seek, el.armLoop]) b.disabled = !loaded;
   if (!loaded) setArm(false);
+  el.normalize.hidden = !loaded;
+  el.normalize.disabled = !(loaded && peaks && rawPeak > 0);
   renderLoop();
 }
 
@@ -1031,6 +1038,9 @@ function openFile(file, isTake = false, restored = false) {
   startMark = null;
   loaded = false;
   peaks = null;
+  rawPeak = 0;
+  curFile = file;
+  renderEnabled();
   viewStart = 0; viewSpan = 1;
   el.zoomReset.hidden = true;
   computePeaks(file, ++loadToken);
@@ -1084,6 +1094,144 @@ for (const ev of ['dragleave', 'drop']) {
   window.addEventListener(ev, (e) => { e.preventDefault(); el.app.classList.remove('drag'); });
 }
 window.addEventListener('drop', (e) => openChecked(e.dataTransfer?.files?.[0]));
+
+// ---------- Normalize ----------
+// The dialog draws the whole track on the same scale as the main waveform (its peak fills the height) with two linked lines
+// that mark a threshold; the slider moves them. OK scales the audio so the threshold reaches the ceiling (NORM_CEIL_DB) and
+// reloads it as a WAV (markers, loop and start mark stay), so the result can be downloaded like a take. Peaks above the
+// threshold (the grayed-out part) are clipped. With the lines at the peak nothing is clipped.
+const NORM_CEIL_DB = -1;      // level the threshold is brought to: just under full scale
+const NORM_RANGE_DB = 24;     // how far below the peak the lines can go
+const NORM_CEIL = 10 ** (NORM_CEIL_DB / 20);
+const normGain = () => NORM_CEIL / 10 ** (+el.normLimit.value / 20);
+const dbText = (v) => `${v > 0 ? '+' : v < 0 ? '−' : ''}${Math.abs(v).toFixed(1)} dB`;
+
+function drawNorm() {
+  const cv = el.normCanvas;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (!w || !h || !peaks) return;
+  const dpr = window.devicePixelRatio || 1;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
+  if (!colors) {
+    const cs = getComputedStyle(document.documentElement);
+    colors = { accent: cs.getPropertyValue('--accent').trim(), dim: cs.getPropertyValue('--accent-dim').trim(), text: cs.getPropertyValue('--text').trim() };
+  }
+  const g = cv.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  const mid = h / 2;
+  // Same scale as the main waveform: the file's peak fills the height (h - 12). The lines sit at limit / peak on that
+  // scale, so they are only visible inside the display while the limit is below the peak; above it they stay on the edge.
+  const half = (h - 12) / 2;
+  const lim = Math.min(half, 10 ** (+el.normLimit.value / 20) / rawPeak * half);   // threshold, pixels from the centre
+  for (let x = 0; x < w; x++) {
+    const a = Math.floor(x / w * PEAK_BUCKETS), b = Math.max(a + 1, Math.floor((x + 1) / w * PEAK_BUCKETS));
+    let p = 0;
+    for (let k = a; k < b && k < PEAK_BUCKETS; k++) if (peaks[k] > p) p = peaks[k];
+    const bh = Math.max(1, p * half), inner = Math.min(bh, lim);
+    g.fillStyle = colors.accent;
+    g.fillRect(x, mid - inner, 1, inner * 2);
+    if (bh > lim) {   // outside the safe region: clipped
+      g.fillStyle = '#5b6663';
+      g.fillRect(x, mid - bh, 1, bh - lim);
+      g.fillRect(x, mid + lim, 1, bh - lim);
+    }
+  }
+  g.fillStyle = 'rgba(143, 160, 155, 0.35)';
+  g.fillRect(0, mid, w, 1);
+  g.strokeStyle = colors.text;
+  g.lineWidth = 1.5;
+  g.setLineDash([6, 4]);
+  g.beginPath();
+  g.moveTo(0, mid - lim); g.lineTo(w, mid - lim);
+  g.moveTo(0, mid + lim); g.lineTo(w, mid + lim);
+  g.stroke();
+  g.setLineDash([]);
+}
+function renderNorm() {
+  const db = +el.normLimit.value, peakDb = 20 * Math.log10(rawPeak), gainDb = NORM_CEIL_DB - db;
+  const clipped = db < peakDb - 0.05;
+  el.normInfo.textContent = `Limit ${dbText(db)} → ${dbText(NORM_CEIL_DB)} (gain ${dbText(gainDb)})${clipped ? ' · peaks above the lines are clipped' : ''}`;
+  el.normInfo.classList.toggle('warn', clipped);
+  fill(el.normLimit, db, +el.normLimit.min, +el.normLimit.max);
+  drawNorm();
+}
+function openNormalize() {
+  if (!loaded || !peaks || !(rawPeak > 0)) return;
+  if (playing) stop();
+  const peakDb = Math.ceil(20 * Math.log10(rawPeak) * 10) / 10;   // rounded up to the slider step, so the max is never below the peak
+  el.normLimit.min = peakDb - NORM_RANGE_DB;
+  el.normLimit.max = peakDb;
+  el.normLimit.value = peakDb;   // estimate: the lines at the peak, so nothing is clipped
+  el.normOk.disabled = false;
+  el.normDialog.showModal();
+  renderNorm();
+  el.normOk.focus();
+}
+
+function encodeWav(buf, gain, ceil) {
+  const ch = buf.numberOfChannels, n = buf.length, bytes = n * ch * 2;
+  const out = new DataView(new ArrayBuffer(44 + bytes));
+  const str = (o, s) => { for (let i = 0; i < s.length; i++) out.setUint8(o + i, s.charCodeAt(i)); };
+  str(0, 'RIFF'); out.setUint32(4, 36 + bytes, true); str(8, 'WAVE'); str(12, 'fmt ');
+  out.setUint32(16, 16, true); out.setUint16(20, 1, true); out.setUint16(22, ch, true);
+  out.setUint32(24, buf.sampleRate, true); out.setUint32(28, buf.sampleRate * ch * 2, true);
+  out.setUint16(32, ch * 2, true); out.setUint16(34, 16, true); str(36, 'data'); out.setUint32(40, bytes, true);
+  const data = Array.from({ length: ch }, (_, c) => buf.getChannelData(c));
+  let o = 44;
+  for (let i = 0; i < n; i++) {
+    for (let c = 0; c < ch; c++) {
+      const v = Math.max(-ceil, Math.min(ceil, data[c][i] * gain));
+      out.setInt16(o, v < 0 ? v * 0x8000 : v * 0x7fff, true);
+      o += 2;
+    }
+  }
+  return new Blob([out], { type: 'audio/wav' });
+}
+
+// Swap the audio for another rendering of the same track: unlike openFile, markers, loop, start mark and per-track memory stay.
+function replaceAudio(file) {
+  if (playing) stop();
+  if (url) URL.revokeObjectURL(url);
+  url = URL.createObjectURL(file);
+  curFile = file;
+  trackName = file.name.replace(/\.[^.]+$/, '');
+  el.name.textContent = trackName;
+  loaded = false;
+  peaks = null;
+  rawPeak = 0;
+  renderEnabled();
+  computePeaks(file, ++loadToken);
+  keepAudio(file, true);
+  takeUnsaved = true;
+  el.takeDownload.hidden = false;
+  el.takeDownload.href = url;
+  el.takeDownload.download = file.name;
+  audio.src = url;
+  renderSpeed();
+}
+
+async function applyNormalize() {
+  const gain = normGain(), file = curFile, token = loadToken;
+  el.normOk.disabled = true;
+  try {
+    const Ctx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const buf = await new Ctx(1, 1, 44100).decodeAudioData(await file.arrayBuffer());
+    if (token !== loadToken) return;   // another file was opened meanwhile
+    const blob = encodeWav(buf, gain, NORM_CEIL);
+    replaceAudio(new File([blob], `${trackName.replace(/-normalized$/, '')}-normalized.wav`, { type: 'audio/wav' }));
+    el.normDialog.close();
+  } catch {
+    el.normInfo.textContent = 'Could not process this file.';
+    el.normInfo.classList.add('warn');
+    el.normOk.disabled = false;
+  }
+}
+el.normalize.addEventListener('click', openNormalize);
+el.normLimit.addEventListener('input', renderNorm);
+el.normCancel.addEventListener('click', () => el.normDialog.close());
+el.normForm.addEventListener('submit', (e) => { e.preventDefault(); applyNormalize(); });
+window.addEventListener('resize', () => { if (el.normDialog.open) drawNorm(); });
 
 // ---------- Controls ----------
 function setSpeed(v) {

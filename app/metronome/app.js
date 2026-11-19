@@ -120,7 +120,9 @@ function renderBeats() {
   const mCount = state.measures.length;
   stageEl.style.setProperty('--n', n);
   stageEl.style.setProperty('--m', mCount);
-  stageEl.toggleAttribute('data-single', n === 1);   // one beat: nothing to erase, no handle
+  stageEl.toggleAttribute('data-single', n === 1);   // one beat: drawn bigger
+  // One measure: no length handle (unless it is already erased, so it can still be restored).
+  stageEl.toggleAttribute('data-nohandle', mCount === 1 && !isCustom());
 
   // Reuse existing rows/disks, add/remove the difference.
   while (measuresEl.children.length > mCount) measuresEl.lastElementChild.remove();

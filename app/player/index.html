@@ -15,6 +15,9 @@
         <button type="button" class="info-btn" id="infoBtn" aria-label="Gestures help" title="Gestures help" aria-haspopup="dialog">i</button>
       </div>
       <div class="actions">
+        <button type="button" class="btn" id="normalize" hidden disabled aria-label="Normalize" title="Normalize the volume">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 19h16M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="label">Normalize</span>
+        </button>
         <a class="btn" id="takeDownload" role="button" hidden title="Download this recording" aria-label="Download recording">
           <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10m0 0-4-4m4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="label">Download</span>
         </a>
@@ -158,7 +161,20 @@
     </form>
   </dialog>
 
-  <dialog id="confirmDialog" aria-labelledby="confirmText">
+  <dialog id="normDialog" aria-labelledby="normTitle">
+    <form id="normForm" class="rec-body" method="dialog">
+      <p class="rec-title" id="normTitle">Normalize</p>
+      <canvas id="normCanvas" aria-hidden="true"></canvas>
+      <input id="normLimit" type="range" min="-24" max="0" step="0.1" value="0" aria-label="Threshold in dB">
+      <output id="normInfo" class="norm-info"></output>
+      <div class="confirm-btns">
+        <button type="button" id="normCancel">Cancel</button>
+        <button type="submit" id="normOk" class="rec-stop">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirmDialog"aria-labelledby="confirmText">
     <div class="rec-body">
       <p class="confirm-text" id="confirmText">Your unsaved recording will be replaced. Download it first if you want to keep it.</p>
       <div class="confirm-btns">

@@ -137,9 +137,16 @@ body {
 .handle:hover { color: var(--text); }
 .handle:focus-visible { outline: 2px solid #6aa8ff; outline-offset: 2px; border-radius: 4px; }
 
-.stage[data-single] .handle { display: none; }
-.stage[data-single] .cells { padding-right: 0; }
-.stage[data-single] .beats { --d: min(150px, 100cqw,   /* a lone beat is drawn 3× bigger */ (100cqh - 2 * var(--pad-y) - (var(--m) - 1) * var(--row-gap)) / var(--m)); }
+/* One measure: no handle, so no room reserved for it */
+.stage[data-nohandle] .handle { display: none; }
+.stage[data-nohandle] .cells { padding-right: 0; }
+.stage[data-nohandle] .beats {
+  --d: min(50px, 100cqw / (var(--n) * 1.25 - 0.25),
+           (100cqh - 2 * var(--pad-y) - (var(--m) - 1) * var(--row-gap)) / var(--m));
+}
+/* A lone beat is drawn up to 3× bigger */
+.stage[data-single] .beats { --d: min(150px, 100cqw / 1.85, (100cqh - 2 * var(--pad-y) - (var(--m) - 1) * var(--row-gap)) / var(--m)); }
+.stage[data-single][data-nohandle] .beats { --d: min(150px, 100cqw, (100cqh - 2 * var(--pad-y) - (var(--m) - 1) * var(--row-gap)) / var(--m)); }
 
 /* Horizontal segment striking through the erased beats, up to the arrow tip. */
 .strike {

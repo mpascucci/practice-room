@@ -153,8 +153,8 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 [hidden] { display: none !important; }
 
 /* Recording dialog */
-#recDialog, #confirmDialog, #infoDialog, #markerDialog { border: 1px solid #e5484d; border-radius: 14px; background: var(--panel); color: var(--text); padding: 0; width: min(88vw, 320px); }
-#recDialog::backdrop, #confirmDialog::backdrop, #infoDialog::backdrop, #markerDialog::backdrop { background: rgba(0, 0, 0, .65); }
+#recDialog, #confirmDialog, #infoDialog, #markerDialog, #normDialog { border: 1px solid #e5484d; border-radius: 14px; background: var(--panel); color: var(--text); padding: 0; width: min(88vw, 320px); }
+#recDialog::backdrop, #confirmDialog::backdrop, #infoDialog::backdrop, #markerDialog::backdrop, #normDialog::backdrop { background: rgba(0, 0, 0, .65); }
 .rec-body { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 24px 20px; }
 .rec-title { margin: 0; display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
 .rec-title .dot { width: 12px; height: 12px; border-radius: 50%; background: #e5484d; animation: blink 1s steps(2, start) infinite; }
@@ -179,9 +179,18 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 .actions .ico { width: 20px; height: 20px; flex: 0 0 auto; }
 .open, .btn { gap: 8px; }
 .actions .btn { flex: 0 0 auto; }
+#normalize:disabled { opacity: .4; cursor: default; }
+
+/* Normalize dialog */
+#normDialog { border-color: var(--accent); width: min(92vw, 520px); }
+#normDialog .rec-body { align-items: stretch; }
+#normDialog .rec-title { justify-content: center; }
+#normCanvas { width: 100%; height: 130px; display: block; border-radius: 8px; background: var(--bg); touch-action: none; }
+.norm-info { margin: 0; text-align: center; font-size: .9rem; color: var(--muted); }
+.norm-info.warn { color: #e0a43a; }
 @media (max-width: 480px) {
   .actions .label { display: none; }
-  .actions .open, .actions .btn, .actions .rec { min-width: 44px; min-height: 44px; padding: 0; border-radius: 50%; }
+  .actions .open, .actions .btn, .actions .rec, .actions #normalize { min-width: 44px; min-height: 44px; padding: 0; border-radius: 50%; }
   .actions .rec[aria-pressed="true"] .label { display: inline; }   /* keep the timer visible while recording */
   .actions .rec[aria-pressed="true"] { border-radius: 22px; padding: 0 12px; }
 }
