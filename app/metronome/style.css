@@ -137,6 +137,10 @@ body {
 .handle:hover { color: var(--text); }
 .handle:focus-visible { outline: 2px solid #6aa8ff; outline-offset: 2px; border-radius: 4px; }
 
+.stage[data-single] .handle { display: none; }
+.stage[data-single] .cells { padding-right: 0; }
+.stage[data-single] .beats { --d: min(150px, 100cqw,   /* a lone beat is drawn 3× bigger */ (100cqh - 2 * var(--pad-y) - (var(--m) - 1) * var(--row-gap)) / var(--m)); }
+
 /* Horizontal segment striking through the erased beats, up to the arrow tip. */
 .strike {
   display: none;
@@ -376,6 +380,9 @@ input[type="range"] {
 @media (max-height: 480px) and (orientation: landscape) {
   .title, .legend { display: none; }
   .app { gap: 12px; }
+}
+/* ...and put the controls on one line only when it fits (about 700px of controls); narrower, they wrap */
+@media (max-height: 480px) and (orientation: landscape) and (min-width: 761px) {
   .controls { flex-wrap: nowrap; width: min(100%, 900px); align-items: flex-end; }
   .field.tempo { flex: 1 1 auto; }
 }

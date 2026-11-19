@@ -120,6 +120,7 @@ function renderBeats() {
   const mCount = state.measures.length;
   stageEl.style.setProperty('--n', n);
   stageEl.style.setProperty('--m', mCount);
+  stageEl.toggleAttribute('data-single', n === 1);   // one beat: nothing to erase, no handle
 
   // Reuse existing rows/disks, add/remove the difference.
   while (measuresEl.children.length > mCount) measuresEl.lastElementChild.remove();
@@ -148,7 +149,7 @@ function renderBeats() {
       el.dataset.measure = m;
       el.dataset.index = i;
       el.dataset.state = state.measures[m][i];
-      el.textContent = n <= 16 ? i + 1 : '';
+      el.textContent = n > 1 && n <= 16 ? i + 1 : '';
       el.setAttribute('aria-label', diskLabel(m, i));
     });
     paintRow(m);
@@ -184,15 +185,21 @@ function diskAt(m, i) {
   return measuresEl.children[m]?.firstElementChild.children[i] ?? null;
 }
 
+let offTimer = 0;
 function setLit(el) {
+  clearTimeout(offTimer);
   if (el && el === litEl) {
     // Same disk again (single beat, single measure): retrigger the flash.
     el.classList.remove('lit'); void el.offsetWidth; el.classList.add('lit');
-    return;
+  } else {
+    litEl?.classList.remove('lit');
+    litEl = el;
+    el?.classList.add('lit');
   }
-  litEl?.classList.remove('lit');
-  litEl = el;
-  el?.classList.add('lit');
+  // A lone beat is the only disk, so it would stay lit with no visible change: switch it off for the second half of the beat.
+  if (el && state.measures.length === 1 && lenOf(0) === 1) {
+    offTimer = setTimeout(() => el.classList.remove('lit'), 30000 / effBpm());
+  }
 }
 
 function syncInputs() {
