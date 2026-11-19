@@ -95,14 +95,66 @@ body {
   display: flex;
   flex-wrap: nowrap;           /* always one line */
   justify-content: center;
-  /* disk diameter: 50px max, shrinks so N disks + gaps fit on one line (cqw = this row),
-     and so all stacked measures fit the stage height (cqh = .stage) */
+  /* disk diameter: 50px max, shrinks so N disks + gaps + the length handle (0.6 d) fit on one line
+     (cqw = this row), and so all stacked measures fit the stage height (cqh = .stage) */
   --d: min(50px,
-           100cqw / (var(--n) * 1.25 - 0.25),
+           100cqw / (var(--n) * 1.25 + 0.6),
            (100cqh - 2 * var(--pad-y) - (var(--m) - 1) * var(--row-gap)) / var(--m));
   --gap: calc(var(--d) * 0.25);
-  gap: var(--gap);
 }
+.cells {
+  position: relative;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--gap);
+  padding-right: calc(var(--d) * 0.85);   /* room for the handle at full length */
+}
+
+/* Length handle: an arrow tip at the end of the row; dragged left it erases the last beats. */
+.handle {
+  position: absolute;
+  top: 0;
+  left: calc(var(--len) * (var(--d) + var(--gap)) - var(--gap) / 2);   /* tip right after the last active beat */
+  z-index: 2;
+  width: calc(var(--d) * 0.6);
+  height: var(--d);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+}
+.handle::before {            /* generous touch target */
+  content: '';
+  position: absolute;
+  left: -8px; right: -8px; top: 50%;
+  height: max(100%, 44px);
+  transform: translateY(-50%);
+}
+.handle svg { width: 100%; height: 100%; fill: currentColor; pointer-events: none; }
+.handle:hover { color: var(--text); }
+.handle:focus-visible { outline: 2px solid #6aa8ff; outline-offset: 2px; border-radius: 4px; }
+
+/* Horizontal segment striking through the erased beats, up to the arrow tip. */
+.strike {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: calc(var(--len) * (var(--d) + var(--gap)) - var(--gap) / 2 + var(--d) * 0.1);   /* starts under the arrow's vertical bar */
+  width: calc((var(--n) - var(--len)) * (var(--d) + var(--gap)) - var(--gap) / 2 - var(--d) * 0.1);
+  height: max(2px, calc(var(--d) * 0.07));
+  transform: translateY(-50%);
+  border-radius: 2px;
+  background: var(--muted);
+  pointer-events: none;
+  z-index: 1;
+}
+.cells[data-custom] .strike { display: block; }
+
+/* Erased beats: still visible under the line, but darker and inert */
+.disk[data-erased] { filter: brightness(.35); cursor: default; }
 
 .disk {
   flex: 0 0 auto;
@@ -402,6 +454,8 @@ input[type="range"] {
 .seg-opts label:has(input:checked) { background: #ffffff1f; color: var(--text); font-weight: 600; }
 .seg-opts label:has(input:focus-visible) { outline: 2px solid #6aa8ff; outline-offset: -2px; }
 
+.bar-demo { width: 100%; height: auto; max-height: 90px; }
+.help-text { margin: 0; font-size: .9rem; line-height: 1.4; color: var(--muted); }
 .seq-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 .btn {
   height: 40px;

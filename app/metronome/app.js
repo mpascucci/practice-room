@@ -51,6 +51,7 @@ const state = {
   bpm: 120,
   mult: 1,          // tempo multiplier 1–4; the effective tempo is bpm × mult
   measures: [defaultMeasure(4)],
+  lens: [4],        // active beats per measure (1..N); beats past it are "erased" but keep their state
   playing: false,
   normalMidi: 50,   // D3
   accentMidi: 38,   // D2
@@ -62,7 +63,13 @@ const state = {
 const MODES = ['click', 'instrument', 'percussion'];
 const PERC_SETS = ['machine', 'bass-snare', 'darabuka', 'tapan', 'pier'];
 const PERC_FILES = { pier: { low: 'pier_PAN.flac', high: 'pier_TA.flac' } };   // sets not using low.flac / high.flac
-const beatCount = () => state.measures[0].length;
+const beatCount = () => state.measures[0].length;   // grid width N (longest possible measure)
+const lenOf = (m) => state.lens[m] ?? beatCount();   // active beats of measure m
+const isCustom = () => state.measures.some((_, m) => lenOf(m) < beatCount());
+const normLens = (lens, count, n) => Array.from({ length: count }, (_, i) =>
+  (Number.isInteger(lens?.[i]) ? clamp(lens[i], 1, n) : n));
+// "3 × 7 beats" or, with erased beats, "2 custom bars"
+const barsLabel = (n, count, custom) => (custom ? `${count} custom bar${count > 1 ? 's' : ''}` : `${n}${count > 1 ? ` × ${count}` : ''} beats`);
 load();
 
 let ctx = null;          // AudioContext (created on first user gesture)
@@ -87,6 +94,7 @@ function load() {
     if (Number.isInteger(s.mult)) state.mult = clamp(s.mult, 1, 4);
     state.measures = s.measures.slice(0, MAX_MEASURES).map((m) =>
       Array.from({ length: n }, (_, i) => (STATES.includes(m?.[i]) ? m[i] : 'normal')));
+    state.lens = normLens(s.lens, state.measures.length, n);
     if (Number.isInteger(s.normalMidi)) state.normalMidi = clamp(s.normalMidi, MIN_MIDI, MAX_MIDI);
     if (Number.isInteger(s.accentMidi)) state.accentMidi = clamp(s.accentMidi, MIN_MIDI, MAX_MIDI);
     if (MODES.includes(s.mode)) state.mode = s.mode;
@@ -98,7 +106,7 @@ function load() {
   } catch { /* storage unavailable — use defaults */ }
 }
 function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ bpm: state.bpm, mult: state.mult, measures: state.measures, normalMidi: state.normalMidi, accentMidi: state.accentMidi, denom: state.denom, timbre: state.timbre, mode: state.mode, perc: state.perc })); } catch {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ bpm: state.bpm, mult: state.mult, measures: state.measures, lens: state.lens, normalMidi: state.normalMidi, accentMidi: state.accentMidi, denom: state.denom, timbre: state.timbre, mode: state.mode, perc: state.perc })); } catch {}
   report();
 }
 
@@ -119,30 +127,61 @@ function renderBeats() {
     const row = document.createElement('div');
     row.className = 'beats';
     row.setAttribute('role', 'group');
+    row.innerHTML = '<div class="cells"><i class="strike" aria-hidden="true"></i>'
+      + '<button type="button" class="handle"><svg viewBox="0 0 12 24" aria-hidden="true"><path d="M0 2h2.6v20H0zM12 2L2.6 12 12 22z"/></svg></button></div>';
     measuresEl.append(row);
   }
   [...measuresEl.children].forEach((row, m) => {
     row.setAttribute('aria-label', `Measure ${m + 1} (click a beat to change: silent, normal, accent)`);
-    while (row.children.length > n) row.lastElementChild.remove();
-    while (row.children.length < n) {
+    const cells = row.firstElementChild;
+    const strike = cells.querySelector('.strike');
+    let disks = [...cells.querySelectorAll('.disk')];
+    while (disks.length > n) disks.pop().remove();
+    while (disks.length < n) {
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'disk';
-      row.append(b);
+      strike.before(b);
+      disks.push(b);
     }
-    [...row.children].forEach((el, i) => {
+    disks.forEach((el, i) => {
       el.dataset.measure = m;
       el.dataset.index = i;
       el.dataset.state = state.measures[m][i];
       el.textContent = n <= 16 ? i + 1 : '';
       el.setAttribute('aria-label', diskLabel(m, i));
     });
+    paintRow(m);
   });
   if (litEl && !litEl.isConnected) litEl = null;
 }
 
+// Marks the erased beats of a measure (those past its length) and positions the strike-through.
+function paintRow(m) {
+  const cells = measuresEl.children[m]?.firstElementChild;
+  if (!cells) return;
+  const len = lenOf(m), n = beatCount();
+  cells.style.setProperty('--len', len);
+  cells.toggleAttribute('data-custom', len < n);
+  cells.querySelectorAll('.disk').forEach((el, i) => {
+    const erased = i >= len;
+    el.toggleAttribute('data-erased', erased);
+    el.disabled = erased;
+  });
+  const h = cells.querySelector('.handle');
+  h.setAttribute('aria-label', `Measure ${m + 1}: ${len} of ${n} beats. Drag left to erase beats, right to restore. Enter for help.`);
+}
+
+function setLen(m, len) {
+  len = clamp(Math.round(len), 1, beatCount());
+  if (!Number.isFinite(len) || len === lenOf(m)) return;
+  state.lens[m] = len;
+  paintRow(m);
+  save();
+}
+
 function diskAt(m, i) {
-  return measuresEl.children[m]?.children[i] ?? null;
+  return measuresEl.children[m]?.firstElementChild.children[i] ?? null;
 }
 
 function setLit(el) {
@@ -270,14 +309,14 @@ function scheduler() {
   while (nextTime < horizon) {
     // Counts may have changed since the last tick.
     if (nextMeasure >= state.measures.length) nextMeasure = 0;
-    if (nextBeat >= beatCount()) nextBeat = 0;
+    if (nextBeat >= lenOf(nextMeasure)) nextBeat = 0;
 
     const s = state.measures[nextMeasure][nextBeat];
     if (s !== 'silent') click(nextTime, s === 'accent');
     queue.push({ m: nextMeasure, i: nextBeat, t: nextTime });
 
     nextTime += 60 / effBpm();
-    if (++nextBeat >= beatCount()) {
+    if (++nextBeat >= lenOf(nextMeasure)) {
       nextBeat = 0;
       nextMeasure = (nextMeasure + 1) % state.measures.length;
     }
@@ -338,10 +377,17 @@ document.addEventListener('visibilitychange', () => {
 function setBeatCount(n) {
   n = clamp(Math.round(n), MIN_BEATS, MAX_BEATS);
   if (!Number.isFinite(n)) return;
-  for (const m of state.measures) {
-    if (n > m.length) m.push(...Array(n - m.length).fill('normal'));
-    else m.length = n;
-  }
+  state.measures.forEach((m, k) => {
+    const old = m.length;
+    if (n > old) {
+      // New beats copy the last one; they are erased too if the measure's tail is erased.
+      m.push(...Array(n - old).fill(m.at(-1)));
+      if (lenOf(k) >= old) state.lens[k] = n;
+    } else {
+      m.length = n;
+      state.lens[k] = Math.min(lenOf(k), n);
+    }
+  });
   renderBeats();
   save();
 }
@@ -349,9 +395,10 @@ function setBeatCount(n) {
 function setMeasureCount(count) {
   count = clamp(Math.round(count), MIN_MEASURES, MAX_MEASURES);
   if (!Number.isFinite(count)) return;
-  // New measures copy the pattern of the last one.
-  while (state.measures.length < count) state.measures.push([...state.measures.at(-1)]);
+  // New measures copy the pattern of the last one, at full length (its erased beats are ignored).
+  while (state.measures.length < count) { state.measures.push([...state.measures.at(-1)]); state.lens.push(beatCount()); }
   state.measures.length = count;
+  state.lens.length = count;
   renderBeats();
   save();
 }
@@ -429,6 +476,56 @@ measuresEl.addEventListener('click', (e) => {
   save();
 });
 
+// ---------- Measure length handle ----------
+// Drag the arrow at the end of a row left to erase its last beats (right to restore them);
+// a click/tap (or Enter) explains the feature.
+const barHelpDialog = $('barHelpDialog');
+barHelpDialog.addEventListener('click', (e) => { if (e.target === barHelpDialog) barHelpDialog.close(); });
+measuresEl.addEventListener('pointerdown', (e) => {
+  const h = e.target.closest('.handle');
+  if (!h) return;
+  e.preventDefault();
+  const row = h.closest('.beats');
+  const m = [...measuresEl.children].indexOf(row);
+  const startX = e.clientX;
+  const tipOffset = h.getBoundingClientRect().left - e.clientX;   // keeps the arrow under the finger
+  let moved = false;
+  h.setPointerCapture(e.pointerId);
+  const onMove = (ev) => {
+    if (!moved && Math.abs(ev.clientX - startX) < 4) return;
+    moved = true;
+    const tipX = ev.clientX + tipOffset;
+    let len = 0;   // beats whose centre is left of the arrow tip
+    for (const d of row.querySelectorAll('.disk')) {
+      const r = d.getBoundingClientRect();
+      if (r.left + r.width / 2 < tipX) len++;
+    }
+    setLen(m, Math.max(1, len));
+  };
+  const onEnd = (ev) => {
+    h.removeEventListener('pointermove', onMove);
+    h.removeEventListener('pointerup', onEnd);
+    h.removeEventListener('pointercancel', onEnd);
+    if (!moved && ev.type === 'pointerup') barHelpDialog.showModal();
+  };
+  h.addEventListener('pointermove', onMove);
+  h.addEventListener('pointerup', onEnd);
+  h.addEventListener('pointercancel', onEnd);
+});
+measuresEl.addEventListener('click', (e) => {
+  if (e.detail === 0 && e.target.closest('.handle')) barHelpDialog.showModal();   // keyboard activation
+});
+measuresEl.addEventListener('keydown', (e) => {
+  const h = e.target.closest?.('.handle');
+  if (!h || (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight')) return;
+  e.preventDefault();
+  e.stopPropagation();   // not the global tempo shortcut
+  const m = [...measuresEl.children].indexOf(h.closest('.beats'));
+  setLen(m, lenOf(m) + (e.key === 'ArrowRight' ? 1 : -1));
+  measuresEl.children[m]?.querySelector('.handle')?.focus();
+});
+$('barHelpClose').addEventListener('click', () => barHelpDialog.close());
+
 // Number inputs: apply while typing if valid; normalize on commit.
 function bindNumber(input, min, max, setter) {
   input.addEventListener('input', () => {
@@ -472,7 +569,7 @@ document.querySelectorAll('[data-step]').forEach((btn) => {
 
 // Keyboard: Space = play/stop, T = tap, ←/→ = tempo ∓1 (Shift: ∓10), ↑/↓ = beats.
 document.addEventListener('keydown', (e) => {
-  if (seqDialog.open || settingsDialog.open || presetsDialog.open) return;          // dialog handles its own keys
+  if (seqDialog.open || settingsDialog.open || presetsDialog.open || barHelpDialog.open) return;         // dialog handles its own keys
   if (e.target instanceof HTMLInputElement && e.target.type !== 'range') return;
   if (e.target instanceof HTMLInputElement && e.key !== ' ' && e.key.toLowerCase() !== 't') return;
   const big = e.shiftKey ? 10 : 1;
@@ -496,7 +593,7 @@ if (EMBEDDED) document.documentElement.classList.add('embedded');
 
 function report() {
   if (!EMBEDDED) return;
-  parent.postMessage({ type: 'status', app: 'metronome', playing: state.playing, info: `${effBpm()} BPM · ${beatCount()}${state.measures.length > 1 ? ` × ${state.measures.length}` : ''} beats` }, '*');
+  parent.postMessage({ type: 'status', app: 'metronome', playing: state.playing, info: `${effBpm()} BPM · ${barsLabel(beatCount(), state.measures.length, isCustom())}` }, '*');
 }
 
 // If the browser refused to start audio (autoplay policy), tell the home page.
@@ -594,6 +691,7 @@ seqForm.addEventListener('submit', (e) => {
   let at = 0;
   for (const n of beats) { measure[at] = seqKind('down'); at += n; }
   state.measures = [measure];
+  state.lens = [sum];
   renderBeats();
   syncInputs();
   save();
@@ -710,6 +808,7 @@ function loadPresets() {
         measures: p.measures.slice(0, MAX_MEASURES).map((m) =>
           Array.from({ length: n }, (_, i) => (STATES.includes(m?.[i]) ? m[i] : 'normal'))),
       };
+      q.lens = normLens(p.lens, q.measures.length, n);
       if (MODES.includes(p.mode) && PERC_SETS.includes(p.perc) && TIMBRES.includes(p.timbre)
           && [p.normalMidi, p.accentMidi, p.denom].every(Number.isInteger)) {
         Object.assign(q, {
@@ -744,8 +843,9 @@ function nextPresetName() {
 // "120 BPM · 4 beats · Darabuka" / "90 × 2 BPM · 7 × 3 beats"
 function presetSummary(p) {
   const tempo = p.mult === 1 ? `${p.bpm}` : `${p.bpm} × ${p.mult}`;
-  const meas = p.measures.length > 1 ? ` × ${p.measures.length}` : '';
-  return `${tempo} BPM · ${p.measures[0].length}${meas} beats${p.mode ? ` · ${soundName(p)}` : ''}`;
+  const n = p.measures[0].length;
+  const custom = p.lens.some((l) => l < n);
+  return `${tempo} BPM · ${barsLabel(n, p.measures.length, custom)}${p.mode ? ` · ${soundName(p)}` : ''}`;
 }
 
 // Small row of disks showing the beat states of the first measure.
@@ -753,7 +853,7 @@ function presetDots(p) {
   const wrap = document.createElement('span');
   wrap.className = 'preset-dots';
   wrap.setAttribute('aria-hidden', 'true');
-  for (const st of p.measures[0]) {
+  for (const st of p.measures[0].slice(0, p.lens[0])) {
     const d = document.createElement('i');
     d.className = `dot ${st}`;
     wrap.append(d);
@@ -794,7 +894,7 @@ function renderPresets() {
 function savePreset() {
   const name = presetName.value.trim().slice(0, MAX_LABEL) || nextPresetName();
   const p = {
-    name, bpm: state.bpm, mult: state.mult, measures: state.measures.map((m) => [...m]),
+    name, bpm: state.bpm, mult: state.mult, measures: state.measures.map((m) => [...m]), lens: [...state.lens],
     mode: state.mode, perc: state.perc, timbre: state.timbre,
     normalMidi: state.normalMidi, accentMidi: state.accentMidi, denom: state.denom,
   };
@@ -810,6 +910,7 @@ function applyPreset(p) {
   state.bpm = p.bpm;
   state.mult = p.mult;
   state.measures = p.measures.map((m) => [...m]);
+  state.lens = [...p.lens];
   if (p.mode) {
     Object.assign(state, { mode: p.mode, perc: p.perc, timbre: p.timbre, normalMidi: p.normalMidi, accentMidi: p.accentMidi, denom: p.denom });
     syncMode();

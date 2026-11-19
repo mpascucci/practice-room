@@ -195,6 +195,26 @@
     </form>
   </dialog>
 
+  <dialog class="seq-dialog" id="barHelpDialog" aria-labelledby="barHelpLabel">
+    <form method="dialog">
+      <p id="barHelpLabel" class="dlg-title">Bars of different lengths</p>
+      <svg class="bar-demo" viewBox="0 0 260 60" role="img" aria-label="A measure of five beats whose last two beats are erased by a line ending in an arrow pointing left">
+        <circle cx="20" cy="30" r="15" fill="var(--accent)"/>
+        <circle cx="64" cy="30" r="15" fill="var(--normal)"/>
+        <circle cx="108" cy="30" r="15" fill="var(--normal)"/>
+        <circle cx="152" cy="30" r="15" fill="#2b5fa8" opacity=".35"/>
+        <circle cx="196" cy="30" r="15" fill="#a66a00" opacity=".35"/>
+        <line x1="132" y1="30" x2="211" y2="30" stroke="var(--muted)" stroke-width="3" stroke-linecap="round"/>
+        <path d="M126 14h3.5v32H126zM142 14l-12.5 16L142 46z" fill="var(--muted)"/>
+      </svg>
+      <p class="help-text">Each bar can have its own number of beats. Drag the arrow at the right end of a bar to the left to erase its last beats: the arrow moves and leaves a line behind; the beats under it stay visible but darkened, and are not played. Drag the arrow back to the right to bring them back, just as they were.</p>
+      <p class="help-text">New bars always start with all their beats.</p>
+      <div class="seq-actions">
+        <button type="button" class="btn primary" id="barHelpClose">Got it</button>
+      </div>
+    </form>
+  </dialog>
+
   <script src="app.js" defer></script>
 </body>
 </html>
