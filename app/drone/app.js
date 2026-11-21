@@ -42,7 +42,7 @@ function sweepSignal(i, u) {
 const COMMA_CENTS = 1200 / 53;   // Turkish/Ottoman koma: 1/53 octave (about 22.64 ¢), 9 commas = one whole tone
 const REF_A_MIN = 400, REF_A_MAX = 480;
 const TEMPERAMENTS = [
-  { id: 'equal', name: 'Equal temperament', cents: [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100] },
+  { id: 'equal', name: 'Equal', cents: [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100] },
   { id: 'just', name: 'Just intonation (5-limit)', ref: 0, cents: [0, 111.73, 203.91, 315.64, 386.31, 498.04, 590.22, 701.96, 813.69, 884.36, 1017.6, 1088.27] },
   { id: 'pythagorean', name: 'Pythagorean', ref: 0, cents: [0, 113.69, 203.91, 294.13, 407.82, 498.04, 611.73, 701.96, 815.64, 905.87, 996.09, 1109.78] },
   { id: 'meantone', name: 'Quarter-comma meantone', ref: 0, cents: [0, 76.05, 193.16, 310.26, 386.31, 503.42, 579.47, 696.58, 772.63, 889.74, 1006.84, 1082.89] },
@@ -983,7 +983,7 @@ tunerToggle.addEventListener('click', () => setTunerOpen(tunerToggle.getAttribut
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') tunerStop(); });
 
 const refASel = $('refA'), temperSel = $('temper');
-temperSel.innerHTML = TEMPERAMENTS.map((t) => `<option value="${t.id}">${t.name}</option>`).join('');
+temperSel.innerHTML = TEMPERAMENTS.map((t) => `<option value="${t.id}">${t.name}${t.id === 'equal' ? ' (default)' : ''}</option>`).join('');
 temperSel.value = state.temper;
 refASel.value = state.refA;
 // Temperament tag left of the base note: shown while the tuner is open or the drone is not in equal temperament,
