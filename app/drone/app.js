@@ -148,7 +148,7 @@ const defaults = () => ({
   mod: { on: false, rate: 0.2, depth: 70, from: 2 },
   swell: { on: false, rate: 0.1, depth: 70 },
   harmonics: Array.from({ length: HARMONICS }, (_, i) => ({
-    on: i < 4,
+    on: i < 3,   // default and Reset: H1–H3 only
     vol: Math.round(100 / Math.pow(i + 1, 0.8)),   // gently falling spectrum
   })),
 });
@@ -539,6 +539,8 @@ function buildSelectors() {
 }
 
 const rowEls = [];
+const histBars = Array.from({ length: HARMONICS }, () => document.createElement('i'));
+$('harmHist').append(...histBars);
 function buildRows() {
   const tpl = $('rowTpl');
   for (let i = 0; i < HARMONICS; i++) {
@@ -589,6 +591,9 @@ function renderRow(i) {
   if (el.vol.valueAsNumber !== h.vol) el.vol.value = h.vol;
   el.pct.textContent = h.vol;
   el.li.classList.toggle('off', !h.on);
+  const hb = histBars[i];   // folded-panel histogram: bar height = slider position, off = dim
+  hb.style.height = `${h.on ? Math.max(8, h.vol) : 8}%`;
+  hb.classList.toggle('on', h.on);
   const m = modFactor(i);
   const level = playing && h.on ? (0.25 + 0.75 * h.vol / 100) * m : 0;
   el.li.style.setProperty('--level', level.toFixed(3));
@@ -757,7 +762,8 @@ function setHarmonicsOpen(open, remember = true) {
   if (remember) { try { localStorage.setItem(HARM_OPEN_KEY, open ? '1' : '0'); } catch {} }
 }
 harmToggle.addEventListener('click', () => setHarmonicsOpen(harmToggle.getAttribute('aria-expanded') !== 'true'));
-try { if (localStorage.getItem(HARM_OPEN_KEY) === '0') setHarmonicsOpen(false, false); } catch {}
+$('harmHist').addEventListener('click', () => setHarmonicsOpen(true));   // the folded panel's histogram opens it (keyboard users have the chevron button)
+try { if (localStorage.getItem(HARM_OPEN_KEY) !== '1') setHarmonicsOpen(false, false); } catch { setHarmonicsOpen(false, false); }
 
 // ---------- Tuner ----------
 // Microphone → AnalyserNode (not routed to the output, so no feedback) → YIN pitch detection →

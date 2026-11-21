@@ -399,7 +399,6 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid var(--a
 .harmonics.collapsed .bulk, .harmonics.collapsed .rows { display: none !important; }
 .harmonics.collapsed .harmonics-head { padding-bottom: 0; }
 .harmonics.collapsed .harmonics-head::after { display: none; }
-.harmonics.collapsed { flex: 0 0 auto; }
 
 /* ---------- Tuner: a curtain pulled down from the top edge ---------- */
 .tuner { display: flex; flex-direction: column; align-items: center; margin-bottom: -6px; }
@@ -554,3 +553,10 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid var(--a
 .preset-del:hover { color: var(--text); background: #2a2620; }
 .preset-del svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .preset-empty { margin: 0; color: var(--muted); font-size: .9rem; }
+
+/* Collapsed harmonics: a small histogram (one bar per harmonic) replaces the controls */
+.harm-hist { cursor: pointer; display: none; flex: 1 1 auto; max-width: 240px; height: 20px; margin-left: auto; align-items: flex-end; gap: 3px; }
+.harm-hist i { flex: 1 1 0; background: var(--line); border-radius: 1px; }
+.harm-hist i.on { background: var(--amber); }
+.harmonics.collapsed .harm-hist { display: flex; }
+.harmonics.collapsed .harm-toggle { flex: 0 0 auto; }
