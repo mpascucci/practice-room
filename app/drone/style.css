@@ -57,6 +57,10 @@ body {
 }
 .temper-tag { display: flex; align-items: center; height: 40px; max-width: 34%; font-size: .78rem; line-height: 1.15; color: var(--amber); text-align: right; }
 .temper-tag[hidden] { display: none; }
+.temper-clear { flex: none; display: grid; place-items: center; width: 26px; height: 26px; margin-left: 6px; padding: 0; border: 1px solid var(--amber-dim); border-radius: 50%; background: none; color: var(--amber); cursor: pointer; }
+.temper-clear:hover { background: color-mix(in srgb, var(--amber) 15%, transparent); }
+.temper-clear[hidden] { display: none; }
+.temper-clear svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 
 .field { display: flex; flex-direction: column; gap: 5px; }
 

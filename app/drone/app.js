@@ -117,10 +117,10 @@ function temperScale(temp) {
   return temp.cents;
 }
 const tunerOpen = () => !$('tuner').classList.contains('collapsed');
-// While the tuner is open the drone's base note follows the tuner's temperament: cents by which the tempered note differs
-// from its equal-tempered pitch (0 for equal temperament or a closed tuner). The harmonics stay the natural multiples.
+// The drone's base note follows the tuner's temperament (also once the tuner is folded, until the X of the temperament
+// tag restores equal temperament): cents by which the tempered note differs from its equal-tempered pitch (0 for equal
+// temperament). The harmonics stay the natural multiples.
 function temperDelta() {
-  if (!tunerOpen()) return 0;
   const temp = TEMPERAMENTS.find((t) => t.id === state.temper);
   if (temp.id === 'equal') return 0;
   const et = (((state.note - anchorOf(temp)) % 12) + 12) % 12 * 100;
@@ -633,12 +633,12 @@ function renderSwell() {
 // Turkish system: solfège name of pitch class pc counted from the Rast note `a`, which is always SOL (as when playing
 // in another ahenk), followed by the sounding western letter, e.g. "SOL - C4" when Rast is on C.
 const trSolfege = (pc, a, oct = '') => `${SOLFEGE[(pc - a + 19) % 12]} - ${LETTERS[pc]}${oct}`;   // +7 (SOL) +12
-// Name of each drone note ("DO - C"). With the tuner open on the Turkish system the solfège is relative to Rast (see
+// Name of each drone note ("DO - C"). On the Turkish system the solfège is relative to Rast (see
 // trSolfege), and a note tuned to a named makam degree (the grid note temperDelta tunes it to) gets that name first,
 // e.g. "Rast (SOL - C)".
 function droneNames(oct = '') {
   const temp = TEMPERAMENTS.find((t) => t.id === state.temper);
-  if (!tunerOpen() || temp.sys !== 'turkish') return LETTERS.map((l, i) => `${SOLFEGE[i]} - ${l}${oct}`);
+  if (temp.sys !== 'turkish') return LETTERS.map((l, i) => `${SOLFEGE[i]} - ${l}${oct}`);
   const sys = SYSTEMS[temp.sys], scale = temperScale(temp), a = anchorOf(temp);
   return LETTERS.map((_, i) => {
     const p = trSolfege(i, a, oct);
@@ -978,13 +978,19 @@ const refASel = $('refA'), temperSel = $('temper');
 temperSel.innerHTML = TEMPERAMENTS.map((t) => `<option value="${t.id}">${t.name}</option>`).join('');
 temperSel.value = state.temper;
 refASel.value = state.refA;
-const temperTag = $('temperTag');
-function retune() {   // the drone's base note depends on the temperament while the tuner is open
-  const open = tunerOpen();
-  temperTag.hidden = !open;
-  temperTag.textContent = TEMPERAMENTS.find((t) => t.id === state.temper).name;
+// Temperament tag left of the base note: shown while the tuner is open or the drone is not in equal temperament,
+// with an X (after the name) that restores equal temperament.
+const temperTag = $('temperTag'), temperName = $('temperName'), temperClear = $('temperClear');
+function retune() {   // the drone's base note depends on the temperament
+  const equal = state.temper === 'equal';
+  temperTag.hidden = equal && !tunerOpen();
+  temperClear.hidden = equal;
+  temperName.textContent = TEMPERAMENTS.find((t) => t.id === state.temper).name;
   renderPitch(); applyPitch();
 }
+temperClear.addEventListener('click', () => {
+  state.temper = 'equal'; temperSel.value = 'equal'; capStop(); retune(); save();
+});
 // Reference note selector (hidden for equal temperament), with an (i) dialog explaining it for the current temperament.
 const refRow = $('refRow'), refSel = $('refSel'), refDialog = $('refDialog');
 const NOTE_OPTIONS = SOLFEGE.map((s, i) => `<option value="${i}">${s} - ${LETTERS[i]}</option>`).join('');
