@@ -460,6 +460,14 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
   background: var(--row); color: var(--text); font: 600 .95rem system-ui, sans-serif; text-align: center;
 }
 .tuner-opts input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.label-row { display: flex; align-items: center; gap: 6px; }
+.info-btn {
+  width: 16px; height: 16px; padding: 0; border-radius: 50%; border: 1px solid var(--muted);
+  background: none; color: var(--muted); font: italic 600 .66rem/1 Georgia, serif; cursor: pointer;
+  position: relative;
+}
+.info-btn::after { content: ''; position: absolute; inset: -12px; }   /* larger touch target */
+.info-btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 
 /* ---------- Presets dialog (same layout as the metronome's) ---------- */
 .pdlg {
@@ -471,6 +479,29 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 .pdlg::backdrop { background: #000a; }
 .pdlg form { display: flex; flex-direction: column; gap: 10px; padding: 18px; height: min(460px, calc(100dvh - 32px)); }
 .pdlg .dlg-title { margin: 0; font-weight: 600; font-size: 1.05rem; }
+.info-dlg form { height: auto; }
+/* Reference capture: the label replaces the selector (same box), the rec button sits at its right. */
+.ref-cap {
+  display: flex; align-items: center; height: 36px; margin: 0; padding: 0 12px; border-radius: 9px;
+  border: 1px solid var(--line); background: var(--row); color: #ffd95e;
+  font: 600 .92rem system-ui, sans-serif; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.ref-cap.done { color: #a8d2ff; border-color: #233e6a; }
+.ref-cap[hidden], .tuner-opts select[hidden] { display: none; }
+.ref-rec {
+  flex: 0 0 auto; width: 36px; height: 36px; padding: 0; border: 1px solid transparent; border-radius: 50%;
+  display: grid; place-items: center; background: var(--rec, #b8372f); color: #fff; cursor: pointer;
+}
+.ref-rec svg { width: 18px; height: 18px; fill: currentColor; }
+.ref-rec .i-trash { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.ref-rec .i-stop, .ref-rec .i-trash, .ref-rec[data-state="listening"] .i-rec, .ref-rec[data-state="captured"] .i-rec { display: none; }
+.ref-rec[data-state="listening"] .i-stop, .ref-rec[data-state="captured"] .i-trash { display: block; }
+.ref-rec[data-state="listening"] { animation: recpulse 1.4s ease-in-out infinite; }
+.ref-rec[data-state="captured"] { background: var(--row); border-color: var(--line); color: var(--muted); }
+.ref-rec[data-state="captured"]:hover { color: var(--text); border-color: var(--muted); }
+.ref-rec:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .ref-rec[data-state="listening"] { animation: none; } }
+.info-text { margin: 0; line-height: 1.45; color: var(--text); }
 .pdlg .dlg-title small { color: var(--muted); font-weight: 400; font-size: .8rem; margin-left: .4em; }
 .preset-save { display: flex; gap: 8px; }
 .preset-save input {
