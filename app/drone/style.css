@@ -489,7 +489,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 .ref-cap.done { color: #a8d2ff; border-color: #233e6a; }
 .ref-cap[hidden], .tuner-opts select[hidden] { display: none; }
 .ref-rec {
-  flex: 0 0 auto; width: 36px; height: 36px; padding: 0; border: 1px solid transparent; border-radius: 50%;
+  flex: 0 0 auto; width: 72px; height: 36px; padding: 0; border: 1px solid transparent; border-radius: 9px;   /* same height and corners as the select */
   display: grid; place-items: center; background: var(--rec, #b8372f); color: #fff; cursor: pointer;
 }
 .ref-rec svg { width: 18px; height: 18px; fill: currentColor; }
@@ -497,8 +497,8 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 .ref-rec .i-stop, .ref-rec .i-trash, .ref-rec[data-state="listening"] .i-rec, .ref-rec[data-state="captured"] .i-rec { display: none; }
 .ref-rec[data-state="listening"] .i-stop, .ref-rec[data-state="captured"] .i-trash { display: block; }
 .ref-rec[data-state="listening"] { animation: recpulse 1.4s ease-in-out infinite; }
-.ref-rec[data-state="captured"] { background: var(--row); border-color: var(--line); color: var(--muted); }
-.ref-rec[data-state="captured"]:hover { color: var(--text); border-color: var(--muted); }
+.ref-rec[data-state="captured"] { background: var(--row); border-color: var(--line); color: var(--text); }   /* same look as the selects */
+.ref-rec[data-state="captured"]:hover { border-color: var(--muted); }
 .ref-rec:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .ref-rec[data-state="listening"] { animation: none; } }
 .info-text { margin: 0; line-height: 1.45; color: var(--text); }
