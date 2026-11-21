@@ -155,9 +155,17 @@ function idb(mode, fn) {
 }
 // Replaces the stored audio with this file; a file over the limit just empties the slot, so the next launch does not
 // reopen an older file instead. Quota errors or private mode: silently not kept.
-const keepAudio = (file, isTake) => idb('readwrite', (st) => (file.size > MAX_KEEP_BYTES
-  ? st.delete(IDB_SLOT)
-  : st.put({ blob: file, name: file.name, type: file.type, isTake }, IDB_SLOT))).catch(() => {});
+// `saving` counts writes in progress: the shell does not auto-update (reload) during one, so a take is never lost.
+let saving = 0;
+const keepAudio = (file, isTake) => {
+  saving++;
+  report();
+  return idb('readwrite', (st) => (file.size > MAX_KEEP_BYTES
+    ? st.delete(IDB_SLOT)
+    : st.put({ blob: file, name: file.name, type: file.type, isTake }, IDB_SLOT)))
+    .catch(() => {})
+    .finally(() => { saving--; report(); });
+};
 const recallAudio = () => idb('readonly', (st) => st.get(IDB_SLOT)).catch(() => null);
 
 // ---------- Helpers ----------
@@ -1561,7 +1569,7 @@ if (EMBEDDED) document.documentElement.classList.add('embedded');
 function report() {
   if (!EMBEDDED) return;
   const info = loaded || trackName ? `${trackName}${state.speed !== 100 ? ` · ${state.speed}%` : ''}${state.transpose ? ` · ${state.transpose > 0 ? '+' : '−'}${Math.abs(state.transpose)} st` : ''}` : 'No file';
-  parent.postMessage({ type: 'status', app: 'player', playing, info: recording ? `● rec · ${info}` : info }, '*');
+  parent.postMessage({ type: 'status', app: 'player', playing, busy: playing || recording || !!recStream || saving > 0, info: recording ? `● rec · ${info}` : info }, '*');
 }
 function blocked() {
   if (EMBEDDED) parent.postMessage({ type: 'blocked', app: 'player' }, '*');

@@ -105,12 +105,14 @@ window.addEventListener('resize', closePop);
 
 // ---------- Status from the apps ----------
 const warnTimers = {};
+const busy = {};   // app -> playing or recording (from its status messages); blocks the auto update
 window.addEventListener('message', (e) => {
   const d = e.data;
   if (!d || !APPS.includes(d.app) || e.source !== pane(d.app).contentWindow) return;
   const s = slot(d.app);
   const info = s.querySelector('[data-info]');
   if (d.type === 'status') {
+    busy[d.app] = d.busy ?? d.playing;
     s.classList.toggle('playing', d.playing);
     const btn = s.querySelector('.play');
     btn.setAttribute('aria-pressed', d.playing);
@@ -276,6 +278,32 @@ installBtn.addEventListener('click', async () => {
 
 // ---------- PWA: offline support ----------
 // Service workers need http(s); skip when opened as a local file.
+// Auto update: a new sw.js installs and takes over by itself (skipWaiting + clients.claim), but the
+// open page keeps running the old code, and an installed app on a phone is usually resumed, not
+// relaunched. So check for a new version whenever the app comes back to the screen (and every
+// 30 min), and once one has taken over, reload — only while nothing plays or records, and only
+// when the app is hidden or just coming back, so it never cuts off practice or jumps under a tap.
 if ('serviceWorker' in navigator && location.protocol !== 'file:') {
-  navigator.serviceWorker.register('sw.js').catch((err) => console.warn('Service worker registration failed:', err));
+  const UPDATE_CHECK_MS = 30 * 60 * 1000;
+  const hadController = !!navigator.serviceWorker.controller;   // false on first install: not an update
+  let updateReady = false;
+  const idle = () => !APPS.some((a) => busy[a]);
+  const reloadIfReady = () => { if (updateReady && idle()) location.reload(); };
+
+  navigator.serviceWorker.register('sw.js').then((reg) => {
+    const check = () => reg.update().catch(() => {});   // offline: try again later
+    setInterval(() => { if (document.visibilityState === 'visible') check(); }, UPDATE_CHECK_MS);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') { reloadIfReady(); check(); }
+    });
+  }).catch((err) => console.warn('Service worker registration failed:', err));
+
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController || updateReady) return;
+    updateReady = true;
+    if (document.visibilityState === 'hidden') reloadIfReady();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') reloadIfReady();
+  });
 }
