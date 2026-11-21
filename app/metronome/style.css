@@ -50,8 +50,6 @@ body {
   margin: 0;
   font-size: clamp(1rem, 4dvh, 1.5rem);
   font-weight: 600;
-  letter-spacing: .08em;
-  text-transform: uppercase;
   color: var(--muted);
 }
 
@@ -95,9 +93,9 @@ body {
   display: flex;
   flex-wrap: nowrap;           /* always one line */
   justify-content: center;
-  /* disk diameter: 50px max, shrinks so N disks + gaps + the length handle (0.6 d) fit on one line
+  /* disk diameter: 88px max, shrinks so N disks + gaps + the length handle (0.6 d) fit on one line
      (cqw = this row), and so all stacked measures fit the stage height (cqh = .stage) */
-  --d: min(50px,
+  --d: min(88px,
            100cqw / (var(--n) * 1.25 + 0.6),
            (100cqh - 2 * var(--pad-y) - (var(--m) - 1) * var(--row-gap)) / var(--m));
   --gap: calc(var(--d) * 0.25);
@@ -141,10 +139,10 @@ body {
 .stage[data-nohandle] .handle { display: none; }
 .stage[data-nohandle] .cells { padding-right: 0; }
 .stage[data-nohandle] .beats {
-  --d: min(50px, 100cqw / (var(--n) * 1.25 - 0.25),
+  --d: min(88px, 100cqw / (var(--n) * 1.25 - 0.25),
            (100cqh - 2 * var(--pad-y) - (var(--m) - 1) * var(--row-gap)) / var(--m));
 }
-/* A lone beat is drawn up to 3× bigger */
+/* A lone beat is drawn bigger (up to 150px) */
 .stage[data-single] .beats { --d: min(150px, 100cqw / 1.85, (100cqh - 2 * var(--pad-y) - (var(--m) - 1) * var(--row-gap)) / var(--m)); }
 .stage[data-single][data-nohandle] .beats { --d: min(150px, 100cqw, (100cqh - 2 * var(--pad-y) - (var(--m) - 1) * var(--row-gap)) / var(--m)); }
 
@@ -267,9 +265,8 @@ body {
 .field.tempo { flex: 1 1 240px; }
 
 label {
-  font-size: .8rem;
-  letter-spacing: .06em;
-  text-transform: uppercase;
+  font-size: .85rem;
+  font-weight: 600;
   color: var(--muted);
 }
 .unit { opacity: .7; }
@@ -373,7 +370,7 @@ label {
 }
 .tap.hit { background: var(--normal); transition: none; }
 .tap:focus-visible { outline: 3px solid #6aa8ff; outline-offset: 2px; }
-.tap-label { font-weight: 600; letter-spacing: .08em; text-transform: uppercase; font-size: .85rem; }
+.tap-label { font-weight: 600; font-size: .95rem; }
 .tap-info { font-size: .65rem; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 1em; }
 .tap-info:empty { display: none; }
 

@@ -2,6 +2,15 @@
 
 const SOLFEGE = ['DO', 'DO♯', 'RE', 'RE♯', 'MI', 'FA', 'FA♯', 'SOL', 'SOL♯', 'LA', 'SI♭', 'SI'];
 const LETTERS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B'];
+// Note-name notation, app-wide (set in the tuner, also used by the metronome): 'both' ("DO - C4"), 'solfege' ("DO4")
+// or 'letters' ("C4"). Stored under its own key, shared by all panes; a change in one pane reaches the others as a
+// `storage` event.
+const NOTATION_KEY = 'practice-room:notation';
+const NOTATIONS = ['both', 'solfege', 'letters'];
+const readNotation = () => { try { const v = localStorage.getItem(NOTATION_KEY); return NOTATIONS.includes(v) ? v : 'both'; } catch { return 'both'; } };
+let notation = readNotation();
+const noteName = (sol, letter, oct = '') => (notation === 'solfege' ? `${sol}${oct}`
+  : notation === 'letters' ? `${letter}${oct}` : `${sol} - ${letter}${oct}`);
 const HARMONICS = 13;
 const STORAGE_KEY = 'shrutibox:v1';
 const ATTACK = 0.6, RELEASE = 0.9, GLIDE = 0.08; // seconds
@@ -230,7 +239,7 @@ function harmonicPitch(k) {
   const nearest = Math.round(exact);
   const cents = Math.round((exact - nearest) * 100);
   const pc = ((nearest % 12) + 12) % 12;
-  return { name: `${SOLFEGE[pc]} · ${LETTERS[pc]}`, cents };
+  return { name: noteName(SOLFEGE[pc], LETTERS[pc]), cents };
 }
 
 // Perceptual slider → gain.
@@ -527,7 +536,7 @@ document.addEventListener('visibilitychange', () => {
 // ---------- UI ----------
 function buildSelectors() {
   for (let h = MOD_FROM_MIN; h <= MOD_FROM_MAX; h++) modFrom.add(new Option(`H${h}`, h));
-  noteSel.innerHTML = SOLFEGE.map((s, i) => `<option value="${i}">${s} - ${LETTERS[i]}</option>`).join('');
+  noteSel.innerHTML = SOLFEGE.map((s, i) => `<option value="${i}">${noteName(s, LETTERS[i])}</option>`).join('');
 }
 
 const rowEls = [];
@@ -632,13 +641,13 @@ function renderSwell() {
 
 // Turkish system: solfège name of pitch class pc counted from the Rast note `a`, which is always SOL (as when playing
 // in another ahenk), followed by the sounding western letter, e.g. "SOL - C4" when Rast is on C.
-const trSolfege = (pc, a, oct = '') => `${SOLFEGE[(pc - a + 19) % 12]} - ${LETTERS[pc]}${oct}`;   // +7 (SOL) +12
+const trSolfege = (pc, a, oct = '') => noteName(SOLFEGE[(pc - a + 19) % 12], LETTERS[pc], oct);   // +7 (SOL) +12
 // Name of each drone note ("DO - C"). On the Turkish system the solfège is relative to Rast (see
 // trSolfege), and a note tuned to a named makam degree (the grid note temperDelta tunes it to) gets that name first,
 // e.g. "Rast (SOL - C)".
 function droneNames(oct = '') {
   const temp = TEMPERAMENTS.find((t) => t.id === state.temper);
-  if (temp.sys !== 'turkish') return LETTERS.map((l, i) => `${SOLFEGE[i]} - ${l}${oct}`);
+  if (temp.sys !== 'turkish') return LETTERS.map((l, i) => noteName(SOLFEGE[i], l, oct));
   const sys = SYSTEMS[temp.sys], scale = temperScale(temp), a = anchorOf(temp);
   return LETTERS.map((_, i) => {
     const p = trSolfege(i, a, oct);
@@ -842,7 +851,7 @@ function tunerReadout(f) {
     // The note is named from its absolute place on the grid (tonic position + offset), as makam names are absolute.
     const tn = sys.notes[deg];
     note.innerHTML = `${tn.label}${Math.floor(n / 12) - 1}${tn.trad ? ` <small>${tn.trad}</small>` : ''}`;
-  } else note.textContent = `${SOLFEGE[pc]} - ${LETTERS[pc]}${Math.floor(n / 12) - 1}`;
+  } else note.textContent = noteName(SOLFEGE[pc], LETTERS[pc], Math.floor(n / 12) - 1);
   const cents = Math.round(dev);
   const sgn = (v) => (v > 0 ? '+' : v < 0 ? '−' : '');
   const commas = Math.round(dev / COMMA_CENTS * 10) / 10;
@@ -993,7 +1002,7 @@ temperClear.addEventListener('click', () => {
 });
 // Reference note selector (hidden for equal temperament), with an (i) dialog explaining it for the current temperament.
 const refRow = $('refRow'), refSel = $('refSel'), refDialog = $('refDialog');
-const NOTE_OPTIONS = SOLFEGE.map((s, i) => `<option value="${i}">${s} - ${LETTERS[i]}</option>`).join('');
+const noteOptions = () => SOLFEGE.map((s, i) => `<option value="${i}">${noteName(s, LETTERS[i])}</option>`).join('');
 const REF_HINTS = {
   movable: 'The scale is built on this note, which is tuned as in equal temperament at the A4 pitch. '
     + 'Drone note (the default) follows the drone, so you tune your intervals against it.',
@@ -1007,7 +1016,7 @@ const refCap = $('refCap'), refRec = $('refRec');
 // Note name and cents (from equal temperament at A4) of a pitch given as a fractional MIDI number.
 function capText(m) {
   const n = Math.round(m), pc = ((n % 12) + 12) % 12, c = Math.round(100 * (m - n));
-  return `${SOLFEGE[pc]} - ${LETTERS[pc]}${Math.floor(n / 12) - 1} ${c > 0 ? '+' : c < 0 ? '−' : '±'}${Math.abs(c)}¢`;
+  return `${noteName(SOLFEGE[pc], LETTERS[pc], Math.floor(n / 12) - 1)} ${c > 0 ? '+' : c < 0 ? '−' : '±'}${Math.abs(c)}¢`;
 }
 function capLabel(m) { refCap.textContent = m === null ? 'play a steady note...' : capText(m); }
 const REC_LABELS = {
@@ -1022,7 +1031,7 @@ const syncRefRow = () => {
   const label = t.sys ? 'Rast note' : 'Reference note';
   $('refLabel').textContent = $('refDlgTitle').textContent = label;
   $('refInfoBtn').setAttribute('aria-label', `About the ${label.toLowerCase()}`);
-  refSel.innerHTML = (t.sys ? '' : `<option value="${DRONE}">Drone note</option>`) + NOTE_OPTIONS;
+  refSel.innerHTML = (t.sys ? '' : `<option value="${DRONE}">Drone note</option>`) + noteOptions();
   refSel.value = refOf(t);
   $('refInfo').textContent = `${REF_HINTS[t.sys || (t.fixed ? 'fixed' : 'movable')]} `
     + 'Or press the red button and play a steady note for 2 seconds: its exact pitch becomes the reference, until you discard it.';
@@ -1048,6 +1057,22 @@ syncRefRow();
 $('refInfoBtn').addEventListener('click', () => refDialog.showModal());
 refDialog.addEventListener('click', (e) => { if (e.target === refDialog) refDialog.close(); });   // tap outside closes
 refSel.addEventListener('change', () => { state.refs[state.temper] = +refSel.value; retune(); save(); });
+// Notation radio: redraw every note name (drone selector, harmonics, reference selector, tuner, top-bar status).
+const notationRadios = document.querySelectorAll('input[name="notation"]');
+function applyNotation(v) {
+  notation = v;
+  notationRadios.forEach((r) => { r.checked = r.value === v; });
+  syncRefRow(); renderPitch(); report();
+}
+notationRadios.forEach((r) => {
+  r.checked = r.value === notation;
+  r.addEventListener('change', () => {
+    if (!r.checked) return;
+    try { localStorage.setItem(NOTATION_KEY, r.value); } catch {}
+    applyNotation(r.value);
+  });
+});
+window.addEventListener('storage', (e) => { if (e.key === NOTATION_KEY) applyNotation(readNotation()); });
 temperSel.addEventListener('change', () => { state.temper = temperSel.value; capturing = false; syncRefRow(); retune(); save(); });
 refASel.addEventListener('change', () => {
   const v = Math.round(+refASel.value);
@@ -1571,7 +1596,7 @@ if (EMBEDDED) document.documentElement.classList.add('embedded');
 
 function report() {
   if (!EMBEDDED) return;
-  parent.postMessage({ type: 'status', app: 'drone', playing: playing, info: `${SOLFEGE[state.note]} - ${LETTERS[state.note]}${state.octave}${state.mod.on ? ' · sweep' : ''}${state.swell.on ? ' · swell' : ''}` }, '*');
+  parent.postMessage({ type: 'status', app: 'drone', playing: playing, info: `${noteName(SOLFEGE[state.note], LETTERS[state.note], state.octave)}${state.mod.on ? ' · sweep' : ''}${state.swell.on ? ' · swell' : ''}` }, '*');
 }
 
 // If the browser refused to start audio (autoplay policy), tell the home page.

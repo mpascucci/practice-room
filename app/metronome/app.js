@@ -13,6 +13,10 @@ const TIMBRES = ['string', 'brass'];
 const MIN_DENOM = 1, MAX_DENOM = 16;
 const LETTERS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B'];
 const SOLFEGE = ['DO', 'DO♯', 'RE', 'RE♯', 'MI', 'FA', 'FA♯', 'SOL', 'SOL♯', 'LA', 'SI♭', 'SI'];
+// Note-name notation, app-wide (set in the drone's tuner): 'both', 'solfege' or 'letters'. See drone/app.js.
+const NOTATION_KEY = 'practice-room:notation';
+const readNotation = () => { try { const v = localStorage.getItem(NOTATION_KEY); return ['solfege', 'letters'].includes(v) ? v : 'both'; } catch { return 'both'; } };
+const noteName = (i) => { const v = readNotation(); return v === 'solfege' ? SOLFEGE[i] : v === 'letters' ? LETTERS[i] : `${SOLFEGE[i]} - ${LETTERS[i]}`; };
 const MIN_OCT = 1, MAX_OCT = 6;
 const MIN_MIDI = 12 * (MIN_OCT + 1), MAX_MIDI = 12 * (MAX_OCT + 1) + 11;
 const freqOfMidi = (m) => 440 * Math.pow(2, (m - 69) / 12);
@@ -722,11 +726,16 @@ const noteSels = {
   normal: [$('normalNote'), $('normalOct')],
   accent: [$('accentNote'), $('accentOct')],
 };
+const renderNoteNames = () => {
+  for (const [noteSel] of Object.values(noteSels)) [...noteSel.options].forEach((o, i) => { o.text = noteName(i); });
+};
 for (const [noteSel, octSel] of Object.values(noteSels)) {
-  noteSel.innerHTML = LETTERS.map((l, i) => `<option value="${i}">${l} - ${SOLFEGE[i]}</option>`).join('');
+  noteSel.innerHTML = LETTERS.map((_, i) => `<option value="${i}"></option>`).join('');
   octSel.innerHTML = Array.from({ length: MAX_OCT - MIN_OCT + 1 }, (_, i) =>
     `<option value="${MIN_OCT + i}">${MIN_OCT + i}</option>`).join('');
 }
+renderNoteNames();
+window.addEventListener('storage', (e) => { if (e.key === NOTATION_KEY) renderNoteNames(); });
 function syncNoteSelects() {
   settingsForm.elements.timbre.value = state.timbre;
   for (const kind of ['normal', 'accent']) {

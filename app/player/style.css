@@ -33,7 +33,7 @@ body {
 .app.drag { outline: 2px dashed var(--accent); outline-offset: -8px; }
 
 .top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.title { margin: 0; font-size: 1rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.title { margin: 0; font-size: 1.05rem; font-weight: 600; color: var(--muted); }
 .open, button {
   font: 600 .95rem system-ui, sans-serif;
   color: var(--text);
@@ -53,7 +53,7 @@ button:focus-visible, .open:focus-within, input:focus-visible + .track { outline
 .track-name { margin: 0; color: var(--muted); overflow-wrap: anywhere; }
 .track-name.loaded { color: var(--text); font-weight: 600; font-size: 1.05rem; }
 
-label, .lbl { font-size: .72rem; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+label, .lbl { font-size: .8rem; font-weight: 600; color: var(--muted); }
 output { font-variant-numeric: tabular-nums; color: var(--text); margin-left: 6px; letter-spacing: 0; }
 
 .times { display: flex; justify-content: space-between; font-size: .85rem; color: var(--muted); }
@@ -156,7 +156,7 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 #recDialog, #confirmDialog, #infoDialog, #markerDialog, #normDialog { border: 1px solid #e5484d; border-radius: 14px; background: var(--panel); color: var(--text); padding: 0; width: min(88vw, 320px); }
 #recDialog::backdrop, #confirmDialog::backdrop, #infoDialog::backdrop, #markerDialog::backdrop, #normDialog::backdrop { background: rgba(0, 0, 0, .65); }
 .rec-body { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 24px 20px; }
-.rec-title { margin: 0; display: flex; align-items: center; gap: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.rec-title { margin: 0; display: flex; align-items: center; gap: 10px; font-weight: 600; }
 .rec-title .dot { width: 12px; height: 12px; border-radius: 50%; background: #e5484d; animation: blink 1s steps(2, start) infinite; }
 .rec-time { margin: 0; font-size: 2.6rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .rec-stop { gap: 8px; min-height: 48px; min-width: 140px; border-radius: 24px; background: var(--stop); border-color: var(--stop); color: #fff; }
@@ -305,7 +305,7 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 .info-body { align-items: stretch; }
 .info-body .rec-title { justify-content: center; }
 .info-list { margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }   /* two equal columns; the labels wrap */
-.info-list dt { overflow-wrap: anywhere; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; font-size: .75rem; color: var(--muted); align-self: center; }
+.info-list dt { overflow-wrap: anywhere; font-weight: 600; font-size: .8rem; color: var(--muted); align-self: center; }
 .info-list dd { margin: 0; }
 #infoDialog { width: min(92vw, 420px); }
 
