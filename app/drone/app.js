@@ -630,15 +630,36 @@ function renderSwell() {
   setRangeFill(swellDepth);
 }
 
+// Turkish system: solfège name of pitch class pc counted from the Rast note `a`, which is always SOL (as when playing
+// in another ahenk), followed by the sounding western letter, e.g. "SOL - C4" when Rast is on C.
+const trSolfege = (pc, a, oct = '') => `${SOLFEGE[(pc - a + 19) % 12]} - ${LETTERS[pc]}${oct}`;   // +7 (SOL) +12
+// Name of each drone note ("DO - C"). With the tuner open on the Turkish system the solfège is relative to Rast (see
+// trSolfege), and a note tuned to a named makam degree (the grid note temperDelta tunes it to) gets that name first,
+// e.g. "Rast (SOL - C)".
+function droneNames(oct = '') {
+  const temp = TEMPERAMENTS.find((t) => t.id === state.temper);
+  if (!tunerOpen() || temp.sys !== 'turkish') return LETTERS.map((l, i) => `${SOLFEGE[i]} - ${l}${oct}`);
+  const sys = SYSTEMS[temp.sys], scale = temperScale(temp), a = anchorOf(temp);
+  return LETTERS.map((_, i) => {
+    const p = trSolfege(i, a, oct);
+    const et = ((i - a + 12) % 12) * 100;
+    const dist = (off) => Math.abs(((off - et + 1800) % 1200) - 600);
+    const k = scale.reduce((best, off, j) => (dist(off) < dist(scale[best]) ? j : best), 0);
+    return sys.notes[k].trad ? `${sys.notes[k].trad} (${p})` : p;
+  });
+}
+
 function renderPitch() {
   const f0 = fundamental();
+  const names = droneNames();
+  [...noteSel.options].forEach((o, i) => { if (o.text !== names[i]) o.text = names[i]; });
   rowEls.forEach((el, i) => {
     const { name, cents } = harmonicPitch(i + 1);
     const c = cents === 0 ? '' : `<span class="cents">${cents > 0 ? '+' : '−'}${Math.abs(cents)}¢</span>`;
     el.pitch.innerHTML = `${name}${c}`;
     el.hz.textContent = `${(f0 * (i + 1)).toFixed(1)} Hz`;
   });
-  freqEl.textContent = `${SOLFEGE[state.note]} - ${LETTERS[state.note]}${state.octave} · ${f0.toFixed(2)} Hz (A4 = ${state.refA} Hz)`;
+  freqEl.textContent = `${droneNames(state.octave)[state.note]} · ${f0.toFixed(2)} Hz (A4 = ${state.refA} Hz)`;
 }
 
 const updateLevels = () => state.harmonics.forEach((_, i) => renderRow(i));
@@ -812,9 +833,10 @@ function tunerReadout(f) {
   const n = Math.round(69 + 12 * Math.log2(target / state.refA));   // equal-tempered neighbour, for the octave number only
   note.classList.remove('idle');
   if (temp.sys === 'turkish') {
-    // Named relative to Rast: the traditional name in big and the sounding note (nearest equal-tempered one to the
-    // target) in small, e.g. "Rast (C4)" when Rast is recorded on C; just the western name when there is no traditional one.
-    const tn = sys.notes[deg], spc = ((n % 12) + 12) % 12, western = `${LETTERS[spc]}${Math.floor(n / 12) - 1}`;
+    // Named relative to Rast: the traditional name in big and the nearest equal-tempered note to the target in small,
+    // its solfège counted from Rast = SOL (trSolfege), e.g. "Rast (SOL - C4)" when Rast is on C; just that when there
+    // is no traditional name.
+    const tn = sys.notes[deg], spc = ((n % 12) + 12) % 12, western = trSolfege(spc, anchor, Math.floor(n / 12) - 1);
     note.innerHTML = tn.trad ? `${tn.trad} <small>(${western})</small>` : western;
   } else if (sys) {
     // The note is named from its absolute place on the grid (tonic position + offset), as makam names are absolute.
