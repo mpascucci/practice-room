@@ -33,20 +33,19 @@ function sweepSignal(i, u) {
 }
 
 // Tuner temperaments: cents above the anchor (reference) note of the 12 chromatic degrees. The anchor is chosen per
-// temperament in the tuner (state.refs), `ref` being the usual one used as default (DRONE = follow the drone's base note):
-// - just, Pythagorean, meantone: the scale is built on the anchor (default: the drone note, the tonic you practise against);
+// temperament in the tuner (state.refs), `ref` being the usual one used as default:
+// - just, Pythagorean, meantone: the scale is built on the anchor (default C, the usual layout of these scales);
 // - `fixed` well-temperaments, listed from C: keep their historical layout, the anchor only picks which note is exact
 //   (default A, as tuners and baroque players set them);
 // - Turkish/Arabic (`sys`): the anchor is the pitch sounded by Rast (default G = bolahenk, C for Arabic).
 // The anchor itself is at its equal-tempered pitch at the current A4.
 const COMMA_CENTS = 1200 / 53;   // Turkish/Ottoman koma: 1/53 octave (about 22.64 ¢), 9 commas = one whole tone
 const REF_A_MIN = 400, REF_A_MAX = 480;
-const DRONE = -1;   // reference note value meaning "the drone's base note"
 const TEMPERAMENTS = [
   { id: 'equal', name: 'Equal temperament', cents: [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100] },
-  { id: 'just', name: 'Just intonation (5-limit)', ref: DRONE, cents: [0, 111.73, 203.91, 315.64, 386.31, 498.04, 590.22, 701.96, 813.69, 884.36, 1017.6, 1088.27] },
-  { id: 'pythagorean', name: 'Pythagorean', ref: DRONE, cents: [0, 113.69, 203.91, 294.13, 407.82, 498.04, 611.73, 701.96, 815.64, 905.87, 996.09, 1109.78] },
-  { id: 'meantone', name: 'Quarter-comma meantone', ref: DRONE, cents: [0, 76.05, 193.16, 310.26, 386.31, 503.42, 579.47, 696.58, 772.63, 889.74, 1006.84, 1082.89] },
+  { id: 'just', name: 'Just intonation (5-limit)', ref: 0, cents: [0, 111.73, 203.91, 315.64, 386.31, 498.04, 590.22, 701.96, 813.69, 884.36, 1017.6, 1088.27] },
+  { id: 'pythagorean', name: 'Pythagorean', ref: 0, cents: [0, 113.69, 203.91, 294.13, 407.82, 498.04, 611.73, 701.96, 815.64, 905.87, 996.09, 1109.78] },
+  { id: 'meantone', name: 'Quarter-comma meantone', ref: 0, cents: [0, 76.05, 193.16, 310.26, 386.31, 503.42, 579.47, 696.58, 772.63, 889.74, 1006.84, 1082.89] },
   { id: 'werckmeister', name: 'Werckmeister III', fixed: true, ref: 9, cents: [0, 90.22, 192.18, 294.13, 390.22, 498.04, 588.27, 696.09, 792.18, 888.27, 996.09, 1092.18] },
   { id: 'kirnberger', name: 'Kirnberger III', fixed: true, ref: 9, cents: [0, 90.22, 193.16, 294.13, 386.31, 498.04, 590.22, 696.58, 792.18, 889.74, 996.09, 1088.27] },
   { id: 'vallotti', name: 'Vallotti', fixed: true, ref: 9, cents: [0, 94.13, 196.09, 298.04, 392.18, 501.96, 592.18, 698.04, 796.09, 894.13, 998.04, 1090.22] },
@@ -108,14 +107,14 @@ const SYSTEMS = {
 };
 
 // Anchor note (pitch class) and note offsets (cents above the anchor) of a temperament.
-const refOf = (temp) => state.refs[temp.id] ?? temp.ref ?? 0;   // chosen reference note (DRONE or a pitch class; C for equal temperament)
+const refOf = (temp) => state.refs[temp.id] ?? temp.ref ?? 0;   // chosen reference note (pitch class; C for equal temperament)
 // A reference recorded from the microphone (state.caps, Hz) overrides the selector: its nearest note is the anchor and
 // anchorCents its offset from equal temperament, so the whole scale follows the exact pitch that was played.
 const capMidi = (temp) => (state.caps[temp.id] ? 69 + 12 * Math.log2(state.caps[temp.id] / state.refA) : null);
 const anchorOf = (temp) => {
   const m = capMidi(temp);
   if (m !== null) return ((Math.round(m) % 12) + 12) % 12;
-  return refOf(temp) === DRONE ? state.note : refOf(temp);
+  return refOf(temp);
 };
 const anchorCents = (temp) => { const m = capMidi(temp); return m === null ? 0 : 100 * (m - Math.round(m)); };
 function temperScale(temp) {
@@ -144,7 +143,7 @@ const defaults = () => ({
   octave: 3,
   refA: 440,        // reference pitch of A4 (Hz), shared by the drone and the tuner
   temper: 'equal',  // tuner temperament (see TEMPERAMENTS)
-  refs: {},         // tuner reference note per temperament id (DRONE or a pitch class); missing = the temperament's `ref`
+  refs: {},         // tuner reference note per temperament id (pitch class); missing = the temperament's `ref`
   caps: {},         // tuner reference recorded from the mic per temperament id (Hz); overrides `refs`
   mod: { on: false, rate: 0.2, depth: 70, from: 2 },
   swell: { on: false, rate: 0.1, depth: 70 },
@@ -185,7 +184,7 @@ function loadRefs(s) {
   const refs = {};
   TEMPERAMENTS.forEach((t) => {
     const v = src[t.id];
-    if (t.ref !== undefined && Number.isInteger(v) && v >= (t.sys ? 0 : DRONE) && v < 12) refs[t.id] = v;
+    if (t.ref !== undefined && Number.isInteger(v) && v >= 0 && v < 12) refs[t.id] = v;
   });
   return refs;
 }
@@ -1002,10 +1001,10 @@ temperClear.addEventListener('click', () => {
 });
 // Reference note selector (hidden for equal temperament), with an (i) dialog explaining it for the current temperament.
 const refRow = $('refRow'), refSel = $('refSel'), refDialog = $('refDialog');
-const noteOptions = () => SOLFEGE.map((s, i) => `<option value="${i}">${noteName(s, LETTERS[i])}</option>`).join('');
+const noteOptions = (def = -1) => SOLFEGE.map((s, i) => `<option value="${i}">${noteName(s, LETTERS[i])}${i === def ? ' (default)' : ''}</option>`).join('');
 const REF_HINTS = {
   movable: 'The scale is built on this note, which is tuned as in equal temperament at the A4 pitch. '
-    + 'Drone note (the default) follows the drone, so you tune your intervals against it.',
+    + 'C (the default) is the usual layout of this scale; set it to the tonic of the piece you play.',
   fixed: 'The temperament keeps its historical layout from C. This note is tuned as in equal temperament at the A4 pitch '
     + 'and the others follow it. A (the default) is how tuners and baroque players set it.',
   turkish: 'The pitch that sounds as Rast. Notes stay named with Rast = SOL, as when playing in another ahenk. '
@@ -1031,7 +1030,7 @@ const syncRefRow = () => {
   const label = t.sys ? 'Rast note' : 'Reference note';
   $('refLabel').textContent = $('refDlgTitle').textContent = label;
   $('refInfoBtn').setAttribute('aria-label', `About the ${label.toLowerCase()}`);
-  refSel.innerHTML = (t.sys ? '' : `<option value="${DRONE}">Drone note</option>`) + noteOptions();
+  refSel.innerHTML = noteOptions(t.ref);
   refSel.value = refOf(t);
   $('refInfo').textContent = `${REF_HINTS[t.sys || (t.fixed ? 'fixed' : 'movable')]} `
     + 'Or press the red button and play a steady note for 2 seconds: its exact pitch becomes the reference, until you discard it.';
