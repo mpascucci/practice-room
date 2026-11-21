@@ -23,9 +23,105 @@ function sweepSignal(i, u) {
   return Math.sin(shift - 2 * Math.PI * x);
 }
 
+// Tuner temperaments: cents above the tonic (the drone's base note) of the 12 chromatic degrees.
+// Entries marked `fixed` are irregular (key-dependent) temperaments listed from C; they are rotated to the tonic below.
+// The tonic itself is the equal-tempered pitch of the base note at the current A4, so the tuner agrees with the drone.
+const COMMA_CENTS = 1200 / 53;   // Turkish/Ottoman koma: 1/53 octave (about 22.64 ¢), 9 commas = one whole tone
+const REF_A_MIN = 400, REF_A_MAX = 480;
+const TEMPERAMENTS = [
+  { id: 'equal', name: 'Equal temperament', cents: [0, 100, 200, 300, 400, 500, 600, 700, 800, 900, 1000, 1100] },
+  { id: 'just', name: 'Just intonation (5-limit)', cents: [0, 111.73, 203.91, 315.64, 386.31, 498.04, 590.22, 701.96, 813.69, 884.36, 1017.6, 1088.27] },
+  { id: 'pythagorean', name: 'Pythagorean', cents: [0, 113.69, 203.91, 294.13, 407.82, 498.04, 611.73, 701.96, 815.64, 905.87, 996.09, 1109.78] },
+  { id: 'meantone', name: 'Quarter-comma meantone', cents: [0, 76.05, 193.16, 310.26, 386.31, 503.42, 579.47, 696.58, 772.63, 889.74, 1006.84, 1082.89] },
+  { id: 'werckmeister', name: 'Werckmeister III', fixed: true, cents: [0, 90.22, 192.18, 294.13, 390.22, 498.04, 588.27, 696.09, 792.18, 888.27, 996.09, 1092.18] },
+  { id: 'kirnberger', name: 'Kirnberger III', fixed: true, cents: [0, 90.22, 193.16, 294.13, 386.31, 498.04, 590.22, 696.58, 792.18, 889.74, 996.09, 1088.27] },
+  { id: 'vallotti', name: 'Vallotti', fixed: true, cents: [0, 94.13, 196.09, 298.04, 392.18, 501.96, 592.18, 698.04, 796.09, 894.13, 998.04, 1090.22] },
+  { id: 'turkish', name: 'Turkish (53 koma)', sys: 'turkish' },
+  { id: 'arabic', name: 'Arabic (24 quarter tones)', sys: 'arabic' },
+];
+
+// Turkish (Arel-Ezgi-Uzdilek) system: the octave is 53 commas (koma) on a Pythagorean grid, C = 0:
+// whole tone = 9, limma (E-F, B-C) = 4. Each natural note takes ±1 (koma) and ±4 (bakiye) accidentals, which reaches
+// the 5- and 8-comma positions from the neighbouring note. Rast (SOL) sits at 31 and anchors the grid on the Rast note chosen below.
+const TR_RAST_POS = 31;   // Rast = SOL on the grid below
+const TR_NATURALS = [[0, 'DO'], [9, 'RE'], [18, 'MI'], [22, 'FA'], [31, 'SOL'], [40, 'LA'], [49, 'SI']];
+// Accidentals drawn as small inline SVGs (no font dependency): koma ♯ (half sharp), bakiye ♯, bakiye ♭, koma ♭ (reversed flat).
+const accSvg = (w, body) => `<svg class="acc" viewBox="0 0 ${w} 20" aria-hidden="true">${body}</svg>`;
+const TR_ACC = {
+  1: accSvg(8, '<path d="M4 1.5v17M0.8 8.2l6.4-2M0.8 13.6l6.4-2"/>'),
+  4: accSvg(12, '<path d="M4.2 2v16M8.2 1.4v16M1 8.2l10-2.6M1 13.8l10-2.6"/>'),
+  '-4': accSvg(9, '<path d="M2.5 1v17M2.5 11.5C9 7 10 15.5 2.5 18"/>'),
+  '-1': accSvg(9, '<path d="M6.5 1v17M6.5 11.5C0 7 -1 15.5 6.5 18"/>'),
+};
+// Traditional makam names, by grid position. Only the ones that are unambiguous are listed.
+const TR_NAMES = { 0: 'Çârgâh', 9: 'Nevâ', 18: 'Hüseynî', 22: 'Acem', 31: 'Rast', 40: 'Dügâh', 44: 'Kürdî', 48: 'Segâh', 49: 'Buselik' };
+const TR_NOTES = (() => {
+  const out = [];
+  TR_NATURALS.forEach(([pos, name], i) => {
+    const next = TR_NATURALS[(i + 1) % 7][0] + (i === 6 ? 53 : 0), gap = next - pos;
+    const accs = gap === 9 ? [0, 1, 4, -4, -1] : [0, 1, -1];
+    const offs = gap === 9 ? [0, 1, 4, 5, 8] : [0, 1, 3];
+    accs.forEach((a, j) => {
+      const p = (pos + offs[j]) % 53;
+      out.push({ pos: p, label: (a < 0 ? TR_NATURALS[(i + 1) % 7][1] : name) + (a ? TR_ACC[a] : ''), trad: TR_NAMES[p] || '' });
+    });
+  });
+  return out;
+})();
+
+// Arabic system: 24 equal quarter tones (50 ¢) per octave, Rast = DO = 0 on the grid. Naturals sit at 0 4 8 10 14 18 22;
+// each gets a half-sharp (sori) and, before the next whole tone, a sharp and a half-flat (koron, reversed flat).
+const AR_NATURALS = [[0, 'DO'], [4, 'RE'], [8, 'MI'], [10, 'FA'], [14, 'SOL'], [18, 'LA'], [22, 'SI']];
+const AR_NAMES = { 0: 'Rast', 4: 'Dukah', 7: 'Sikah', 10: 'Jaharkah', 14: 'Nawa', 18: 'Husayni', 21: 'Iraq' };
+const AR_NOTES = (() => {
+  const out = [];
+  AR_NATURALS.forEach(([pos, name], i) => {
+    const [nPos, nName] = AR_NATURALS[(i + 1) % 7];
+    const gap = (i === 6 ? 24 : nPos) - pos;
+    const steps = gap === 4 ? [[0, 0], [1, 1], [2, i === 5 ? -2 : 2], [3, -1]] : [[0, 0], [1, 1]];   // [quarter tones above, accidental]
+    steps.forEach(([o, a]) => {
+      const flat = a < 0;
+      out.push({ pos: (pos + o) % 24, label: (flat ? nName : name) + (a ? TR_ACC[a === 1 ? 1 : a === -1 ? -1 : a > 0 ? 4 : -4] : ''), trad: AR_NAMES[(pos + o) % 24] || '' });
+    });
+  });
+  return out;
+})();
+// Systems anchored on a chosen Rast note: pitch of each note in cents above Rast.
+const SYSTEMS = {
+  turkish: { notes: TR_NOTES, rastKey: 'rast', off: (n) => ((n.pos - TR_RAST_POS + 53) % 53) * 1200 / 53 },
+  arabic: { notes: AR_NOTES, rastKey: 'rastAr', off: (n) => n.pos * 50 },
+};
+
+// Anchor note (pitch class) and note offsets (cents above the anchor) of a temperament.
+const anchorOf = (temp) => (temp.sys ? state[SYSTEMS[temp.sys].rastKey] : state.tonic);
+function temperScale(temp) {
+  const sys = SYSTEMS[temp.sys];
+  if (sys) return sys.notes.map(sys.off);
+  if (temp.fixed) return temp.cents.map((_, k) => (temp.cents[(state.tonic + k) % 12] - temp.cents[state.tonic] + 1200) % 1200);
+  return temp.cents;
+}
+const tunerOpen = () => !$('tuner').classList.contains('collapsed');
+// While the tuner is open the drone's base note follows the tuner's temperament: cents by which the tempered note differs
+// from its equal-tempered pitch (0 for equal temperament or a closed tuner). The harmonics stay the natural multiples.
+function temperDelta() {
+  if (!tunerOpen()) return 0;
+  const temp = TEMPERAMENTS.find((t) => t.id === state.temper);
+  if (temp.id === 'equal') return 0;
+  const et = (((state.note - anchorOf(temp)) % 12) + 12) % 12 * 100;
+  const scale = temperScale(temp);
+  const diff = (off) => ((off - et + 1800) % 1200) - 600;
+  if (temp.sys) return scale.reduce((best, off) => (Math.abs(diff(off)) < Math.abs(best) ? diff(off) : best), 600);
+  return diff(scale[et / 100]);
+}
+
 const defaults = () => ({
   note: 0,          // pitch class, 0 = C
   octave: 3,
+  refA: 440,        // reference pitch of A4 (Hz), shared by the drone and the tuner
+  temper: 'equal',  // tuner temperament (see TEMPERAMENTS)
+  tonic: 0,         // tuner base note for the non-equal temperaments (0 = C)
+  rast: 7,          // Turkish system: pitch class sounded by Rast (7 = G)
+  rastAr: 0,        // Arabic system: pitch class sounded by Rast (0 = C)
   mod: { on: false, rate: 0.2, depth: 70, from: 2 },
   swell: { on: false, rate: 0.1, depth: 70 },
   harmonics: Array.from({ length: HARMONICS }, (_, i) => ({
@@ -67,6 +163,11 @@ function load() {
     state = {
       note: Number.isInteger(s.note) && s.note >= 0 && s.note < 12 ? s.note : d.note,
       octave: [2, 3, 4].includes(s.octave) ? s.octave : d.octave,
+      refA: Number.isFinite(s.refA) && s.refA >= REF_A_MIN && s.refA <= REF_A_MAX ? Math.round(s.refA) : d.refA,
+      temper: TEMPERAMENTS.some((t) => t.id === s.temper) ? s.temper : d.temper,
+      tonic: Number.isInteger(s.tonic) && s.tonic >= 0 && s.tonic < 12 ? s.tonic : d.tonic,
+      rast: Number.isInteger(s.rast) && s.rast >= 0 && s.rast < 12 ? s.rast : d.rast,
+      rastAr: Number.isInteger(s.rastAr) && s.rastAr >= 0 && s.rastAr < 12 ? s.rastAr : d.rastAr,
       mod: {
         on: false,   // sweep always starts off; rate, depth and range are remembered
         rate: Number.isFinite(s.mod?.rate) ? Math.min(RATE_MAX, Math.max(RATE_MIN, s.mod.rate)) : d.mod.rate,
@@ -85,19 +186,22 @@ function load() {
     };
   } catch { /* storage unavailable — use defaults */ }
 }
+let harmHold = null;   // on/off flags of the harmonics saved while the tuner mutes H2 and above
 function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {}
+  // The tuner's temporary muting is never persisted: store the flags the user had before opening it.
+  const out = harmHold ? { ...state, harmonics: state.harmonics.map((h, i) => ({ ...h, on: harmHold[i] })) } : state;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(out)); } catch {}
   report();
 }
 
 // ---------- Pitch helpers ----------
 const midiOf = () => 12 * (state.octave + 1) + state.note;          // C4 = 60
-const freqOfMidi = (m) => 440 * Math.pow(2, (m - 69) / 12);
-const fundamental = () => freqOfMidi(midiOf());
+const freqOfMidi = (m) => state.refA * Math.pow(2, (m - 69) / 12);
+const fundamental = () => freqOfMidi(midiOf()) * Math.pow(2, temperDelta() / 1200);
 
 // Nearest equal-tempered note of a harmonic, with cents deviation.
 function harmonicPitch(k) {
-  const exact = midiOf() + 12 * Math.log2(k);
+  const exact = midiOf() + temperDelta() / 100 + 12 * Math.log2(k);
   const nearest = Math.round(exact);
   const cents = Math.round((exact - nearest) * 100);
   const pc = ((nearest % 12) + 12) % 12;
@@ -509,7 +613,7 @@ function renderPitch() {
     el.pitch.innerHTML = `${name}${c}`;
     el.hz.textContent = `${(f0 * (i + 1)).toFixed(1)} Hz`;
   });
-  freqEl.textContent = `${SOLFEGE[state.note]} - ${LETTERS[state.note]}${state.octave} · ${f0.toFixed(2)} Hz (A4 = 440 Hz)`;
+  freqEl.textContent = `${SOLFEGE[state.note]} - ${LETTERS[state.note]}${state.octave} · ${f0.toFixed(2)} Hz (A4 = ${state.refA} Hz)`;
 }
 
 const updateLevels = () => state.harmonics.forEach((_, i) => renderRow(i));
@@ -630,17 +734,35 @@ function tunerReadout(f) {
     tunerDisks.forEach((d) => { d.style.setProperty('--i', 0); d.classList.remove('top'); });
     return;
   }
-  const midi = 69 + 12 * Math.log2(f / 440);
-  const n = Math.round(midi);
-  const pc = ((n % 12) + 12) % 12;
+  // Cents above the tonic (the drone's base note), folded into one octave, then the nearest degree of the temperament.
+  const temp = TEMPERAMENTS.find((t) => t.id === state.temper);
+  const sys = SYSTEMS[temp.sys];
+  const tonic = freqOfMidi(60 + (sys ? state[sys.rastKey] : state.tonic));   // Turkish/Arabic: the grid is anchored on Rast
+  const c = ((1200 * Math.log2(f / tonic)) % 1200 + 1200) % 1200;
+  const scale = temperScale(temp);
+  let deg = 0, dev = Infinity;
+  scale.forEach((off, k) => {
+    const dd = ((c - off + 1800) % 1200) - 600;
+    if (Math.abs(dd) < Math.abs(dev)) { deg = k; dev = dd; }
+  });
+  const pc = sys ? 0 : (state.tonic + deg) % 12;
+  const target = f * Math.pow(2, -dev / 1200);
+  const n = Math.round(69 + 12 * Math.log2(target / state.refA));   // equal-tempered neighbour, for the octave number only
   note.classList.remove('idle');
-  note.textContent = `${SOLFEGE[pc]} - ${LETTERS[pc]}${Math.floor(n / 12) - 1}`;
-  $('tunerHz').textContent = `${f.toFixed(1)} Hz`;
+  if (sys) {
+    // The note is named from its absolute place on the grid (tonic position + offset), as makam names are absolute.
+    const tn = sys.notes[deg];
+    note.innerHTML = `${tn.label}${Math.floor(n / 12) - 1}${tn.trad ? ` <small>${tn.trad}</small>` : ''}`;
+  } else note.textContent = `${SOLFEGE[pc]} - ${LETTERS[pc]}${Math.floor(n / 12) - 1}`;
+  const cents = Math.round(dev);
+  const sgn = (v) => (v > 0 ? '+' : v < 0 ? '−' : '');
+  const commas = Math.round(dev / COMMA_CENTS * 10) / 10;
+  $('tunerHz').innerHTML = `<b>${f.toFixed(1)}</b> Hz &nbsp;<b>${sgn(cents)}${Math.abs(cents)}</b>¢ &nbsp;<b>${sgn(commas)}${Math.abs(commas).toFixed(1)}</b> koma`;
   // Disk k (k = -4…4) is the bin centred on k·10 cents; lit by how close the pitch is to that centre.
-  const c = Math.max(-40, Math.min(40, (midi - n) * 100));
-  const top = Math.round(c / 10) + 4;   // nearest bin = most intense disk, outlined in white
+  const dc = Math.max(-40, Math.min(40, dev));
+  const top = Math.round(dc / 10) + 4;   // nearest bin = most intense disk, outlined in white
   tunerDisks.forEach((d, k) => {
-    d.style.setProperty('--i', Math.max(0, 1 - Math.abs(c - (k - 4) * 10) / 10).toFixed(2));
+    d.style.setProperty('--i', Math.max(0, 1 - Math.abs(dc - (k - 4) * 10) / 10).toFixed(2));
     d.classList.toggle('top', k === top);
   });
 }
@@ -684,12 +806,12 @@ function tunerLoop() {
   const now = performance.now();
   const f = Math.sqrt(sq / tunerBuf.length) >= TUNER_RMS_GATE ? yinPitch(tunerBuf, tunerCtx.sampleRate) : 0;
   if (f) {
-    const midi = 69 + 12 * Math.log2(f / 440);
+    const midi = 69 + 12 * Math.log2(f / state.refA);
     // Light smoothing, but jump straight to a new note instead of gliding through the semitones in between.
     const dt = Math.min(0.1, (now - tunerLastAt) / 1000);   // frame-rate independent exponential smoothing
     tunerMidi = tunerMidi !== null && Math.abs(midi - tunerMidi) < 0.6 ? tunerMidi + (1 - Math.exp(-dt / TUNER_SMOOTH_S)) * (midi - tunerMidi) : midi;
     tunerLastAt = now;
-    tunerReadout(440 * Math.pow(2, (tunerMidi - 69) / 12));
+    tunerReadout(freqOfMidi(tunerMidi));
   } else if (now - tunerLastAt > TUNER_HOLD_MS) {
     tunerMidi = null;
     tunerReadout(0);
@@ -740,13 +862,58 @@ function tunerStop() {
   tunerMsg();
 }
 
+// With the tuner open only the fundamental sounds (H2 and above are switched off); closing it restores them.
+function holdHarmonics(mute) {
+  if (mute === !!harmHold) return;
+  if (mute) harmHold = state.harmonics.map((h) => h.on);
+  state.harmonics.forEach((h, i) => { h.on = mute ? i === 0 && h.on : harmHold[i]; renderRow(i); applyPartial(i); });
+  if (!mute) harmHold = null;
+  save();
+}
+
 function setTunerOpen(open) {
   tunerSection.classList.toggle('collapsed', !open);
+  holdHarmonics(open);
+  retune();
   tunerToggle.setAttribute('aria-expanded', open);
   if (open) tunerStart(); else tunerStop();   // listen while the curtain is down, release the mic when it is folded
 }
 tunerToggle.addEventListener('click', () => setTunerOpen(tunerToggle.getAttribute('aria-expanded') !== 'true'));
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') tunerStop(); });
+
+const refASel = $('refA'), temperSel = $('temper');
+temperSel.innerHTML = TEMPERAMENTS.map((t) => `<option value="${t.id}">${t.name}</option>`).join('');
+temperSel.value = state.temper;
+refASel.value = state.refA;
+const temperTag = $('temperTag');
+function retune() {   // the drone's base note depends on the temperament while the tuner is open
+  const open = tunerOpen();
+  temperTag.hidden = !open;
+  temperTag.textContent = TEMPERAMENTS.find((t) => t.id === state.temper).name;
+  renderPitch(); applyPitch();
+}
+const rastRow = $('rastRow'), rastSel = $('rast');
+rastSel.innerHTML = SOLFEGE.map((s, i) => `<option value="${i}">${s} - ${LETTERS[i]}</option>`).join('');
+// Key of the state field holding the anchor note for the current temperament (null for equal temperament: no anchor needed).
+const anchorKey = () => {
+  const t = TEMPERAMENTS.find((x) => x.id === state.temper);
+  return t.sys ? SYSTEMS[t.sys].rastKey : t.id === 'equal' ? null : 'tonic';
+};
+const syncRastRow = () => {
+  const key = anchorKey();
+  rastRow.hidden = !key;
+  if (key) { rastSel.value = state[key]; $('rastLabel').textContent = key === 'tonic' ? 'Root note' : 'Rast note'; }
+};
+syncRastRow();
+rastSel.addEventListener('change', () => { state[anchorKey()] = +rastSel.value; retune(); save(); });
+temperSel.addEventListener('change', () => { state.temper = temperSel.value; syncRastRow(); retune(); save(); });
+refASel.addEventListener('change', () => {
+  const v = Math.round(+refASel.value);
+  state.refA = Number.isFinite(v) ? Math.min(REF_A_MAX, Math.max(REF_A_MIN, v)) : 440;
+  refASel.value = state.refA;
+  tunerMidi = null;
+  renderPitch(); applyPitch(); save();   // the drone follows the reference pitch too
+});
 
 // ---------- Harmonics recorder ----------
 // The rec button listens to the microphone and sets the harmonic sliders to the heard spectrum: YIN (shared with

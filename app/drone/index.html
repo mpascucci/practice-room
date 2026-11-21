@@ -19,6 +19,22 @@
             <div class="tuner-disks" id="tunerDisks" aria-hidden="true"><span class="disk"></span><span class="disk"></span><span class="disk"></span><span class="disk"></span><span class="disk mid"></span><span class="disk"></span><span class="disk"></span><span class="disk"></span><span class="disk"></span></div>
           <p class="tuner-hz" id="tunerHz">&nbsp;</p>
           </div>
+          <div class="tuner-opts">
+            <div class="field">
+              <label for="temper">Temperament</label>
+              <select id="temper"></select>
+            </div>
+            <div class="field">
+              <label for="refA">A4 (Hz)</label>
+              <input type="number" id="refA" min="400" max="480" step="1" inputmode="numeric">
+            </div>
+          </div>
+          <div class="tuner-opts" id="rastRow" hidden>
+            <div class="field">
+              <label for="rast" id="rastLabel">Root note</label>
+              <select id="rast"></select>
+            </div>
+          </div>
           <p class="tuner-msg" id="tunerMsg" role="status" hidden></p>
         </div>
       </div>
@@ -33,8 +49,9 @@
       <h1 class="title">Drone</h1>
 
       <div class="transport">
+        <span class="temper-tag" id="temperTag" hidden></span>
         <div class="field">
-          <label for="note">Base note</label>
+          <label for="note">Base note (H1)</label>
           <select id="note"></select>
         </div>
 

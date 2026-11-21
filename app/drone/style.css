@@ -55,6 +55,8 @@ body {
   flex-wrap: wrap;
   justify-content: flex-end;
 }
+.temper-tag { display: flex; align-items: center; height: 40px; max-width: 34%; font-size: .78rem; line-height: 1.15; color: var(--amber); text-align: right; }
+.temper-tag[hidden] { display: none; }
 
 .field { display: flex; flex-direction: column; gap: 5px; }
 
@@ -341,6 +343,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
   /* transport row: Base note, Octave, rec, play must stay on one line, so everything shrinks a little */
   .transport { gap: 8px; flex-wrap: nowrap; }
   .transport .field { min-width: 0; }
+  .temper-tag { height: 36px; font-size: .68rem; max-width: 26%; }
   .transport select { height: 36px; padding: 0 24px 0 9px; font-size: .92rem; background-position: right 8px center; background-size: 9px; }
   .transport .play { width: 46px; height: 46px; }
   .row { grid-template-columns: 66px 74px 1fr 30px; gap: 8px; padding: 0 8px; }
@@ -423,8 +426,11 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 .tuner-row { display: flex; flex-direction: column; align-items: center; gap: 16px; width: min(100%, 520px); }
 .tuner-id { display: flex; align-items: center; justify-content: center; height: 2.5rem; }   /* fixed: same height for the big note and the small "listening..." */
 .tuner-note { font-size: 2.2rem; font-weight: 600; line-height: 1.1; }
+.tuner-note .acc { height: .8em; width: auto; overflow: visible; vertical-align: -.08em; margin: 0 .06em; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.tuner-note small { font-size: .45em; font-weight: 400; color: var(--muted); margin-left: .3em; }
 .tuner-note.idle { font-size: 1.1rem; font-weight: 400; color: var(--muted); }
-.tuner-hz { font-size: .8rem; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 1.1em; }
+.tuner-hz b { font-weight: inherit; color: #ffd95e; }
+.tuner-hz { font-size: .96rem; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 1.1em; }
 .tuner-msg { font-size: .75rem; color: var(--muted); text-align: center; }
 .tuner-msg.warn { color: var(--amber); }
 /* Nine disks = nine 10-cent bins (-40…+40). Intensity falls off linearly with the distance from the bin centre. */
@@ -443,6 +449,17 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid #6aa8ff
 }
 .tuner-disks .disk.top { outline-color: #fff; }
 .tuner-disks .disk.mid { --dim: #233e6a; --lit: #a8d2ff; }
+
+.tuner-opts { display: flex; gap: 12px; align-items: flex-end; justify-content: center; margin-top: 14px; width: min(100%, 520px); }
+.tuner-opts[hidden] { display: none; }
+.tuner-opts + .tuner-opts { margin-top: 8px; }
+.tuner-opts .field:first-child { flex: 1 1 auto; min-width: 0; }
+.tuner-opts select { width: 100%; height: 36px; font-size: .92rem; }
+.tuner-opts input {
+  width: 76px; height: 36px; padding: 0 8px; border-radius: 9px; border: 1px solid var(--line);
+  background: var(--row); color: var(--text); font: 600 .95rem system-ui, sans-serif; text-align: center;
+}
+.tuner-opts input:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 
 /* ---------- Presets dialog (same layout as the metronome's) ---------- */
 .pdlg {
