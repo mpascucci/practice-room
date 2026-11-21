@@ -342,9 +342,16 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid var(--a
 /* ---------- Narrow screens ---------- */
 @media (max-width: 520px) {
   /* transport row: Base note, Octave, rec, play must stay on one line, so everything shrinks a little */
-  .transport { gap: 8px; flex-wrap: nowrap; }
+  /* grid: the temperament tag (if shown) takes its own line above the controls */
+  .transport {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, max-content)) auto auto;
+    justify-content: end;
+    align-items: end;
+    gap: 6px 8px;
+  }
   .transport .field { min-width: 0; }
-  .temper-tag { height: 36px; font-size: .68rem; max-width: 26%; }
+  .temper-tag { grid-column: 1 / -1; justify-self: end; justify-content: flex-end; height: auto; min-height: 26px; max-width: 100%; font-size: .72rem; }
   .transport select { height: 36px; padding: 0 24px 0 9px; font-size: .92rem; background-position: right 8px center; background-size: 9px; }
   .transport .play { width: 46px; height: 46px; }
   .row { grid-template-columns: 66px 74px 1fr 30px; gap: 8px; padding: 0 8px; }
