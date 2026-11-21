@@ -24,6 +24,8 @@ const freqOfMidi = (m) => 440 * Math.pow(2, (m - 69) / 12);
 const BRASS = [0.8, 1, 0.9, 0.75, 0.6, 0.5, 0.4, 0.3, 0.22, 0.16, 0.12, 0.09, 0.07];
 const ATTACK = 0.003;        // s — near-instant, precise onset
 const MIN_NOTE = 0.04;       // s — shortest sounding length
+const PLUCK_MAX_RING = 3;    // s — longest tail of a plucked note
+const PLUCK_FADE = 0.03;     // s — final fade-out at the end of a plucked tail
 
 const $ = (id) => document.getElementById(id);
 const measuresEl = $('measures');
@@ -308,10 +310,19 @@ function click(time, accent, dur = (60 / effBpm()) / state.denom) {
     lp.frequency.exponentialRampToValueAtTime(Math.min(f * 14, 18000), time + att * 2.5);
     osc.connect(lp).connect(gain);
   } else {
-    // Plucked: instant attack, then a continuous exponential decay.
+    // Plucked: instant attack, then an exponential decay whose *power* halves `dur` after the
+    // onset, so the note length is the width at half power (not the time to silence). The tail
+    // rings on until -40 dB (capped at PLUCK_MAX_RING), then fades out quickly.
+    const tau = 2 * dur / Math.LN2;   // amplitude time constant: e^(-2·dur/tau) = 1/2
+    const ring = Math.max(dur, Math.min(tau * Math.log(100), PLUCK_MAX_RING));
     gain.gain.linearRampToValueAtTime(peak, time + ATTACK);
-    gain.gain.exponentialRampToValueAtTime(0.0001, end);
+    gain.gain.exponentialRampToValueAtTime(peak * Math.exp(-(ring - ATTACK) / tau), time + ring);
+    gain.gain.linearRampToValueAtTime(0, time + ring + PLUCK_FADE);
     osc.connect(gain);
+    gain.connect(out);
+    osc.start(time);
+    osc.stop(time + ring + PLUCK_FADE + 0.01);
+    return;
   }
   gain.connect(out);
   osc.start(time);
