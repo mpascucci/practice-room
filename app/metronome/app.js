@@ -11,6 +11,19 @@ const TAP_MAX = 9;           // taps kept for the running average (8 intervals)
 const STORAGE_KEY = 'metronome:v2';
 const TIMBRES = ['string', 'brass'];
 const MIN_DENOM = 1, MAX_DENOM = 16;
+// Note lengths, in beats: 1/16 … 1/2, 1, then half steps up to MAX_LEN beats.
+const MAX_LEN = 4;
+const LENGTHS = [
+  ...Array.from({ length: MAX_DENOM - MIN_DENOM }, (_, i) => 1 / (MAX_DENOM - i)),
+  ...Array.from({ length: (MAX_LEN - 1) * 2 + 1 }, (_, i) => 1 + i / 2),
+];
+const lenIndex = (len) => LENGTHS.reduce((best, v, i) => (Math.abs(v - len) < Math.abs(LENGTHS[best] - len) ? i : best), 0);
+const snapLen = (len) => LENGTHS[lenIndex(len)];
+// Saved settings and presets store `noteLen` (beats); older ones store `denom` (length = 1/denom).
+const readLen = (o) => (Number.isFinite(o?.noteLen) && o.noteLen > 0 ? snapLen(o.noteLen)
+  : Number.isInteger(o?.denom) ? 1 / clamp(o.denom, MIN_DENOM, MAX_DENOM) : null);
+const lenLabel = (len) => (len < 1 ? `1/${Math.round(1 / len)}`
+  : `${Math.floor(len)}${len % 1 ? '½' : ''}`);
 const LETTERS = ['C', 'C♯', 'D', 'D♯', 'E', 'F', 'F♯', 'G', 'G♯', 'A', 'B♭', 'B'];
 const SOLFEGE = ['DO', 'DO♯', 'RE', 'RE♯', 'MI', 'FA', 'FA♯', 'SOL', 'SOL♯', 'LA', 'SI♭', 'SI'];
 // Note-name notation, app-wide (set in the drone's tuner): 'both', 'solfege' or 'letters'. See drone/app.js.
@@ -69,7 +82,7 @@ const state = {
   accentMidi: 38,   // D2
   mode: 'click',      // 'click' (plain sine tick) | 'instrument' (see settings dialog) | 'percussion' (WAV samples, see `perc`)
   timbre: 'brass',  // 'brass' = labelled "sustain" in the UI (sustained) | 'string' = labelled "pluck" (plucked); the stored values keep their old names
-  denom: 3,         // note length = 1/denom of a beat
+  noteLen: 1 / 3,   // note length, in beats (one of LENGTHS)
   perc: 'bass-snare', // percussion set: a folder in sounds/ (see PERC_SETS)
 };
 const MODES = ['click', 'instrument', 'percussion', 'mute'];   // 'mute': no sound, light only
@@ -114,11 +127,11 @@ function load() {
     if (s.perc === 'darabouka') s.perc = 'darabuka';   // old spelling in saved settings
     if (PERC_SETS.includes(s.perc)) state.perc = s.perc;
     if (TIMBRES.includes(s.timbre)) state.timbre = s.timbre;
-    if (Number.isInteger(s.denom)) state.denom = clamp(s.denom, MIN_DENOM, MAX_DENOM);
+    state.noteLen = readLen(s) ?? state.noteLen;
   } catch { /* storage unavailable — use defaults */ }
 }
 function save() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ bpm: state.bpm, mult: state.mult, measures: state.measures, lens: state.lens, normalMidi: state.normalMidi, accentMidi: state.accentMidi, denom: state.denom, timbre: state.timbre, mode: state.mode, perc: state.perc })); } catch {}
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ bpm: state.bpm, mult: state.mult, measures: state.measures, lens: state.lens, normalMidi: state.normalMidi, accentMidi: state.accentMidi, noteLen: state.noteLen, timbre: state.timbre, mode: state.mode, perc: state.perc })); } catch {}
   report();
 }
 
@@ -223,7 +236,7 @@ function syncInputs() {
   tempoRange.value = state.bpm;
   multSelect.value = state.mult;
   showEff();
-  denomInput.value = state.denom === 1 ? '1' : `1/${state.denom}`;
+  denomInput.value = lenLabel(state.noteLen);
 }
 
 // ---------- Audio ----------
@@ -283,7 +296,7 @@ function percHit(time, accent) {
 }
 
 let brassWave = null;
-function click(time, accent, dur = (60 / effBpm()) / state.denom) {
+function click(time, accent, dur = (60 / effBpm()) * state.noteLen) {
   if (state.mode === 'mute') return;
   if (state.mode === 'click') return sineClick(time, accent);
   if (state.mode === 'percussion') return percHit(time, accent);
@@ -453,10 +466,8 @@ function setMult(m) {
 }
 multSelect.addEventListener('change', () => setMult(Number(multSelect.value)));
 
-function setDenom(d) {
-  d = clamp(Math.round(d), MIN_DENOM, MAX_DENOM);
-  if (!Number.isFinite(d)) return;
-  state.denom = d;
+function stepLen(dir) {
+  state.noteLen = LENGTHS[clamp(lenIndex(state.noteLen) + dir, 0, LENGTHS.length - 1)];
   save();
 }
 
@@ -582,7 +593,7 @@ const stepActions = {
   tempo: (d) => setTempo(state.bpm + d),
   beatCount: (d) => setBeatCount(beatCount() + d),
   measureCount: (d) => setMeasureCount(state.measures.length + d),
-  denom: (d) => setDenom(state.denom - d),   // + = longer note = smaller denominator
+  denom: (d) => stepLen(d),
 };
 document.querySelectorAll('[data-step]').forEach((btn) => {
   let holdTimer = 0;
@@ -848,12 +859,12 @@ function loadPresets() {
       };
       q.lens = normLens(p.lens, q.measures.length, n);
       if (MODES.includes(p.mode) && PERC_SETS.includes(p.perc) && TIMBRES.includes(p.timbre)
-          && [p.normalMidi, p.accentMidi, p.denom].every(Number.isInteger)) {
+          && [p.normalMidi, p.accentMidi].every(Number.isInteger) && readLen(p)) {
         Object.assign(q, {
           mode: p.mode, perc: p.perc, timbre: p.timbre,
           normalMidi: clamp(p.normalMidi, MIN_MIDI, MAX_MIDI),
           accentMidi: clamp(p.accentMidi, MIN_MIDI, MAX_MIDI),
-          denom: clamp(p.denom, MIN_DENOM, MAX_DENOM),
+          noteLen: readLen(p),
         });
       }
       return [q];
@@ -934,7 +945,7 @@ function savePreset() {
   const p = {
     name, bpm: state.bpm, mult: state.mult, measures: state.measures.map((m) => [...m]), lens: [...state.lens],
     mode: state.mode, perc: state.perc, timbre: state.timbre,
-    normalMidi: state.normalMidi, accentMidi: state.accentMidi, denom: state.denom,
+    normalMidi: state.normalMidi, accentMidi: state.accentMidi, noteLen: state.noteLen,
   };
   const at = presets.findIndex((x) => x.name.toLowerCase() === name.toLowerCase());
   if (at >= 0) presets[at] = p;                       // same label: overwrite
@@ -950,7 +961,7 @@ function applyPreset(p) {
   state.measures = p.measures.map((m) => [...m]);
   state.lens = [...p.lens];
   if (p.mode) {
-    Object.assign(state, { mode: p.mode, perc: p.perc, timbre: p.timbre, normalMidi: p.normalMidi, accentMidi: p.accentMidi, denom: p.denom });
+    Object.assign(state, { mode: p.mode, perc: p.perc, timbre: p.timbre, normalMidi: p.normalMidi, accentMidi: p.accentMidi, noteLen: p.noteLen });
     syncMode();
     if (ctx && state.mode === 'percussion') loadPerc();   // samples of a set not used yet load now (silent until decoded)
   }
