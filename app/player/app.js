@@ -1032,7 +1032,10 @@ function okToReplace() {
 function openFile(file, isTake = false, restored = false) {
   if (!file) return;
   el.name.classList.remove('placeholder');
-  if (!(file.type.startsWith('audio/') || /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|webm)$/i.test(file.name))) {
+  // Video containers are accepted too: <audio> plays their audio track (most systems report .mp4 as video/mp4).
+  // A file that passes but can't be decoded is caught by the audio 'error' listener (cantPlay).
+  if (!(/^(audio\/|video\/(mp4|quicktime|webm)$)/.test(file.type)
+        || /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|webm|mp4|m4v|mov)$/i.test(file.name))) {
     el.name.classList.remove('loaded');
     el.name.textContent = t('notAudio', { name: file.name });
     return;
