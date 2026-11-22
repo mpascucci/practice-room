@@ -1017,6 +1017,7 @@ I18N.onChange(() => {
 // ---------- Hidden: version ----------
 // Triple-click on the background (not on a control) shows the app version below the controls; again to hide it.
 const versionEl = document.getElementById('version');
+versionEl.addEventListener('click', () => { versionEl.hidden = true; });
 document.addEventListener('click', async (e) => {
   if (e.detail !== 3) return;
   if (e.target.closest('button, input, select, label, dialog, .panel, a')) return;
@@ -1031,7 +1032,7 @@ document.addEventListener('click', async (e) => {
       setTimeout(reject, 1000);
     });
   } catch { /* no service worker (e.g. plain http): keep '?' */ }
-  versionEl.textContent = `Practice Room ${v}`;
+  versionEl.textContent = `Practice Room ${v} (click to hide)`;
   versionEl.hidden = false;
 });
 
