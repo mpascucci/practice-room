@@ -1334,7 +1334,7 @@ let pinch = null, gestureHadPinch = false;
 let sel = null;          // drag in progress: {x0, t0, active, mode, start}  mode: 'loop' (select a region), 'scrub' (touch: move the start mark) or 'pan' (mouse: translate the view)
 let armLoop = false;     // touch devices: the Select button is on, so the next drag selects a loop region
 let dragRange = null;    // [lo, hi] seconds while dragging out a loop region (preview only, applied on release)
-const MIN_LOOP = 0.2, DRAG_PX = 6, LIMIT_PX = 6;
+const MIN_LOOP = 0.2, DRAG_PX = 6, LIMIT_PX = 6, SNAP_PX = 10;
 
 function timeAtX(clientX) {
   const r = box.getBoundingClientRect();
@@ -1372,7 +1372,13 @@ function setLoopLimits(a, b) {
 }
 function seekAtX(clientX) {
   if (!loaded || !audio.duration) return;
-  seekTo(timeAtX(clientX), true);
+  // Magnetic markers: a click within SNAP_PX of a marker line puts the start mark exactly on it.
+  let t = timeAtX(clientX), best = SNAP_PX + 1;
+  for (const m of markers) {
+    const dist = Math.abs(clientX - xOfTime(m.t));
+    if (dist < best) { best = dist; t = m.t; }
+  }
+  seekTo(t, true);
 }
 // Click-drag-drop on the waveform: the dragged region becomes the A-B loop (and the loop is switched on).
 function setLoopRegion(lo, hi) {
