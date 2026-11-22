@@ -1014,6 +1014,27 @@ I18N.onChange(() => {
   report();
 });
 
+// ---------- Hidden: version ----------
+// Triple-click on the background (not on a control) shows the app version below the controls; again to hide it.
+const versionEl = document.getElementById('version');
+document.addEventListener('click', async (e) => {
+  if (e.detail !== 3) return;
+  if (e.target.closest('button, input, select, label, dialog, .panel, a')) return;
+  if (!versionEl.hidden) { versionEl.hidden = true; return; }
+  let v = '?';
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    v = await new Promise((resolve, reject) => {
+      const ch = new MessageChannel();
+      ch.port1.onmessage = (m) => resolve(m.data);
+      reg.active.postMessage('version', [ch.port2]);
+      setTimeout(reject, 1000);
+    });
+  } catch { /* no service worker (e.g. plain http): keep '?' */ }
+  versionEl.textContent = `Practice Room ${v}`;
+  versionEl.hidden = false;
+});
+
 // ---------- Init ----------
 renderBeats();
 syncInputs();

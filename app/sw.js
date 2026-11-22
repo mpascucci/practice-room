@@ -63,6 +63,11 @@ self.addEventListener('activate', (e) => {
   );
 });
 
+// Hidden control of the pages: ask which version is running (double-click on a page background).
+self.addEventListener('message', (e) => {
+  if (e.data === 'version' && e.ports[0]) e.ports[0].postMessage(VERSION);
+});
+
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;

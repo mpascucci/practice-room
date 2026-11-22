@@ -100,6 +100,7 @@ body {
 
 /* Only the beats stage may shrink; every other control keeps its size. */
 .app > * { flex-shrink: 0; }
+.version { margin: 0; font-size: 12px; opacity: .6; text-align: center; }
 
 /* ---------- Beats panel ---------- */
 /* The stage takes all the vertical space left by the other controls, which stay at
