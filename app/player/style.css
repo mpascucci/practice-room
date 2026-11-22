@@ -17,8 +17,8 @@
   --backdrop: rgba(0, 0, 0, .65);
   color-scheme: dark;
 }
-/* Light theme (theme.js sets data-theme). The waveform, the progress bar / mini-map and the normalize graph stay
-   dark displays; the canvases read their colours from the canvas element, so they pick up the scope below. */
+/* Light theme (theme.js sets data-theme). The waveform and the mini-map are white; the normalize graph stays a
+   dark display. The canvases read their colours from the canvas element, so they pick up the scope below. */
 :root[data-theme="light"] {
   --bg: #e3ebe8;
   --panel: #f4f8f7;
@@ -27,6 +27,7 @@
   --muted: #566762;
   --accent: #187a56;
   --accent-dim: #d6eee4;
+  --display-text: #15201d;   /* playhead line over the white mini-map */
   --track-bg: #cdd8d4;
   --thumb-bg: #ffffff;
   --warn: #b3261e;
@@ -35,7 +36,12 @@
   --backdrop: rgba(0, 0, 0, .45);
   color-scheme: light;
 }
-:root[data-theme="light"] :is(.wave, .progress-track, #normCanvas) {
+:root[data-theme="light"] :is(.wave, .progress-track) {
+  --panel: #fff;
+  --accent-dim: #b4d6c8;   /* bars after the playhead */
+  --mark: #b88a00;         /* start mark */
+}
+:root[data-theme="light"] #normCanvas {
   --bg: #161a19;
   --panel: #1d2322;
   --line: #34403d;

@@ -88,7 +88,13 @@ body {
 }
 .slot[data-app="drone"] { --c: var(--drone); }
 .slot[data-app="player"] { --c: var(--player); }
-.slot.active { background: var(--tab-active); border-color: var(--line); }
+.slot { border-color: color-mix(in srgb, var(--c) 35%, var(--line)); }   /* thin border... */
+.slot.active { background: var(--tab-active); border-color: var(--c); box-shadow: inset 0 0 0 1px var(--c); }   /* ...2px when selected (inset shadow: no layout shift) */
+/* light theme: each selector takes its app's faint background (same values as the apps' own --bg) */
+:root[data-theme="light"] .slot { background: var(--tint); }
+:root[data-theme="light"] .slot[data-app="metronome"] { --tint: #e2eaf5; }
+:root[data-theme="light"] .slot[data-app="drone"] { --tint: #e9e3d8; }
+:root[data-theme="light"] .slot[data-app="player"] { --tint: #e3ebe8; }
 .slot.active::after {
   content: "";
   position: absolute;
@@ -202,13 +208,12 @@ body {
 .copyright a:hover { color: var(--text); }
 
 /* Language picker: a globe and the language code; a transparent native select on top opens the menu of full names. */
-.lang-pick { position: relative; display: inline-flex; align-items: center; gap: .25em; white-space: nowrap; cursor: pointer; }
-.lang-pick svg { vertical-align: -.125em; }
+.lang-pick { position: relative; display: inline; white-space: nowrap; cursor: pointer; }   /* inline, like the other footer items, so the separators share one baseline */
+.lang-pick svg { vertical-align: -.125em; margin-right: .25em; }
 .lang-pick:hover { color: var(--text); }
 
 /* Theme toggle: icon of the theme it switches to, plus its name on wide screens */
-#themeBtn { display: inline-flex; align-items: center; gap: .3em; vertical-align: bottom; text-decoration: none; }
-#themeBtn svg { flex: none; }
+#themeBtn svg { vertical-align: -.125em; margin-right: .3em; }   /* inline like the Share button, so it sits on the same baseline as the other footer items */
 :root[data-theme="light"] #themeBtn .i-sun, :root:not([data-theme="light"]) #themeBtn .i-moon { display: none; }
 .lang-pick select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; font: inherit; }
 .lang-pick:has(select:focus-visible) { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 3px; }
@@ -255,6 +260,7 @@ body {
   .vol svg { width: 18px; height: 18px; }
   .play { width: 36px; height: 36px; }
   .theme-label { display: none; }
+  #themeBtn svg { margin-right: 0; }   /* icon only: no gap before the separator */
   .gh-link { display: none; }   /* footer room for the language picker and longer translations */
 }
 

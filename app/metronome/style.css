@@ -35,18 +35,18 @@
 }
 /* Light theme (theme.js sets data-theme): the room goes light, the beats panel stays a dark display. */
 :root[data-theme="light"] {
-  --bg: #e9ebee;
+  --bg: #e2eaf5;
   --text: #1c1f23;
   --muted: #5f666e;
   --field: #ffffff;
-  --field-border: #c4c9cf;
-  --dialog: #f6f7f9;
+  --field-border: #bccadc;
+  --dialog: #f4f7fb;
   --focus: #2462c4;
   --hover: #0000000a;
   --hover-2: #0000000d;
   --press: #00000014;
   --press-2: #0000001a;
-  --btn-hover: #eef0f3;
+  --btn-hover: #eaf0f8;
   --shadow: #0003;
   --backdrop: #0008;
   --error: #c62828;

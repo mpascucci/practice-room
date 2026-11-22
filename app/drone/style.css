@@ -20,11 +20,12 @@
   --shadow: #0007;
   /* tuner curtain */
   --curtain-top: #0f0d0b;  /* gradient from the top edge */
+  --curtain-bottom: var(--panel);
   --pleat: #ffffff06;
   --curtain-shadow: #000a;
-  --tn-dim: #593d0b;       /* tuner disks, off / lit; the centre disk is blue */
+  --tn-dim: #6b490d;       /* tuner disks, off / lit; the centre disk is blue */
   --tn-lit: #ffd95e;
-  --tn-mid-dim: #233e6a;
+  --tn-mid-dim: #2a4a7f;
   --tn-mid-lit: #a8d2ff;
   --tn-ring: #fff;         /* nearest disk */
   --tn-yellow: #ffd95e;    /* Hz value, reference being captured */
@@ -34,7 +35,7 @@
 /* Light theme (theme.js sets data-theme). The tuner curtain, its handle and the spectrogram stay dark displays. */
 :root[data-theme="light"] {
   --bg: #e9e3d8;
-  --panel: #f3eee5;
+  --panel: #fffdf9;        /* same tint as --row */
   --row: #fffdf9;
   --row-off: #e7e0d3;
   --line: #cdc2b0;
@@ -51,6 +52,7 @@
   --off-fg: #8d847a;
   --shadow: #0003;
   --curtain-top: #ded5c4;
+  --curtain-bottom: #ece5d8;
   --pleat: #00000008;
   --curtain-shadow: #0003;
   --tn-dim: #e6d5b2;
@@ -62,6 +64,14 @@
   --tn-blue: #2462c4;
   color-scheme: light;
 }
+/* tuner controls sit on the curtain: firmer border so the --row tint stands out from it */
+:root[data-theme="light"] .curtain-inner { --line: #b8ac97; }
+/* the disks container stays dark: dark-theme disk colours */
+:root[data-theme="light"] .tuner-disks {
+  --tn-dim: #6b490d; --tn-lit: #ffd95e; --tn-mid-dim: #2a4a7f; --tn-mid-lit: #a8d2ff; --tn-ring: #fff;
+}
+/* field labels in black */
+:root[data-theme="light"] :is(label, .harmonics-head > span, .notation legend, .seg label) { color: #000; }
 /* fades are stronger on a light background: soften them so inactive controls stay readable */
 :root[data-theme="light"] .sweep:not(.active) .field { opacity: .7; }
 :root[data-theme="light"] :is(.row.off .pitch, .row.off .hz, .row.off .pct) { opacity: .6; }
@@ -482,11 +492,11 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid var(--a
   overflow: hidden; min-height: 0;
   display: flex; flex-direction: column; align-items: center; gap: 4px;
   padding: 54px 12px 58px;
-  background: linear-gradient(var(--curtain-top), var(--panel));
+  background: linear-gradient(var(--curtain-top), var(--curtain-bottom));
   border-radius: 0 0 18px 18px;
   box-shadow: inset 0 0 0 1px var(--inner), 0 8px 14px -8px var(--curtain-shadow);
   /* fold-like vertical pleats */
-  background-image: repeating-linear-gradient(90deg, var(--pleat) 0 14px, transparent 14px 28px), linear-gradient(var(--curtain-top), var(--panel));
+  background-image: repeating-linear-gradient(90deg, var(--pleat) 0 14px, transparent 14px 28px), linear-gradient(var(--curtain-top), var(--curtain-bottom));
 }
 .tuner.collapsed .curtain-inner { padding-block: 0; visibility: hidden; transition: visibility 0s 280ms, padding 280ms; box-shadow: none; }
 .curtain-inner p { margin: 0; }
@@ -514,8 +524,11 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid var(--a
 /* Nine disks = nine 10-cent bins (-40…+40). Intensity falls off linearly with the distance from the bin centre. */
 .tuner-disks {
   width: 100%; display: flex; justify-content: center;
-  /* 9 disks + 8 gaps (.25 d) = 11 d must fit the width left by the page (2×14px) and curtain (2×12px) padding, plus the outline ring */
-  --d: min(46px, calc((100vw - 64px) / 11)); gap: calc(var(--d) * .25);
+  /* 9 disks + 8 gaps (.25 d) = 11 d must fit the width left by the page (2×14px), curtain (2×12px) and container (2×14px) padding, plus the outline ring */
+  --d: min(46px, calc((100vw - 92px) / 11)); gap: calc(var(--d) * .25);
+  /* rectangular dark container, like the beats panel of the metronome */
+  padding: 16px 14px; border-radius: 14px;
+  background: #141210; box-shadow: 0 8px 30px var(--shadow), inset 0 0 0 1px #ffffff0d;
 }
 .tuner-disks .disk {
   --i: 0; --dim: var(--tn-dim); --lit: var(--tn-lit);

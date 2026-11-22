@@ -33,7 +33,7 @@ let timer = 0;
 let loadToken = 0;
 let wakeLock = null;
 let peaks = null;        // Float32Array of per-bucket peak amplitudes (0..1), null until decoded
-let colors = null;
+let colors = null, normColors = null;   // cached canvas colours: main waveform / normalize graph (different themed scopes)
 let curFile = null;      // the File currently loaded (decoded again by Normalize)
 let rawPeak = 0;         // highest absolute sample of the loaded file (0..1), 0 until decoded
 
@@ -474,7 +474,7 @@ function drawWave() {
   }
   if (!colors) {
     const cs = getComputedStyle(cv);   // the canvas: in light theme it sits in a dark-display scope (style.css)
-    colors = { accent: cs.getPropertyValue('--accent').trim(), dim: cs.getPropertyValue('--accent-dim').trim(), text: cs.getPropertyValue('--text').trim() };
+    colors = { accent: cs.getPropertyValue('--accent').trim(), dim: cs.getPropertyValue('--accent-dim').trim(), text: cs.getPropertyValue('--text').trim(), mark: cs.getPropertyValue('--mark').trim() || '#f2c744' };
   }
   const g = cv.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -490,7 +490,7 @@ function drawWave() {
   const live = !!dragRange || state.loop;   // gray when the loop is off
   if (la != null && d) {
     const xa = Math.max(0, xOf(la)), xb = Math.min(w, xOf(lb ?? la));
-    g.fillStyle = live ? 'rgba(95, 201, 160, 0.14)' : 'rgba(143, 160, 155, 0.12)';
+    g.fillStyle = live ? 'color-mix(in srgb, ' + colors.accent + ' 16%, transparent)' : 'rgba(143, 160, 155, 0.18)';
     if (xb > xa) g.fillRect(xa, 0, xb - xa, h);
   }
 
@@ -530,7 +530,7 @@ function drawWave() {
   if (startMark != null && d) {
     const x = xOf(startMark);
     if (x >= 0 && x <= w) {
-      g.fillStyle = '#f2c744';
+      g.fillStyle = colors.mark;
       g.fillRect(Math.min(w - 2, Math.max(0, x - 1)), 0, 2, h);
     }
   }
@@ -556,7 +556,7 @@ function drawWave() {
   if (d) {
     const x = xOf(pos);
     if (x >= 0 && x <= w) {
-      g.fillStyle = '#fff';
+      g.fillStyle = colors.text;
       g.fillRect(Math.min(w - 1, x), 0, 1, h);
     }
   }
@@ -1125,9 +1125,9 @@ function drawNorm() {
   if (!w || !h || !peaks) return;
   const dpr = window.devicePixelRatio || 1;
   if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
-  if (!colors) {
+  if (!normColors) {
     const cs = getComputedStyle(cv);   // the canvas: in light theme it sits in a dark-display scope (style.css)
-    colors = { accent: cs.getPropertyValue('--accent').trim(), dim: cs.getPropertyValue('--accent-dim').trim(), text: cs.getPropertyValue('--text').trim() };
+    normColors = { accent: cs.getPropertyValue('--accent').trim(), dim: cs.getPropertyValue('--accent-dim').trim(), text: cs.getPropertyValue('--text').trim() };
   }
   const g = cv.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
@@ -1142,7 +1142,7 @@ function drawNorm() {
     let p = 0;
     for (let k = a; k < b && k < PEAK_BUCKETS; k++) if (peaks[k] > p) p = peaks[k];
     const bh = Math.max(1, p * half), inner = Math.min(bh, lim);
-    g.fillStyle = colors.accent;
+    g.fillStyle = normColors.accent;
     g.fillRect(x, mid - inner, 1, inner * 2);
     if (bh > lim) {   // outside the safe region: clipped
       g.fillStyle = '#5b6663';
@@ -1152,7 +1152,7 @@ function drawNorm() {
   }
   g.fillStyle = 'rgba(143, 160, 155, 0.35)';
   g.fillRect(0, mid, w, 1);
-  g.strokeStyle = colors.text;
+  g.strokeStyle = normColors.text;
   g.lineWidth = 1.5;
   g.setLineDash([6, 4]);
   g.beginPath();
@@ -1609,7 +1609,7 @@ I18N.onChange(() => {
 // ---------- Theme ----------
 // theme.js switched <html data-theme>: drop the cached canvas colours and redraw.
 window.addEventListener('themechange', () => {
-  colors = null;
+  colors = normColors = null;
   pwKey = '';
   drawWave();
   if (el.normDialog.open) renderNorm();
