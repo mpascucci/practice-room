@@ -3,7 +3,7 @@
 // background, so edits show up on the next launch. Bump VERSION to force a clean re-cache
 // (e.g. after adding or removing files).
 
-const VERSION = 'v5.09';
+const VERSION = 'v5.10';
 const CACHE = `practice-room-${VERSION}`;
 
 const FILES = [
@@ -12,6 +12,7 @@ const FILES = [
   'style.css',
   'app.js',
   'i18n.js',
+  'theme.js',
   'strings.js',
   'manifest.webmanifest',
   'CREDITS.md',

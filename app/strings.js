@@ -16,6 +16,10 @@ I18N.add({
     copied: 'Copied!',
     copyPrompt: 'Copy this link:',
     shareText: 'Metronome, drone and audio player for music practice.',
+    themeLight: 'Light',
+    themeDark: 'Dark',
+    themeToLight: 'Switch to light theme',
+    themeToDark: 'Switch to dark theme',
   },
   it: {
     language: 'Lingua',
@@ -48,6 +52,10 @@ I18N.add({
     copied: 'Copiato!',
     copyPrompt: 'Copia questo link:',
     shareText: 'Metronomo, bordone e lettore audio per studiare musica.',
+    themeLight: 'Chiaro',
+    themeDark: 'Scuro',
+    themeToLight: 'Passa al tema chiaro',
+    themeToDark: 'Passa al tema scuro',
   },
   fr: {
     language: 'Langue',
@@ -80,6 +88,10 @@ I18N.add({
     copied: 'Copié !',
     copyPrompt: 'Copiez ce lien :',
     shareText: 'Métronome, bourdon et lecteur audio pour travailler la musique.',
+    themeLight: 'Clair',
+    themeDark: 'Sombre',
+    themeToLight: 'Passer au thème clair',
+    themeToDark: 'Passer au thème sombre',
   },
   es: {
     language: 'Idioma',
@@ -112,6 +124,10 @@ I18N.add({
     copied: '¡Copiado!',
     copyPrompt: 'Copia este enlace:',
     shareText: 'Metrónomo, bordón y reproductor de audio para practicar música.',
+    themeLight: 'Claro',
+    themeDark: 'Oscuro',
+    themeToLight: 'Cambiar al tema claro',
+    themeToDark: 'Cambiar al tema oscuro',
   },
   de: {
     language: 'Sprache',
@@ -144,5 +160,9 @@ I18N.add({
     copied: 'Kopiert!',
     copyPrompt: 'Diesen Link kopieren:',
     shareText: 'Metronom, Bordun und Audioplayer zum Üben.',
+    themeLight: 'Hell',
+    themeDark: 'Dunkel',
+    themeToLight: 'Zum hellen Design wechseln',
+    themeToDark: 'Zum dunklen Design wechseln',
   },
 });

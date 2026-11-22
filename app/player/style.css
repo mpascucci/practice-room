@@ -8,6 +8,41 @@
   --accent-dim: #2f6652;
   --play: #2e7d32;
   --stop: #b23a3a;
+  --track-bg: #2b3633;     /* slider / switch / meter, empty part */
+  --thumb-bg: #e8efed;     /* slider thumb and switch knob */
+  --display-text: #e8efed; /* playhead line over the dark mini-map */
+  --warn: #ff9a8a;
+  --caution: #e0a43a;
+  --danger-line: #7a3a3a;
+  --backdrop: rgba(0, 0, 0, .65);
+  color-scheme: dark;
+}
+/* Light theme (theme.js sets data-theme). The waveform, the progress bar / mini-map and the normalize graph stay
+   dark displays; the canvases read their colours from the canvas element, so they pick up the scope below. */
+:root[data-theme="light"] {
+  --bg: #e3ebe8;
+  --panel: #f4f8f7;
+  --line: #c2d0cb;
+  --text: #15201d;
+  --muted: #566762;
+  --accent: #187a56;
+  --accent-dim: #d6eee4;
+  --track-bg: #cdd8d4;
+  --thumb-bg: #ffffff;
+  --warn: #b3261e;
+  --caution: #a15c00;
+  --danger-line: #e3a39d;
+  --backdrop: rgba(0, 0, 0, .45);
+  color-scheme: light;
+}
+:root[data-theme="light"] :is(.wave, .progress-track, #normCanvas) {
+  --bg: #161a19;
+  --panel: #1d2322;
+  --line: #34403d;
+  --text: #e8efed;
+  --muted: #8fa09b;
+  --accent: #5fc9a0;
+  --accent-dim: #2f6652;
   color-scheme: dark;
 }
 *, *::before, *::after { box-sizing: border-box; }
@@ -90,22 +125,22 @@ input[type="range"] {
   --p: 0;
   width: 100%; height: 26px; margin: 0; background: transparent; cursor: pointer;
   -webkit-appearance: none; appearance: none;
-  --track: linear-gradient(90deg, var(--accent) calc(var(--p) * 100%), #2b3633 calc(var(--p) * 100%));
+  --track: linear-gradient(90deg, var(--accent) calc(var(--p) * 100%), var(--track-bg) calc(var(--p) * 100%));
 }
 input[type="range"]:disabled { opacity: .4; cursor: default; }
 input[type="range"]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: var(--track); }
 input[type="range"]::-moz-range-track { height: 6px; border-radius: 3px; background: var(--track); }
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none; width: 18px; height: 18px; margin-top: -6px; border-radius: 50%;
-  background: var(--text); border: 3px solid var(--accent);
+  background: var(--thumb-bg); border: 3px solid var(--accent);
 }
-input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--text); border: 3px solid var(--accent); }
+input[type="range"]::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--thumb-bg); border: 3px solid var(--accent); }
 input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 
 .switch { display: inline-flex; cursor: pointer; }
 .switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-.switch .track { width: 44px; height: 26px; border-radius: 13px; background: #2b3633; position: relative; transition: background-color 150ms; }
-.switch .knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--text); transition: transform 150ms; }
+.switch .track { width: 44px; height: 26px; border-radius: 13px; background: var(--track-bg); position: relative; transition: background-color 150ms; }
+.switch .knob { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--thumb-bg); transition: transform 150ms; }
 .switch input:checked + .track { background: var(--accent-dim); }
 .switch input:checked + .track .knob { transform: translateX(18px); background: var(--accent); }
 .switch input:disabled + .track { opacity: .4; }
@@ -132,7 +167,7 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
   .progress-view { background: color-mix(in srgb, var(--accent) 28%, transparent); border-left: 1px solid var(--accent); border-right: 1px solid var(--accent); box-sizing: border-box; }
   .progress-marks { top: 0; height: 100%; }
   .pm { top: 0; width: 2px; height: 100%; margin: 0 0 0 -1px; clip-path: none; }
-  .progress-handle { top: 0; width: 2px; height: 100%; margin-left: -1px; border: 0; border-radius: 0; background: var(--text); box-shadow: none; }
+  .progress-handle { top: 0; width: 2px; height: 100%; margin-left: -1px; border: 0; border-radius: 0; background: var(--display-text); box-shadow: none; }
 }
 @media (min-width: 601px) and (min-height: 700px) { .progress { height: 44px; } }
 .wave:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -154,7 +189,7 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 
 /* Recording dialog */
 #recDialog, #confirmDialog, #infoDialog, #markerDialog, #normDialog { border: 1px solid #e5484d; border-radius: 14px; background: var(--panel); color: var(--text); padding: 0; width: min(88vw, 320px); }
-#recDialog::backdrop, #confirmDialog::backdrop, #infoDialog::backdrop, #markerDialog::backdrop, #normDialog::backdrop { background: rgba(0, 0, 0, .65); }
+#recDialog::backdrop, #confirmDialog::backdrop, #infoDialog::backdrop, #markerDialog::backdrop, #normDialog::backdrop { background: var(--backdrop); }
 .rec-body { display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 24px 20px; }
 .rec-title { margin: 0; display: flex; align-items: center; gap: 10px; font-weight: 600; }
 .rec-title .dot { width: 12px; height: 12px; border-radius: 50%; background: #e5484d; animation: blink 1s steps(2, start) infinite; }
@@ -162,9 +197,9 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 .rec-stop { gap: 8px; min-height: 48px; min-width: 140px; border-radius: 24px; background: var(--stop); border-color: var(--stop); color: #fff; }
 .rec-stop svg { width: 16px; height: 16px; fill: currentColor; }
 
-.hint.warn { color: #ff9a8a; font-size: .85rem; }
+.hint.warn { color: var(--warn); font-size: .85rem; }
 
-.meter { position: relative; width: 100%; height: 14px; border-radius: 7px; background: #2b3633; overflow: hidden; }
+.meter { position: relative; width: 100%; height: 14px; border-radius: 7px; background: var(--track-bg); overflow: hidden; }
 .meter-fill { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent); transition: background-color 80ms; }
 .meter-fill.hot { background: #e0a43a; }
 .meter-fill.clip { background: #e5484d; }
@@ -187,7 +222,7 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 #normDialog .rec-title { justify-content: center; }
 #normCanvas { width: 100%; height: 130px; display: block; border-radius: 8px; background: var(--bg); touch-action: none; }
 .norm-info { margin: 0; text-align: center; font-size: .9rem; color: var(--muted); }
-.norm-info.warn { color: #e0a43a; }
+.norm-info.warn { color: var(--caution); }
 @media (max-width: 480px) {
   .actions .label { display: none; }
   .actions .open, .actions .btn, .actions .rec, .actions #normalize { min-width: 44px; min-height: 44px; padding: 0; border-radius: 50%; }
@@ -396,6 +431,6 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 .marker-label { cursor: grab; touch-action: none; }
 .marker-label.dragging { cursor: grabbing; z-index: 1; }
 
-#markerRemove { color: #ff9a8a; border-color: #7a3a3a; }
+#markerRemove { color: var(--warn); border-color: var(--danger-line); }
 #markerDialog .confirm-btns { flex-wrap: wrap; }
 #markerOk { background: #e040fb; border-color: #e040fb; color: #1a0620; }

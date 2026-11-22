@@ -15,7 +15,52 @@
 
   --play: #2e7d32;
   --stop: #b23a3a;
+
+  --dialog: #1a1a1a;
+  --focus: #6aa8ff;
+  --hover: #ffffff0d;
+  --hover-2: #ffffff10;
+  --press: #ffffff1f;
+  --press-2: #ffffff20;
+  --btn-hover: #3a3a3a;
+  --shadow: #0007;
+  --backdrop: #000a;
+  --error: #ff6b6b;
+  --warn: #ffb84a;
+  --ink-blue: var(--normal-lit);    /* lit colours used as text / controls outside the beats panel */
+  --ink-amber: var(--accent-lit);
+  --panel-edge: #ffffff0d;     /* inset hairline around the beats panel */
+  --ring: #fff;                /* outline of the lit beat */
   color-scheme: dark;
+}
+/* Light theme (theme.js sets data-theme): the room goes light, the beats panel stays a dark display. */
+:root[data-theme="light"] {
+  --bg: #e9ebee;
+  --text: #1c1f23;
+  --muted: #5f666e;
+  --field: #ffffff;
+  --field-border: #c4c9cf;
+  --dialog: #f6f7f9;
+  --focus: #2462c4;
+  --hover: #0000000a;
+  --hover-2: #0000000d;
+  --press: #00000014;
+  --press-2: #0000001a;
+  --btn-hover: #eef0f3;
+  --shadow: #0003;
+  --backdrop: #0008;
+  --error: #c62828;
+  --warn: #a15c00;
+  --ink-blue: #2462c4;
+  --ink-amber: #a15c00;
+  /* beats panel: dark gray (lighter than the dark theme's), the disks keep their colours */
+  --panel: #2e3135;
+  color-scheme: light;
+}
+:root[data-theme="light"] .panel {   /* light handle, strike and focus ring on the dark panel */
+  --text: #e8e8e8;
+  --muted: #a3a8ae;
+  --focus: #6aa8ff;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -79,7 +124,7 @@ body {
   background: var(--panel);
   border-radius: 14px;
   padding: var(--pad-y) clamp(10px, 3vw, 28px);
-  box-shadow: 0 8px 30px #0006, inset 0 0 0 1px #ffffff0d;
+  box-shadow: 0 8px 30px var(--shadow), inset 0 0 0 1px var(--panel-edge);
 }
 
 .measures {
@@ -133,7 +178,7 @@ body {
 }
 .handle svg { width: 100%; height: 100%; fill: currentColor; pointer-events: none; }
 .handle:hover { color: var(--text); }
-.handle:focus-visible { outline: 2px solid #6aa8ff; outline-offset: 2px; border-radius: 4px; }
+.handle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
 
 /* One measure: no handle, so no room reserved for it */
 .stage[data-nohandle] .handle { display: none; }
@@ -188,11 +233,11 @@ body {
 .disk[data-state="normal"] { background: var(--normal); }
 .disk[data-state="accent"] { background: var(--accent); }
 
-.disk:focus-visible { outline-color: #6aa8ff; }
+.disk:focus-visible { outline-color: var(--focus); }
 
 /* Lit beat: instant on, short fade out */
 .disk.lit {
-  outline-color: #fff;
+  outline-color: var(--ring);
   transform: scale(1.06);
   transition: none;
 }
@@ -225,7 +270,7 @@ body {
   cursor: pointer;
   display: grid;
   place-items: center;
-  box-shadow: 0 6px 18px #0007;
+  box-shadow: 0 6px 18px var(--shadow);
   transition: background-color 150ms, transform 80ms;
 }
 /* small devices (phones, portrait or landscape): 30% smaller, but never below a 44px touch target */
@@ -233,7 +278,7 @@ body {
   .play { --size: max(44px, calc(clamp(56px, 12dvh, 84px) * 0.7)); }
 }
 .play:active { transform: scale(.95); }
-.play:focus-visible { outline: 3px solid #6aa8ff; outline-offset: 3px; }
+.play:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
 .play { padding: 0; grid-template: minmax(0, 1fr) / minmax(0, 1fr); }   /* definite track + no default button padding, so the % sizes below are of the whole button */
 .play svg { fill: currentColor; pointer-events: none; }
 /* Uniform play/stop symbol, same in every app and at every size: its circumscribed circle is half the button's
@@ -270,7 +315,7 @@ label {
   color: var(--muted);
 }
 .unit { opacity: .7; }
-.tempo-val.multiplied, .mult select.multiplied { color: var(--accent-lit); }
+.tempo-val.multiplied, .mult select.multiplied { color: var(--ink-amber); }
 
 .stepper {
   display: flex;
@@ -289,8 +334,8 @@ label {
   font-size: 1.3rem;
   cursor: pointer;
 }
-.stepper button:hover { background: #ffffff10; }
-.stepper button:active { background: #ffffff20; }
+.stepper button:hover { background: var(--hover-2); }
+.stepper button:active { background: var(--press-2); }
 .stepper input {
   width: 4.2ch;
   border: 0;
@@ -305,7 +350,7 @@ label {
 }
 .stepper input::-webkit-inner-spin-button,
 .stepper input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-.stepper input:focus { outline: none; background: #ffffff0d; }
+.stepper input:focus { outline: none; background: var(--hover); }
 /* touch screens: value shown, not editable, never focused (no virtual keyboard) */
 .stepper input.display-only { pointer-events: none; user-select: none; -webkit-user-select: none; }
 
@@ -325,7 +370,7 @@ label {
   color: var(--text);
   font: 600 1.05rem system-ui, sans-serif;
 }
-.mult select:focus-visible { outline: 2px solid #6aa8ff; outline-offset: 1px; }
+.mult select:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 
 .tap {
   min-width: 76px;
@@ -344,7 +389,7 @@ label {
   user-select: none;
   transition: background-color 80ms;
 }
-.tap:hover { background: #3a3a3a; }
+.tap:hover { background: var(--btn-hover); }
 
 /* icon-only button (edit beat sequence) */
 .icon-btn {
@@ -359,8 +404,8 @@ label {
   color: var(--text);
   cursor: pointer;
 }
-.icon-btn:hover { background: #3a3a3a; }
-.icon-btn:focus-visible { outline: 3px solid #6aa8ff; outline-offset: 2px; }
+.icon-btn:hover { background: var(--btn-hover); }
+.icon-btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .icon-btn svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .icon-btn .lbl { display: none; }
 /* PC and large displays: icon + text label (the complement of the compact breakpoint above). */
@@ -369,14 +414,14 @@ label {
   .icon-btn .lbl { display: inline; }
 }
 .tap.hit { background: var(--normal); transition: none; }
-.tap:focus-visible { outline: 3px solid #6aa8ff; outline-offset: 2px; }
+.tap:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .tap-label { font-weight: 600; font-size: .95rem; }
 .tap-info { font-size: .65rem; color: var(--muted); font-variant-numeric: tabular-nums; min-height: 1em; }
 .tap-info:empty { display: none; }
 
 input[type="range"] {
   width: 100%;
-  accent-color: var(--normal-lit);
+  accent-color: var(--ink-blue);
   height: 28px;
 }
 
@@ -427,11 +472,11 @@ input[type="range"] {
   padding: 0;
   border: 1px solid var(--field-border);
   border-radius: 14px;
-  background: var(--panel);
+  background: var(--dialog);
   color: var(--text);
-  box-shadow: 0 20px 60px #000a;
+  box-shadow: 0 20px 60px var(--shadow);
 }
-.seq-dialog::backdrop { background: #000a; }
+.seq-dialog::backdrop { background: var(--backdrop); }
 .seq-dialog form { display: flex; flex-direction: column; gap: 10px; padding: 18px; }
 .seq-dialog label { text-transform: none; letter-spacing: 0; font-size: .95rem; color: var(--text); }
 .seq-dialog input {
@@ -444,16 +489,16 @@ input[type="range"] {
   font: 600 1.25rem/1 system-ui, sans-serif;
   letter-spacing: .04em;
 }
-.seq-dialog input:focus { outline: 2px solid #6aa8ff; outline-offset: 1px; }
-.seq-dialog input.invalid { outline-color: #ff6b6b; border-color: #ff6b6b; }
+.seq-dialog input:focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+.seq-dialog input.invalid { outline-color: var(--error); border-color: var(--error); }
 .seq-error, .seq-warn { margin: 0; font-size: .8rem; }
-.seq-error { color: #ff6b6b; }
-.seq-warn { color: #ffb84a; }
+.seq-error { color: var(--error); }
+.seq-warn { color: var(--warn); }
 .seq-result {
   min-height: 1.4em;
   font-size: 1.05rem;
   font-variant-numeric: tabular-nums;
-  color: var(--normal-lit);
+  color: var(--ink-blue);
   word-break: break-word;
 }
 .seg { border: 0; margin: 0; padding: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
@@ -481,10 +526,10 @@ input[type="range"] {
   user-select: none;
 }
 .seg-opts label + label { border-left: 1px solid var(--field-border); }
-.seg-opts label:hover { background: #ffffff0d; }
+.seg-opts label:hover { background: var(--hover); }
 .seg-opts input { position: absolute; opacity: 0; width: 1px; height: 1px; pointer-events: none; }
-.seg-opts label:has(input:checked) { background: #ffffff1f; color: var(--text); font-weight: 600; }
-.seg-opts label:has(input:focus-visible) { outline: 2px solid #6aa8ff; outline-offset: -2px; }
+.seg-opts label:has(input:checked) { background: var(--press); color: var(--text); font-weight: 600; }
+.seg-opts label:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: -2px; }
 
 .bar-demo { width: 100%; height: auto; max-height: 90px; }
 .help-text { margin: 0; font-size: .9rem; line-height: 1.4; color: var(--muted); }
@@ -499,11 +544,11 @@ input[type="range"] {
   font: 600 .95rem system-ui, sans-serif;
   cursor: pointer;
 }
-.btn:hover { background: #3a3a3a; }
+.btn:hover { background: var(--btn-hover); }
 .btn.primary { background: var(--play); border-color: transparent; color: #fff; }
 .btn.primary:hover { background: #379140; }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
-.btn:focus-visible { outline: 3px solid #6aa8ff; outline-offset: 2px; }
+.btn:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
 /* ---------- Transport row & sound settings ---------- */
 .transport {
@@ -541,9 +586,9 @@ input[type="range"] {
 .mute-btn svg path:first-child { stroke-width: 1; }
 .mute-btn svg path:last-child { fill: none; }
 .mode-toggle button + button { border-left: 1px solid var(--field-border); }
-.mode-toggle button:hover { background: #ffffff0d; }
-.mode-toggle button[aria-pressed="true"] { background: #ffffff1f; color: var(--text); }
-.mode-toggle button:focus-visible { outline: 2px solid #6aa8ff; outline-offset: -2px; }
+.mode-toggle button:hover { background: var(--hover); }
+.mode-toggle button[aria-pressed="true"] { background: var(--press); color: var(--text); }
+.mode-toggle button:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
 .dlg-title { margin: 0; font-weight: 600; font-size: 1.05rem; }
 .note-row { display: flex; gap: 10px; align-items: center; }
 .seq-dialog select {
@@ -556,7 +601,7 @@ input[type="range"] {
   font: 600 1.05rem system-ui, sans-serif;
 }
 .seq-dialog select:first-child { flex: 1 1 auto; }
-.seq-dialog select:focus-visible { outline: 2px solid #6aa8ff; outline-offset: 1px; }
+.seq-dialog select:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 .seq-dialog .stepper input { height: auto; padding: 0; border-radius: 0; letter-spacing: 0; }
 .stepper input.frac-input { width: 6ch; }
 .seg-opts.two { grid-template-columns: repeat(2, 1fr); }
@@ -583,8 +628,8 @@ input[type="range"] {
   border-radius: 10px; border: 1px solid var(--field-border); background: var(--field);
   color: var(--text); font: inherit; text-align: left; cursor: pointer;
 }
-.preset-load:hover { background: #3a3a3a; }
-.preset-load:focus-visible { outline: 3px solid #6aa8ff; outline-offset: 2px; }
+.preset-load:hover { background: var(--btn-hover); }
+.preset-load:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 /* label, then the tempo summary to its right when it fits, otherwise below it */
 .preset-head { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; row-gap: 0; max-width: 100%; }
 .preset-name { font-weight: 600; overflow-wrap: anywhere; }

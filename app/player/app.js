@@ -473,7 +473,7 @@ function drawWave() {
     cv.height = Math.round(h * dpr);
   }
   if (!colors) {
-    const cs = getComputedStyle(document.documentElement);
+    const cs = getComputedStyle(cv);   // the canvas: in light theme it sits in a dark-display scope (style.css)
     colors = { accent: cs.getPropertyValue('--accent').trim(), dim: cs.getPropertyValue('--accent-dim').trim(), text: cs.getPropertyValue('--text').trim() };
   }
   const g = cv.getContext('2d');
@@ -587,7 +587,7 @@ function drawProgressWave() {
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, w, h);
   if (!peaks) return;
-  g.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--accent-dim').trim();
+  g.fillStyle = getComputedStyle(cv).getPropertyValue('--accent-dim').trim();
   const bw = 2, gap = 1, n = Math.floor(w / (bw + gap));
   for (let i = 0; i < n; i++) {
     const a = Math.floor(i / n * PEAK_BUCKETS), b = Math.max(a + 1, Math.floor((i + 1) / n * PEAK_BUCKETS));
@@ -1126,7 +1126,7 @@ function drawNorm() {
   const dpr = window.devicePixelRatio || 1;
   if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
   if (!colors) {
-    const cs = getComputedStyle(document.documentElement);
+    const cs = getComputedStyle(cv);   // the canvas: in light theme it sits in a dark-display scope (style.css)
     colors = { accent: cs.getPropertyValue('--accent').trim(), dim: cs.getPropertyValue('--accent-dim').trim(), text: cs.getPropertyValue('--text').trim() };
   }
   const g = cv.getContext('2d');
@@ -1604,6 +1604,15 @@ I18N.onChange(() => {
   if (el.normDialog.open) renderNorm();
   if (!canRecord) recMessage(t('recUnsupported'));
   report();
+});
+
+// ---------- Theme ----------
+// theme.js switched <html data-theme>: drop the cached canvas colours and redraw.
+window.addEventListener('themechange', () => {
+  colors = null;
+  pwKey = '';
+  drawWave();
+  if (el.normDialog.open) renderNorm();
 });
 
 // ---------- Init ----------

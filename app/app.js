@@ -145,8 +145,26 @@ for (const app of APPS) {
     pane(app).contentWindow.postMessage({ type: 'cmd', action: 'ping' }, '*');
     sendVol(app);
     sendLang(app);
+    sendTheme(app);
   });
 }
+
+// ---------- Theme ----------
+// Light / dark toggle in the footer (theme.js applies it). The button names the theme it switches to.
+// The apps follow through the `storage` event, and through a message in case storage is unavailable.
+const themeBtn = document.getElementById('themeBtn');
+const sendTheme = (app) => pane(app).contentWindow?.postMessage({ type: 'cmd', action: 'theme', value: THEME.get() }, '*');
+function renderTheme() {
+  const to = THEME.get() === 'light' ? 'Dark' : 'Light';
+  document.getElementById('themeLabel').textContent = t(`theme${to}`);
+  themeBtn.title = t(`themeTo${to}`);
+  themeBtn.setAttribute('aria-label', themeBtn.title);
+}
+themeBtn.addEventListener('click', () => {
+  THEME.set(THEME.get() === 'light' ? 'dark' : 'light', true);
+  for (const app of APPS) sendTheme(app);
+});
+window.addEventListener('themechange', renderTheme);
 
 // ---------- Language ----------
 // The footer picker shows the current language (chosen, or detected from the browser) and saves an explicit
@@ -157,6 +175,7 @@ function renderLang() {
   langSel.value = I18N.lang;
   document.getElementById('langCode').textContent = I18N.lang.toUpperCase();
   for (const app of APPS) { renderVol(app); renderPlay(app); }
+  renderTheme();
   closePop();
 }
 langSel.addEventListener('change', () => { I18N.set(langSel.value, true); for (const app of APPS) sendLang(app); });
