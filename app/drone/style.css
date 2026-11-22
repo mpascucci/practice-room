@@ -482,7 +482,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid var(--a
 .harmonics.collapsed .harmonics-head::after { display: none; }
 
 /* ---------- Tuner: a curtain pulled down from the top edge ---------- */
-.tuner { display: flex; flex-direction: column; align-items: center; margin-bottom: -6px; }
+.tuner { display: flex; flex-direction: column; align-items: center; margin-bottom: 10px; }
 .curtain {
   display: grid; grid-template-rows: 1fr; width: 100%;
   transition: grid-template-rows 280ms ease;
@@ -502,11 +502,11 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid var(--a
 .curtain-inner p { margin: 0; }
 .tuner-handle {
   display: inline-flex; align-items: center; gap: 6px; padding: 15px 14px 16px;
-  border: 0; border-radius: 0 0 12px 12px; cursor: pointer;
-  background: var(--panel); box-shadow: inset 0 0 0 1px var(--inner);
-  font: inherit; font-size: .8rem; font-weight: 600; color: var(--muted);
+  border: 1px solid #ffffff59; border-top: 0; border-radius: 0 0 12px 12px; cursor: pointer;   /* whiter in dark theme */
+  background: var(--panel);
+  font: inherit; font-size: .8rem; font-weight: 600; color: #fff;   /* black in light theme, see below */
 }
-.tuner-handle:hover { color: var(--text); }
+:root[data-theme="light"] .tuner-handle { color: #000; border-color: var(--line); }
 .tuner-handle:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 .tuner-handle .fork { width: 18px; height: 18px; }
 .tuner-handle .chev { width: 16px; height: 16px; transition: transform 280ms; transform: rotate(180deg); }

@@ -20,8 +20,9 @@ const ATTACK = 0.6, RELEASE = 0.9, GLIDE = 0.08; // seconds
 const MOD_FROM_MIN = 2, MOD_FROM_MAX = 12;         // selectable starting harmonic
 const modStart = () => state.mod.from - 1;         // index of the first swept harmonic
 const RATE_MIN = 0.02, RATE_MAX = 2;               // Hz, log-mapped slider
-const rateFromPos = (p) => RATE_MIN * Math.pow(RATE_MAX / RATE_MIN, p / 100);
-const posFromRate = (r) => 100 * Math.log(r / RATE_MIN) / Math.log(RATE_MAX / RATE_MIN);
+const SWELL_RATE_MAX = 20;                          // Hz: the swell slider goes up to a 0.05 s period
+const rateFromPos = (p, max = RATE_MAX) => RATE_MIN * Math.pow(max / RATE_MIN, p / 100);
+const posFromRate = (r, max = RATE_MAX) => 100 * Math.log(r / RATE_MIN) / Math.log(max / RATE_MIN);
 // Reflected travelling wave: a sine pattern across the swept harmonics whose position
 // swings up by one wavelength and back (smooth turnaround) once per sweep cycle.
 // u = LFO phase (radians); returns the modulation signal in [-1, 1] for harmonic i.
@@ -145,10 +146,10 @@ const defaults = () => ({
   temper: 'equal',  // tuner temperament (see TEMPERAMENTS)
   refs: {},         // tuner reference note per temperament id (pitch class); missing = the temperament's `ref`
   caps: {},         // tuner reference recorded from the mic per temperament id (Hz); overrides `refs`
-  mod: { on: false, rate: 0.2, depth: 70, from: 2 },
-  swell: { on: false, rate: 0.1, depth: 70 },
+  mod: { on: true, rate: 0.2, depth: 70, from: 2 },
+  swell: { on: false, rate: 0.5, depth: 50 },   // 2 s period
   harmonics: Array.from({ length: HARMONICS }, (_, i) => ({
-    on: i < 3,   // default and Reset: H1–H3 only
+    on: i < 4,   // default and Reset: H1–H4 only
     vol: Math.round(100 / Math.pow(i + 1, 0.8)),   // gently falling spectrum
   })),
 });
@@ -202,14 +203,14 @@ function load() {
       caps: Object.fromEntries(Object.entries(s.caps && typeof s.caps === 'object' ? s.caps : {})
         .filter(([id, hz]) => TEMPERAMENTS.some((t) => t.id === id && t.ref !== undefined) && Number.isFinite(hz) && hz >= 20 && hz <= 5000)),
       mod: {
-        on: false,   // sweep always starts off; rate, depth and range are remembered
+        on: d.mod.on,   // sweep always starts at its default (on); rate, depth and range are remembered
         rate: Number.isFinite(s.mod?.rate) ? Math.min(RATE_MAX, Math.max(RATE_MIN, s.mod.rate)) : d.mod.rate,
         depth: Number.isFinite(s.mod?.depth) ? Math.min(100, Math.max(0, s.mod.depth)) : d.mod.depth,
         from: Number.isInteger(s.mod?.from) && s.mod.from >= MOD_FROM_MIN && s.mod.from <= MOD_FROM_MAX ? s.mod.from : d.mod.from,
       },
       swell: {
         on: false,   // swell always starts off; rate and depth are remembered
-        rate: Number.isFinite(s.swell?.rate) ? Math.min(RATE_MAX, Math.max(RATE_MIN, s.swell.rate)) : d.swell.rate,
+        rate: Number.isFinite(s.swell?.rate) ? Math.min(SWELL_RATE_MAX, Math.max(RATE_MIN, s.swell.rate)) : d.swell.rate,
         depth: Number.isFinite(s.swell?.depth) ? Math.min(100, Math.max(0, s.swell.depth)) : d.swell.depth,
       },
       harmonics: d.harmonics.map((h, i) => ({
@@ -595,9 +596,11 @@ function renderRow(i) {
   el.pct.textContent = h.vol;
   el.li.classList.toggle('off', !h.on);
   const hb = histBars[i];   // folded-panel histogram: bar height = slider position, off = dim
-  hb.style.height = `${h.on ? Math.max(8, h.vol) : 8}%`;
-  hb.classList.toggle('on', h.on);
   const m = modFactor(i);
+  // While the sweep/swell is audible the bar follows the live level (same law as the slider fill).
+  const barPos = playing ? h.vol * Math.sqrt(Math.max(0, m)) : h.vol;
+  hb.style.height = `${h.on ? Math.min(100, Math.max(8, barPos)) : 8}%`;
+  hb.classList.toggle('on', h.on);
   const level = playing && h.on ? (0.25 + 0.75 * h.vol / 100) * m : 0;
   el.li.style.setProperty('--level', level.toFixed(3));
   // Live amplitude in slider units: gain = (vol/100)² · m  →  position = vol · √m
@@ -637,9 +640,9 @@ function renderMod() {
 function renderSwell() {
   swellSection.classList.toggle('active', state.swell.on);
   swellOn.checked = state.swell.on;
-  swellRate.value = posFromRate(state.swell.rate);
+  swellRate.value = posFromRate(state.swell.rate, SWELL_RATE_MAX);
   const r = state.swell.rate;
-  swellRateOut.textContent = `${r < 0.1 ? r.toFixed(3) : r.toFixed(2)} Hz · ${(1 / r).toFixed(1)} s`;
+  swellRateOut.textContent = `${r < 0.1 ? r.toFixed(3) : r.toFixed(2)} Hz · ${(1 / r).toFixed(r > 10 ? 2 : 1)} s`;
   swellDepth.value = state.swell.depth;
   swellDepthOut.textContent = `${state.swell.depth}%`;
   setRangeFill(swellRate);
@@ -736,7 +739,7 @@ swellOn.addEventListener('change', () => {
 });
 swellRate.addEventListener('input', () => {
   clearInstrument();
-  state.swell.rate = rateFromPos(swellRate.valueAsNumber);
+  state.swell.rate = rateFromPos(swellRate.valueAsNumber, SWELL_RATE_MAX);
   renderSwell(); applySwellRate(); save();
 });
 swellDepth.addEventListener('input', () => {
@@ -1385,7 +1388,7 @@ function loadPresets() {
         },
         swell: {
           on: p.swell?.on === true,
-          rate: clampNum(p.swell?.rate, RATE_MIN, RATE_MAX, d.swell.rate),
+          rate: clampNum(p.swell?.rate, RATE_MIN, SWELL_RATE_MAX, d.swell.rate),
           depth: clampNum(p.swell?.depth, 0, 100, d.swell.depth),
         },
       }];
