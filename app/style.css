@@ -84,9 +84,11 @@ body {
   display: flex;
   align-items: center;
   gap: 7px;
+  max-width: 100%;
   font-weight: 600;
   white-space: nowrap;
 }
+.name .label { min-width: 0; overflow: hidden; text-overflow: ellipsis; }   /* long translations shrink, never overlap the buttons */
 .ico { display: none; width: 22px; height: 22px; flex: 0 0 auto; }
 .led {
   width: 8px; height: 8px;
@@ -161,6 +163,13 @@ body {
 .copyright a { color: inherit; text-decoration: underline; }
 .copyright a:hover { color: var(--text); }
 
+/* Language picker: a globe and the language code; a transparent native select on top opens the menu of full names. */
+.lang-pick { position: relative; display: inline-flex; align-items: center; gap: .25em; white-space: nowrap; cursor: pointer; }
+.lang-pick svg { vertical-align: -.125em; }
+.lang-pick:hover { color: var(--text); }
+.lang-pick select { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: pointer; font: inherit; }
+.lang-pick:has(select:focus-visible) { outline: 2px solid #6aa8ff; outline-offset: 2px; border-radius: 3px; }
+
 /* ---------- Per-app volume button + popover ---------- */
 .vol {
   position: relative; z-index: 1; flex: 0 0 auto;
@@ -202,9 +211,13 @@ body {
   .vol { width: 28px; height: 28px; }
   .vol svg { width: 18px; height: 18px; }
   .play { width: 36px; height: 36px; }
+  .gh-link { display: none; }   /* footer room for the language picker and longer translations */
 }
 
 @media (display-mode: standalone) { #installBtn, .install-sep { display: none; } }
+
+/* very small screens: no room for Credits in the footer */
+@media (max-width: 349px) { .credits-link { display: none; } }
 
 /* Small screens, only while the Install button is shown: "☕ Buy me a coffee" shrinks to "☕ coffee?" */
 @media (max-width: 600px) {

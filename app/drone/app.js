@@ -501,7 +501,7 @@ function start() {
   playing = true;
   applyMaster(volToGain(MASTER_VOL), ATTACK / 3);   // bellows fill up
   playBtn.setAttribute('aria-pressed', 'true');
-  playBtn.setAttribute('aria-label', 'Stop');
+  playBtn.setAttribute('aria-label', t('stop'));
   syncAnimation();
   requestWakeLock();
   report();
@@ -514,7 +514,7 @@ function stop() {
   playing = false;
   applyMaster(0, RELEASE / 3);
   playBtn.setAttribute('aria-pressed', 'false');
-  playBtn.setAttribute('aria-label', 'Play');
+  playBtn.setAttribute('aria-label', t('play'));
   syncAnimation();
   wakeLock?.release().catch(() => {});
   wakeLock = null;
@@ -539,6 +539,10 @@ function buildSelectors() {
 }
 
 const rowEls = [];
+function rowLabels(el, i) {
+  el.on.setAttribute('aria-label', t('harmOnOff', { n: i + 1 }));
+  el.vol.setAttribute('aria-label', t('harmVolume', { n: i + 1 }));
+}
 const histBars = Array.from({ length: HARMONICS }, () => document.createElement('i'));
 $('harmHist').append(...histBars);
 function buildRows() {
@@ -555,8 +559,7 @@ function buildRows() {
       pct: li.querySelector('.pct'),
     };
     el.h.textContent = `H${i + 1}`;
-    el.on.setAttribute('aria-label', `Harmonic ${i + 1} on/off`);
-    el.vol.setAttribute('aria-label', `Harmonic ${i + 1} volume`);
+    rowLabels(el, i);
 
     el.on.addEventListener('change', () => {
       state.harmonics[i].on = el.on.checked;
@@ -812,7 +815,7 @@ const tunerDisks = [...document.querySelectorAll('#tunerDisks .disk')];
 function tunerReadout(f) {
   const note = $('tunerNote');
   if (!f) {
-    note.textContent = 'listening...';
+    note.textContent = t('listening');
     note.classList.add('idle');
     $('tunerHz').innerHTML = '&nbsp;';
     tunerDisks.forEach((d) => { d.style.setProperty('--i', 0); d.classList.remove('top'); });
@@ -860,7 +863,7 @@ function tunerReadout(f) {
   const cents = Math.round(dev);
   const sgn = (v) => (v > 0 ? '+' : v < 0 ? '−' : '');
   const commas = Math.round(dev / COMMA_CENTS * 10) / 10;
-  $('tunerHz').innerHTML = `<b>${f.toFixed(1)}</b> Hz &nbsp;<b>${sgn(cents)}${Math.abs(cents)}</b>¢ &nbsp;<b>${sgn(commas)}${Math.abs(commas).toFixed(1)}</b> koma`;
+  $('tunerHz').innerHTML = `<b>${f.toFixed(1)}</b> Hz &nbsp;<b>${sgn(cents)}${Math.abs(cents)}</b>¢ &nbsp;<b>${sgn(commas)}${Math.abs(commas).toFixed(1)}</b> ${t('koma')}`;
   // Disk k (k = -4…4) is the bin centred on k·10 cents; lit by how close the pitch is to that centre.
   const dc = Math.max(-40, Math.min(40, dev));
   const top = Math.round(dc / 10) + 4;   // nearest bin = most intense disk, outlined in white
@@ -925,16 +928,16 @@ function tunerLoop() {
 }
 
 async function tunerMicError(err) {
-  if (err.name === 'NotFoundError') return 'No microphone found.';
-  if (err.name === 'NotReadableError') return 'The microphone is in use by another app or can\'t be opened.';
-  if (err.name !== 'NotAllowedError' && err.name !== 'SecurityError') return `Can't open the microphone (${err.name}).`;
-  if (!window.isSecureContext) return 'Microphone access needs a secure page: open the app over https or on localhost.';
-  return 'Microphone access is blocked. Allow it in the browser\'s site settings for this page, then reload and press Listen again.';
+  if (err.name === 'NotFoundError') return t('micNotFound');
+  if (err.name === 'NotReadableError') return t('micInUse');
+  if (err.name !== 'NotAllowedError' && err.name !== 'SecurityError') return t('micError', { name: err.name });
+  if (!window.isSecureContext) return t('micInsecure');
+  return t('micBlocked');
 }
 
 // Raw microphone stream (no echo-cancel/noise-suppression/AGC). Resolves to {stream} or {error: text}; shared by the tuner and the harmonics recorder.
 async function openMic() {
-  if (!navigator.mediaDevices?.getUserMedia) return { error: 'This browser can\'t access the microphone.' };
+  if (!navigator.mediaDevices?.getUserMedia) return { error: t('micUnsupported') };
   try {
     return { stream: await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false } }) };
   } catch (err) {
@@ -989,8 +992,12 @@ tunerToggle.addEventListener('click', () => setTunerOpen(tunerToggle.getAttribut
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') tunerStop(); });
 
 const refASel = $('refA'), temperSel = $('temper');
-temperSel.innerHTML = TEMPERAMENTS.map((t) => `<option value="${t.id}">${t.name}${t.id === 'equal' ? ' (default)' : ''}</option>`).join('');
-temperSel.value = state.temper;
+const temperLabel = (temp) => t(`temper_${temp.id}`);   // temperament names are translated, keyed by id
+const buildTemperSel = () => {
+  temperSel.innerHTML = TEMPERAMENTS.map((x) => `<option value="${x.id}">${temperLabel(x)}${x.id === 'equal' ? ` (${t('default')})` : ''}</option>`).join('');
+  temperSel.value = state.temper;
+};
+buildTemperSel();
 refASel.value = state.refA;
 // Temperament tag left of the base note: shown while the tuner is open or the drone is not in equal temperament,
 // with an X (after the name) that restores equal temperament.
@@ -999,7 +1006,7 @@ function retune() {   // the drone's base note depends on the temperament
   const equal = state.temper === 'equal';
   temperTag.hidden = equal && !tunerOpen();
   temperClear.hidden = equal;
-  temperName.textContent = TEMPERAMENTS.find((t) => t.id === state.temper).name;
+  temperName.textContent = temperLabel(TEMPERAMENTS.find((x) => x.id === state.temper));
   renderPitch(); applyPitch();
 }
 temperClear.addEventListener('click', () => {
@@ -1007,50 +1014,37 @@ temperClear.addEventListener('click', () => {
 });
 // Reference note selector (hidden for equal temperament), with an (i) dialog explaining it for the current temperament.
 const refRow = $('refRow'), refSel = $('refSel'), refDialog = $('refDialog');
-const noteOptions = (def = -1) => SOLFEGE.map((s, i) => `<option value="${i}">${noteName(s, LETTERS[i])}${i === def ? ' (default)' : ''}</option>`).join('');
-const REF_HINTS = {
-  movable: 'The scale is built on this note, which is tuned as in equal temperament at the A4 pitch. '
-    + 'C (the default) is the usual layout of this scale; set it to the tonic of the piece you play.',
-  fixed: 'The temperament keeps its historical layout from C. This note is tuned as in equal temperament at the A4 pitch '
-    + 'and the others follow it. A (the default) is how tuners and baroque players set it.',
-  turkish: 'The pitch that sounds as Rast. Notes stay named with Rast = SOL, as when playing in another ahenk. '
-    + 'G (the default) is bolahenk, concert pitch.',
-  arabic: 'The pitch that sounds as Rast. Notes stay named with Rast = DO. C is the default.',
-};
+const noteOptions = (def = -1) => SOLFEGE.map((s, i) => `<option value="${i}">${noteName(s, LETTERS[i])}${i === def ? ` (${t('default')})` : ''}</option>`).join('');
+// Reference hints: translation keys refHint_movable / _fixed / _turkish / _arabic (strings.js).
 const refCap = $('refCap'), refRec = $('refRec');
 // Note name and cents (from equal temperament at A4) of a pitch given as a fractional MIDI number.
 function capText(m) {
   const n = Math.round(m), pc = ((n % 12) + 12) % 12, c = Math.round(100 * (m - n));
   return `${noteName(SOLFEGE[pc], LETTERS[pc], Math.floor(n / 12) - 1)} ${c > 0 ? '+' : c < 0 ? '−' : '±'}${Math.abs(c)}¢`;
 }
-function capLabel(m) { refCap.textContent = m === null ? 'play a steady note...' : capText(m); }
-const REC_LABELS = {
-  idle: 'Record the reference: play a steady note',
-  listening: 'Stop listening',
-  captured: 'Discard the recorded reference',
-};
+function capLabel(m) { refCap.textContent = m === null ? t('playSteady') : capText(m); }
+const REC_LABELS = { idle: 'refRecIdle', listening: 'refRecListening', captured: 'refRecCaptured' };   // translation keys
 const syncRefRow = () => {
-  const t = TEMPERAMENTS.find((x) => x.id === state.temper);
-  refRow.hidden = t.ref === undefined;
+  const temp = TEMPERAMENTS.find((x) => x.id === state.temper);
+  refRow.hidden = temp.ref === undefined;
   if (refRow.hidden) return;
-  const label = t.sys ? 'Rast note' : 'Reference note';
-  $('refLabel').textContent = $('refDlgTitle').textContent = label;
-  $('refInfoBtn').setAttribute('aria-label', `About the ${label.toLowerCase()}`);
-  refSel.innerHTML = noteOptions(t.ref);
-  refSel.value = refOf(t);
-  $('refInfo').textContent = `${REF_HINTS[t.sys || (t.fixed ? 'fixed' : 'movable')]} `
-    + 'Or press the red button and play a steady note for 2 seconds: its exact pitch becomes the reference, until you discard it.';
+  const rast = !!temp.sys;
+  $('refLabel').textContent = $('refDlgTitle').textContent = t(rast ? 'rastNote' : 'refNote');
+  $('refInfoBtn').setAttribute('aria-label', t(rast ? 'aboutRast' : 'aboutRef'));
+  refSel.innerHTML = noteOptions(temp.ref);
+  refSel.value = refOf(temp);
+  $('refInfo').textContent = `${t(`refHint_${temp.sys || (temp.fixed ? 'fixed' : 'movable')}`)} ${t('refHintRec')}`;
   // Selector, or a label showing the note being recorded (yellow) / the recorded reference (blue).
-  const captured = capMidi(t) !== null;
+  const captured = capMidi(temp) !== null;
   const mode = capturing ? 'listening' : captured ? 'captured' : 'idle';
   refSel.hidden = mode !== 'idle';
   refCap.hidden = mode === 'idle';
   refCap.classList.toggle('done', mode === 'captured');
   if (mode === 'listening') capLabel(tunerMidi);
-  if (mode === 'captured') refCap.textContent = capText(capMidi(t));
+  if (mode === 'captured') refCap.textContent = capText(capMidi(temp));
   refRec.dataset.state = mode;
-  refRec.setAttribute('aria-label', REC_LABELS[mode]);
-  refRec.title = REC_LABELS[mode];
+  refRec.setAttribute('aria-label', t(REC_LABELS[mode]));
+  refRec.title = t(REC_LABELS[mode]);
 };
 refRec.addEventListener('click', () => {
   if (capturing) { capStop(); return; }
@@ -1315,16 +1309,19 @@ const INSTRUMENTS = [
 
 const instrumentSel = $('instrument');
 function buildInstruments() {
-  instrumentSel.add(new Option('instrument…', ''));
+  // Names and groups are translated, keyed by id ('inst_clarinet') and group ('group_With swell').
+  const value = instrumentSel.value;
+  instrumentSel.replaceChildren(new Option(t('instPlaceholder'), ''));
   const groups = {};
   for (const inst of INSTRUMENTS) {
     if (!groups[inst.group]) {
       groups[inst.group] = document.createElement('optgroup');
-      groups[inst.group].label = inst.group;
+      groups[inst.group].label = t(`group_${inst.group}`);
       instrumentSel.append(groups[inst.group]);
     }
-    groups[inst.group].append(new Option(inst.name, inst.id));
+    groups[inst.group].append(new Option(t(`inst_${inst.id}`), inst.id));
   }
+  instrumentSel.value = value;
 }
 
 // Any manual change to harmonics or sweep means the sound is no longer the preset.
@@ -1364,7 +1361,6 @@ const presetsDialog = $('presetsDialog');
 const presetName = $('presetName');
 const presetList = $('presetList');
 const presetEmpty = $('presetEmpty');
-const PRESETS_EMPTY_TEXT = presetEmpty.textContent;
 const clampNum = (v, lo, hi, d) => (Number.isFinite(v) ? Math.min(hi, Math.max(lo, v)) : d);
 let presets = loadPresets();
 
@@ -1404,16 +1400,17 @@ function storePresets() {
 function nextPresetName() {
   const used = new Set(presets.map((p) => p.name.toLowerCase()));
   let k = 1;
-  while (used.has(`preset ${String(k).padStart(2, '0')}`)) k++;
-  return `Preset ${String(k).padStart(2, '0')}`;
+  const base = t('presetBase');
+  while (used.has(`${base} ${String(k).padStart(2, '0')}`.toLowerCase())) k++;
+  return `${base} ${String(k).padStart(2, '0')}`;
 }
 
 // Dropdown: "presets…" placeholder, the saved presets, then "Save / edit…" last.
 const PRESET_EDIT = 'edit';
 function renderPresetSelect() {
-  presetSel.replaceChildren(new Option('presets…', ''));
+  presetSel.replaceChildren(new Option(t('presetsPlaceholder'), ''));
   presets.forEach((p, i) => presetSel.add(new Option(p.name, i)));
-  presetSel.add(new Option('Save / edit…', PRESET_EDIT));
+  presetSel.add(new Option(t('saveEdit'), PRESET_EDIT));
   presetSel.value = '';
   presetSel.classList.remove('chosen');
 }
@@ -1434,7 +1431,7 @@ function presetBars(p) {
 
 function presetSummary(p) {
   const n = p.harmonics.filter((h) => h.on).length;
-  return `${n} harmonic${n === 1 ? '' : 's'}${p.mod.on ? ' · sweep' : ''}${p.swell.on ? ' · swell' : ''}`;
+  return `${t('harmonicsN', { n })}${p.mod.on ? ` · ${t('sweepLc')}` : ''}${p.swell.on ? ` · ${t('swellLc')}` : ''}`;
 }
 
 function renderPresets() {
@@ -1459,7 +1456,7 @@ function renderPresets() {
     del.type = 'button';
     del.className = 'preset-del';
     del.dataset.del = i;
-    del.setAttribute('aria-label', `Delete preset ${p.name}`);
+    del.setAttribute('aria-label', t('deletePreset', { name: p.name }));
     del.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>';
     li.append(load, del);
     return li;
@@ -1478,7 +1475,7 @@ function savePreset() {
   const at = presets.findIndex((x) => x.name.toLowerCase() === name.toLowerCase());
   if (at >= 0) presets[at] = p;                       // same label: overwrite
   else if (presets.length < MAX_PRESETS) presets.push(p);
-  else { presetEmpty.textContent = `Too many presets (max ${MAX_PRESETS}): delete one first.`; presetEmpty.hidden = false; return; }
+  else { presetEmpty.textContent = t('tooManyPresets', { max: MAX_PRESETS }); presetEmpty.hidden = false; return; }
   storePresets();
   renderPresets();
 }
@@ -1496,7 +1493,7 @@ function applyPreset(p) {
 presetSel.addEventListener('change', () => {
   const v = presetSel.value;
   if (v === PRESET_EDIT) {
-    presetEmpty.textContent = PRESETS_EMPTY_TEXT;
+    presetEmpty.textContent = t('presetEmpty');
     renderPresets();
     presetsDialog.showModal();
     $('presetSave').focus();   // not the text field: no virtual keyboard on touch devices
@@ -1601,7 +1598,7 @@ if (EMBEDDED) document.documentElement.classList.add('embedded');
 
 function report() {
   if (!EMBEDDED) return;
-  parent.postMessage({ type: 'status', app: 'drone', playing: playing, info: `${noteName(SOLFEGE[state.note], LETTERS[state.note], state.octave)}${state.mod.on ? ' · sweep' : ''}${state.swell.on ? ' · swell' : ''}` }, '*');
+  parent.postMessage({ type: 'status', app: 'drone', playing: playing, info: `${noteName(SOLFEGE[state.note], LETTERS[state.note], state.octave)}${state.mod.on ? ` · ${t('sweepLc')}` : ''}${state.swell.on ? ` · ${t('swellLc')}` : ''}` }, '*');
 }
 
 // If the browser refused to start audio (autoplay policy), tell the home page.
@@ -1623,6 +1620,32 @@ window.addEventListener('message', (e) => {
     shellVol = Math.min(1, Math.max(0, e.data.value));
     if (trim) trim.gain.setTargetAtTime(shellVol, ctx.currentTime, 0.02);
   }
+});
+
+// ---------- Language ----------
+// Static text is switched by i18n.js; re-render what is built here.
+I18N.onChange(() => {
+  playBtn.setAttribute('aria-label', t(playing ? 'stop' : 'play'));
+  rowEls.forEach(rowLabels);
+  buildTemperSel();
+  retune();
+  syncRefRow();
+  const note = $('tunerNote');
+  if (note.classList.contains('idle')) note.textContent = t('listening');
+  buildInstruments();
+  const preset = presetSel.value, chosen = presetSel.classList.contains('chosen');
+  renderPresetSelect();
+  presetSel.value = preset;
+  presetSel.classList.toggle('chosen', chosen);
+  if (presetsDialog.open) {   // keep the label being typed
+    const label = presetName.value;
+    presetEmpty.textContent = t('presetEmpty');
+    renderPresets();
+    presetName.value = label;
+    presetSel.value = preset;
+    presetSel.classList.toggle('chosen', chosen);
+  }
+  report();
 });
 
 // ---------- Init ----------

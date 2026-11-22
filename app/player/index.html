@@ -11,21 +11,21 @@
   <main class="app" id="app">
     <header class="top">
       <div class="title-wrap">
-        <h1 class="title">Player</h1>
-        <button type="button" class="info-btn" id="infoBtn" aria-label="Gestures help" title="Gestures help" aria-haspopup="dialog">i</button>
+        <h1 class="title" data-i18n="player">Player</h1>
+        <button type="button" class="info-btn" id="infoBtn" aria-label="Gestures help" title="Gestures help" data-i18n-attr="aria-label:gesturesHelp title:gesturesHelp" aria-haspopup="dialog">i</button>
       </div>
       <div class="actions">
-        <button type="button" class="btn" id="normalize" hidden disabled aria-label="Normalize" title="Normalize the volume">
-          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 19h16M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="label">Normalize</span>
+        <button type="button" class="btn" id="normalize" hidden disabled aria-label="Normalize" title="Normalize the volume" data-i18n-attr="aria-label:normalize title:normalizeTitle">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16M4 19h16M12 8v8M9 11l3-3 3 3M9 13l3 3 3-3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="label" data-i18n="normalize">Normalize</span>
         </button>
-        <a class="btn" id="takeDownload" role="button" hidden title="Download this recording" aria-label="Download recording">
-          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10m0 0-4-4m4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="label">Download</span>
+        <a class="btn" id="takeDownload" role="button" hidden title="Download this recording" aria-label="Download recording" data-i18n-attr="title:downloadTitle aria-label:downloadAria">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v10m0 0-4-4m4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="label" data-i18n="download">Download</span>
         </a>
-        <button type="button" class="rec" id="rec" aria-pressed="false" aria-label="Record a take" title="Record a take with the microphone (R)">
+        <button type="button" class="rec" id="rec" aria-pressed="false" aria-label="Record a take" title="Record a take with the microphone (R)" data-i18n-attr="title:recTitle aria-label:recordTake">
           <i class="dot"></i><span class="label" id="recLabel">Rec</span>
         </button>
-        <label class="open" for="file" title="Open an audio file" aria-label="Open audio file">
-          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="label">Open audio file…</span>
+        <label class="open" for="file" title="Open an audio file" aria-label="Open audio file" data-i18n-attr="title:openTitle aria-label:openAria">
+          <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="label" data-i18n="openFile">Open audio file…</span>
         </label>
         <input id="file" type="file" accept="audio/*,.mp3,.m4a,.wav,.ogg,.flac,.aac" hidden>
       </div>
@@ -33,85 +33,85 @@
 
     <p class="track-name placeholder" id="trackName" aria-live="polite"></p>
 
-    <section class="seek" aria-label="Position">
-      <div class="marker-strip" id="markerStrip" aria-label="Markers"></div>
+    <section class="seek" aria-label="Position" data-i18n-attr="aria-label:position">
+      <div class="marker-strip" id="markerStrip" aria-label="Markers" data-i18n-attr="aria-label:markers"></div>
       <div class="wave">
         <canvas id="wave" aria-hidden="true"></canvas>
-        <button type="button" class="zoom-reset" id="zoomReset" hidden aria-label="Reset zoom" title="Reset zoom"></button>
-        <input id="seek" type="range" min="0" max="1000" value="0" step="1" disabled aria-label="Position">
+        <button type="button" class="zoom-reset" id="zoomReset" hidden aria-label="Reset zoom" title="Reset zoom" data-i18n-attr="aria-label:resetZoom title:resetZoom"></button>
+        <input id="seek" type="range" min="0" max="1000" value="0" step="1" disabled aria-label="Position" data-i18n-attr="aria-label:position">
       </div>
       <div class="progress" id="progress" aria-hidden="true"><div class="progress-track"><canvas id="progressWave"></canvas><div class="progress-view" id="progressView"></div></div><div class="progress-marks" id="progressMarks"></div><div class="progress-handle" id="progressHandle"></div></div>
       <div class="times"><output id="cur">0:00</output><output id="dur">0:00</output></div>
     </section>
 
-    <section class="transport" aria-label="Transport">
-      <button type="button" class="skip" id="rewind" aria-label="Back to the beginning" title="Back to the beginning" disabled>
+    <section class="transport" aria-label="Transport" data-i18n-attr="aria-label:transport">
+      <button type="button" class="skip" id="rewind" aria-label="Back to the beginning" title="Back to the beginning" data-i18n-attr="aria-label:rewind title:rewind" disabled>
         <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 5v14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M19 6v12l-9-6z" fill="currentColor"/></svg>
       </button>
-      <button type="button" class="skip" id="pause" aria-label="Pause" title="Pause: stop here and keep this position as the start" disabled>
+      <button type="button" class="skip" id="pause" aria-label="Pause" title="Pause: stop here and keep this position as the start" data-i18n-attr="aria-label:pause title:pauseTitle" disabled>
         <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14M16 5v14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
       </button>
       <button class="play" id="play" type="button" aria-pressed="false" aria-label="Play" disabled>
         <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
         <svg class="icon-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
       </button>
-      <button type="button" class="skip" id="addMarker" aria-label="Add a marker at the playback start" title="Add a marker at the playback start (M)" disabled><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16l-5-3.500L7 20z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
+      <button type="button" class="skip" id="addMarker" aria-label="Add a marker at the playback start" title="Add a marker at the playback start (M)" data-i18n-attr="aria-label:addMarkerAria title:addMarkerTitle" disabled><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4h10v16l-5-3.500L7 20z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
     </section>
 
     <p class="hint" id="recMsg" aria-live="polite"></p>
 
     <div class="controls">
     <div class="tune" id="tune" data-open="speed">
-    <section class="panel" id="transposePanel" aria-label="Transpose">
-      <button type="button" class="tab-open" data-tune="transpose" aria-label="Expand transpose"></button>
+    <section class="panel" id="transposePanel" aria-label="Transpose" data-i18n-attr="aria-label:transpose">
+      <button type="button" class="tab-open" data-tune="transpose" aria-label="Expand transpose" data-i18n-attr="aria-label:expandTranspose"></button>
       <div class="row-head">
-        <label for="transpose"><span class="lt"><span class="full">Transpose</span><span class="abbr">Trans.</span></span> <output id="transposeInt" class="interval"></output> <output id="transposeOut"></output></label>
+        <label for="transpose"><span class="lt"><span class="full" data-i18n="transpose">Transpose</span><span class="abbr" data-i18n="transposeShort">Trans.</span></span> <output id="transposeInt" class="interval"></output> <output id="transposeOut"></output></label>
         <div class="steps">
-          <button type="button" class="fine" id="transposeFine" aria-pressed="false" aria-label="Quarter-tone steps" title="Quarter-tone steps (half a semitone)">¼</button>
-          <button type="button" id="transposeDown" aria-label="Down one semitone">−</button>
-          <button type="button" id="transposeUp" aria-label="Up one semitone">+</button>
-          <button type="button" class="reset" id="transposeReset" aria-label="Reset transpose to 0" title="Reset transpose to 0"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.700-6M4 4v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">0</span></button>
+          <button type="button" class="fine" id="transposeFine" aria-pressed="false" aria-label="Quarter-tone steps" title="Quarter-tone steps (half a semitone)" data-i18n-attr="aria-label:quarterTone title:quarterToneTitle">¼</button>
+          <button type="button" id="transposeDown" aria-label="Down one semitone" data-i18n-attr="aria-label:semitoneDown">−</button>
+          <button type="button" id="transposeUp" aria-label="Up one semitone" data-i18n-attr="aria-label:semitoneUp">+</button>
+          <button type="button" class="reset" id="transposeReset" aria-label="Reset transpose to 0" title="Reset transpose to 0" data-i18n-attr="aria-label:resetTranspose title:resetTranspose"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.700-6M4 4v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">0</span></button>
         </div>
       </div>
       <input id="transpose" type="range" min="-12" max="12" step="1" value="0">
       <div class="ticks" aria-hidden="true"><span style="--f:0">−12</span><span style="--f:0.25">−6</span><span style="--f:0.5">0</span><span style="--f:0.75">+6</span><span style="--f:1">+12</span></div>
-      <p class="hint">Changes the pitch in semitones; the speed stays the same.</p>
+      <p class="hint" data-i18n="transposeHint">Changes the pitch in semitones; the speed stays the same.</p>
     </section>
 
-    <section class="panel" id="speedPanel" aria-label="Speed">
-      <button type="button" class="tab-open" data-tune="speed" aria-label="Show speed"></button>
+    <section class="panel" id="speedPanel" aria-label="Speed" data-i18n-attr="aria-label:speed">
+      <button type="button" class="tab-open" data-tune="speed" aria-label="Show speed" data-i18n-attr="aria-label:showSpeed"></button>
       <div class="row-head">
-        <label for="speed"><span class="lt">Speed</span> <output id="speedOut"></output></label>
+        <label for="speed"><span class="lt" data-i18n="speed">Speed</span> <output id="speedOut"></output></label>
         <div class="steps">
-          <button type="button" id="speedDown" aria-label="Slower">−</button>
-          <button type="button" id="speedUp" aria-label="Faster">+</button>
-          <button type="button" class="reset" id="speedReset" aria-label="Reset speed to 100%" title="Reset speed to 100%"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.700-6M4 4v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">100%</span></button>
+          <button type="button" id="speedDown" aria-label="Slower" data-i18n-attr="aria-label:slower">−</button>
+          <button type="button" id="speedUp" aria-label="Faster" data-i18n-attr="aria-label:faster">+</button>
+          <button type="button" class="reset" id="speedReset" aria-label="Reset speed to 100%" title="Reset speed to 100%" data-i18n-attr="aria-label:resetSpeed title:resetSpeed"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.700-6M4 4v5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">100%</span></button>
         </div>
       </div>
       <input id="speed" type="range" min="25" max="150" step="1" value="100">
       <div class="ticks"><span aria-hidden="true" style="--f:0">25%</span><span aria-hidden="true" style="--f:0.2">50%</span><span aria-hidden="true" style="--f:0.4">75%</span><span class="tick-reset" id="speedTick" style="--f:0.6">100%</span><span aria-hidden="true" style="--f:0.8">125%</span><span aria-hidden="true" style="--f:1">150%</span></div>
-      <p class="hint">Pitch stays the same when the speed changes.</p>
+      <p class="hint" data-i18n="speedHint">Pitch stays the same when the speed changes.</p>
     </section>
 
     </div>
 
-    <section class="panel" aria-label="Loop">
+    <section class="panel" aria-label="Loop" data-i18n-attr="aria-label:loop">
       <div class="row-head">
-        <span class="lbl"><span class="lt">Loop A–B</span> <output id="loopOut">off</output></span>
+        <span class="lbl"><span class="lt" data-i18n="loopAB">Loop A–B</span> <output id="loopOut">off</output></span>
       </div>
       <div class="loop-btns">
-        <button type="button" id="setA" disabled aria-label="Set loop start (A)" title="Set loop start (A, [)"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M9 12h11M13 8l-4 4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">Set A</span></button>
-        <button type="button" id="setB" disabled aria-label="Set loop end (B)" title="Set loop end (B, ])"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14M15 12H4M11 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">Set B</span></button>
-        <button type="button" class="arm" id="armLoop" hidden disabled aria-pressed="false" aria-label="Select a loop region" title="Select a loop region: tap, then drag on the waveform"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M19 5v14M8 12h8M8 12l2.500-2.500M8 12l2.500 2.500M16 12l-2.500-2.500M16 12l-2.500 2.500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">Select</span></button>
-        <button type="button" id="clearLoop" disabled aria-label="Clear loop" title="Clear loop"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4.5l4 4a1.5 1.5 0 0 1 0 2.1L10.700 19.500H6.300l-2.500-2.500a1.500 1.500 0 0 1 0-2.100L13.400 4.500a1.500 1.500 0 0 1 2.100 0zM8 10l6 6M11 19.500h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt">Clear</span></button>
+        <button type="button" id="setA" disabled aria-label="Set loop start (A)" title="Set loop start (A, [)" data-i18n-attr="aria-label:setAAria title:setATitle"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M9 12h11M13 8l-4 4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt" data-i18n="setA">Set A</span></button>
+        <button type="button" id="setB" disabled aria-label="Set loop end (B)" title="Set loop end (B, ])" data-i18n-attr="aria-label:setBAria title:setBTitle"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5v14M15 12H4M11 8l4 4-4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt" data-i18n="setB">Set B</span></button>
+        <button type="button" class="arm" id="armLoop" hidden disabled aria-pressed="false" aria-label="Select a loop region" title="Select a loop region: tap, then drag on the waveform" data-i18n-attr="aria-label:selectLoopAria title:selectLoopTitle"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5v14M19 5v14M8 12h8M8 12l2.500-2.500M8 12l2.500 2.500M16 12l-2.500-2.500M16 12l-2.500 2.500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt" data-i18n="select">Select</span></button>
+        <button type="button" id="clearLoop" disabled aria-label="Clear loop" title="Clear loop" data-i18n-attr="aria-label:clearLoop title:clearLoop"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15.5 4.5l4 4a1.5 1.5 0 0 1 0 2.1L10.700 19.500H6.300l-2.500-2.500a1.500 1.500 0 0 1 0-2.100L13.400 4.500a1.500 1.500 0 0 1 2.100 0zM8 10l6 6M11 19.500h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="txt" data-i18n="clear">Clear</span></button>
         <button type="button" class="toggle" id="loopOn" data-on="true" aria-label="Stop loop" title="Stop loop (L)">
           <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 3l3 3-3 3M4 11V9a3 3 0 0 1 3-3h13M7 21l-3-3 3-3M20 13v2a3 3 0 0 1-3 3H4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path class="strike" d="M4 20 20 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           <span class="txt">Stop Loop</span>
         </button>
       </div>
       <div class="loop-pause">
-        <label for="loopPause">Pause <output id="loopPauseOut"></output></label>
-        <input id="loopPause" type="range" min="0" max="10" step="0.5" value="0" aria-label="Pause before replaying the loop, in seconds">
+        <label for="loopPause" data-i18n="loopPause">Pause <output id="loopPauseOut"></output></label>
+        <input id="loopPause" type="range" min="0" max="10" step="0.5" value="0" aria-label="Pause before replaying the loop, in seconds" data-i18n-attr="aria-label:loopPauseAria">
       </div>
     </section>
     </div>
@@ -120,13 +120,13 @@
 
   <dialog id="recDialog" aria-labelledby="recTitle">
     <div class="rec-body">
-      <p class="rec-title" id="recTitle"><i class="dot"></i>Recording…</p>
+      <p class="rec-title" id="recTitle" data-i18n="recording"><i class="dot"></i>Recording…</p>
       <output class="rec-time" id="recTime">0:00</output>
-      <div class="meter" role="meter" aria-label="Input level" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="meter">
+      <div class="meter" role="meter" aria-label="Input level" data-i18n-attr="aria-label:inputLevel" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="meter">
         <div class="meter-fill" id="meterFill"></div>
         <div class="meter-peak" id="meterPeak"></div>
       </div>
-      <button type="button" class="rec-stop" id="recStop">
+      <button type="button" class="rec-stop" id="recStop" data-i18n="stop">
         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>Stop
       </button>
     </div>
@@ -134,28 +134,28 @@
 
   <dialog id="infoDialog" aria-labelledby="infoTitle">
     <div class="rec-body info-body">
-      <p class="rec-title" id="infoTitle">Waveform gestures</p>
+      <p class="rec-title" id="infoTitle" data-i18n="gesturesTitle">Waveform gestures</p>
       <dl class="info-list">
-        <dt>Zoom</dt><dd data-mouse="mouse wheel" data-touch="pinch"></dd>
-        <dt>Translate</dt><dd data-mouse="drag" data-touch="two fingers"></dd>
-        <dt>Set playback start</dt><dd data-mouse="click" data-touch="tap or drag"></dd>
-        <dt>Set loop A–B</dt><dd data-mouse="Shift + drag" data-touch="tap Select, then drag"></dd>
-        <dt>Add a marker</dt><dd data-mouse="bookmark button or M, then name it" data-touch="bookmark button, then name it"></dd>
-        <dt>Rename or remove a marker</dt><dd data-mouse="click its label" data-touch="tap its label"></dd>
-        <dt>Move a loop limit</dt><dd data-mouse="drag its bar" data-touch=""></dd>
-        <dt>Move a marker</dt><dd data-mouse="drag its label" data-touch="drag its label"></dd>
+        <dt data-i18n="gZoom">Zoom</dt><dd data-mouse="mouse wheel" data-touch="pinch" data-i18n-attr="data-mouse:gWheel data-touch:gPinch"></dd>
+        <dt data-i18n="gPan">Translate</dt><dd data-mouse="drag" data-touch="two fingers" data-i18n-attr="data-mouse:gDrag data-touch:gTwoFingers"></dd>
+        <dt data-i18n="gStart">Set playback start</dt><dd data-mouse="click" data-touch="tap or drag" data-i18n-attr="data-mouse:gClick data-touch:gTapDrag"></dd>
+        <dt data-i18n="gLoop">Set loop A–B</dt><dd data-mouse="Shift + drag" data-touch="tap Select, then drag" data-i18n-attr="data-mouse:gShiftDrag data-touch:gTapSelect"></dd>
+        <dt data-i18n="gAddMarker">Add a marker</dt><dd data-mouse="bookmark button or M, then name it" data-touch="bookmark button, then name it" data-i18n-attr="data-mouse:gBookmarkM data-touch:gBookmark"></dd>
+        <dt data-i18n="gRename">Rename or remove a marker</dt><dd data-mouse="click its label" data-touch="tap its label" data-i18n-attr="data-mouse:gClickLabel data-touch:gTapLabel"></dd>
+        <dt data-i18n="gLimit">Move a loop limit</dt><dd data-mouse="drag its bar" data-touch="" data-i18n-attr="data-mouse:gDragBar"></dd>
+        <dt data-i18n="gMove">Move a marker</dt><dd data-mouse="drag its label" data-touch="drag its label" data-i18n-attr="data-mouse:gDragLabel data-touch:gDragLabel"></dd>
       </dl>
-      <button type="button" id="infoClose">Close</button>
+      <button type="button" id="infoClose" data-i18n="close">Close</button>
     </div>
   </dialog>
 
   <dialog id="markerDialog" aria-labelledby="markerTitle">
     <form id="markerForm" class="rec-body" method="dialog">
-      <p class="rec-title" id="markerTitle">Marker</p>
-      <input id="markerName" type="text" maxlength="24" autocomplete="off" spellcheck="false" aria-label="Marker name">
+      <p class="rec-title" id="markerTitle" data-i18n="marker">Marker</p>
+      <input id="markerName" type="text" maxlength="24" autocomplete="off" spellcheck="false" aria-label="Marker name" data-i18n-attr="aria-label:markerName">
       <div class="confirm-btns">
-        <button type="button" id="markerRemove" class="danger" hidden>Remove</button>
-        <button type="button" id="markerCancel">Cancel</button>
+        <button type="button" id="markerRemove" class="danger" hidden data-i18n="remove">Remove</button>
+        <button type="button" id="markerCancel" data-i18n="cancel">Cancel</button>
         <button type="submit" id="markerOk" class="rec-stop">Add</button>
       </div>
     </form>
@@ -163,27 +163,29 @@
 
   <dialog id="normDialog" aria-labelledby="normTitle">
     <form id="normForm" class="rec-body" method="dialog">
-      <p class="rec-title" id="normTitle">Normalize</p>
+      <p class="rec-title" id="normTitle" data-i18n="normalize">Normalize</p>
       <canvas id="normCanvas" aria-hidden="true"></canvas>
-      <input id="normLimit" type="range" min="-24" max="0" step="0.1" value="0" aria-label="Threshold in dB">
+      <input id="normLimit" type="range" min="-24" max="0" step="0.1" value="0" aria-label="Threshold in dB" data-i18n-attr="aria-label:thresholdDb">
       <output id="normInfo" class="norm-info"></output>
       <div class="confirm-btns">
-        <button type="button" id="normCancel">Cancel</button>
+        <button type="button" id="normCancel" data-i18n="cancel">Cancel</button>
         <button type="submit" id="normOk" class="rec-stop">OK</button>
       </div>
     </form>
   </dialog>
 
-  <dialog id="confirmDialog"aria-labelledby="confirmText">
+  <dialog id="confirmDialog" aria-labelledby="confirmText">
     <div class="rec-body">
-      <p class="confirm-text" id="confirmText">Your unsaved recording will be replaced. Download it first if you want to keep it.</p>
+      <p class="confirm-text" id="confirmText" data-i18n="confirmReplace">Your unsaved recording will be replaced. Download it first if you want to keep it.</p>
       <div class="confirm-btns">
-        <button type="button" id="confirmCancel">Cancel</button>
-        <button type="button" id="confirmOk" class="rec-stop">Replace</button>
+        <button type="button" id="confirmCancel" data-i18n="cancel">Cancel</button>
+        <button type="button" id="confirmOk" class="rec-stop" data-i18n="replace">Replace</button>
       </div>
     </div>
   </dialog>
 
+  <script src="../i18n.js" defer></script>
+  <script src="strings.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>

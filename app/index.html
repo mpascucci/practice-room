@@ -19,10 +19,10 @@
 </head>
 <body>
   <div class="shell">
-    <nav class="bar" role="tablist" aria-label="Apps">
+    <nav class="bar" role="tablist" aria-label="Apps" data-i18n-attr="aria-label:apps">
       <div class="slot" data-app="metronome">
-        <button class="tab" role="tab" id="tab-metronome" aria-label="Metronome" aria-controls="pane-metronome" aria-selected="false">
-          <span class="name"><i class="led"></i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l4 18H5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 17 16 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14.7" cy="10" r="1.6" fill="currentColor"/></svg><span class="label">Metronome</span></span>
+        <button class="tab" role="tab" id="tab-metronome" aria-label="Metronome" data-i18n-attr="aria-label:metronome" aria-controls="pane-metronome" aria-selected="false">
+          <span class="name"><i class="led"></i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l4 18H5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 17 16 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14.7" cy="10" r="1.6" fill="currentColor"/></svg><span class="label" data-i18n="metronome">Metronome</span></span>
           <span class="info" data-info></span>
         </button>
         <button class="vol" type="button" aria-label="Metronome volume" aria-haspopup="true" aria-expanded="false" title="Metronome volume"><svg class="i-vol" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.500v5h4l5 4v-13l-5 4z" fill="currentColor"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.500 6.500a8 8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
@@ -33,8 +33,8 @@
       </div>
 
       <div class="slot" data-app="drone">
-        <button class="tab" role="tab" id="tab-drone" aria-label="Drone/Tuner" aria-controls="pane-drone" aria-selected="false">
-          <span class="name"><i class="led"></i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 3v8a3.5 3.5 0 0 0 7 0V3M12 14.5V21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="label">Drone/Tuner</span></span>
+        <button class="tab" role="tab" id="tab-drone" aria-label="Drone/Tuner" data-i18n-attr="aria-label:droneTuner" aria-controls="pane-drone" aria-selected="false">
+          <span class="name"><i class="led"></i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 3v8a3.5 3.5 0 0 0 7 0V3M12 14.5V21" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="label" data-i18n="droneTuner">Drone/Tuner</span></span>
           <span class="info" data-info></span>
         </button>
         <button class="vol" type="button" aria-label="Drone volume" aria-haspopup="true" aria-expanded="false" title="Drone volume"><svg class="i-vol" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.500v5h4l5 4v-13l-5 4z" fill="currentColor"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.500 6.500a8 8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
@@ -45,8 +45,8 @@
       </div>
 
       <div class="slot" data-app="player">
-        <button class="tab" role="tab" id="tab-player" aria-label="Player" aria-controls="pane-player" aria-selected="false">
-          <span class="name"><i class="led"></i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h1.5M7 8v8M10.5 4.500v15M14 7v10M17.500 9.500v5M21 12h-.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="label">Player</span></span>
+        <button class="tab" role="tab" id="tab-player" aria-label="Player" data-i18n-attr="aria-label:player" aria-controls="pane-player" aria-selected="false">
+          <span class="name"><i class="led"></i><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h1.5M7 8v8M10.5 4.500v15M14 7v10M17.500 9.500v5M21 12h-.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="label" data-i18n="player">Player</span></span>
           <span class="info" data-info></span>
         </button>
         <button class="vol" type="button" aria-label="Player volume" aria-haspopup="true" aria-expanded="false" title="Player volume"><svg class="i-vol" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9.500v5h4l5 4v-13l-5 4z" fill="currentColor"/><path class="waves" d="M16 9a4 4 0 0 1 0 6M18.500 6.500a8 8 0 0 1 0 11" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></button>
@@ -57,39 +57,41 @@
       </div>
     </nav>
 
-    <div class="volpop" id="volpop" role="group" aria-label="Volume" hidden>
+    <div class="volpop" id="volpop" role="group" aria-label="Volume" data-i18n-attr="aria-label:volume" hidden>
       <span class="volname" id="volname"></span>
-      <input id="volrange" type="range" min="0" max="100" step="1" aria-label="Volume">
+      <input id="volrange" type="range" min="0" max="100" step="1" aria-label="Volume" data-i18n-attr="aria-label:volume">
       <output id="volout"></output>
     </div>
 
     <main class="panes">
       <iframe id="pane-metronome" data-app="metronome" role="tabpanel" aria-labelledby="tab-metronome"
-              src="metronome/index.html" title="Metronome" allow="autoplay; screen-wake-lock"></iframe>
+              src="metronome/index.html" title="Metronome" data-i18n-attr="title:metronome" allow="autoplay; screen-wake-lock"></iframe>
       <iframe id="pane-drone" data-app="drone" role="tabpanel" aria-labelledby="tab-drone"
-              src="drone/index.html" title="Drone" allow="autoplay; microphone; screen-wake-lock"></iframe>
+              src="drone/index.html" title="Drone" data-i18n-attr="title:drone" allow="autoplay; microphone; screen-wake-lock"></iframe>
       <iframe id="pane-player" data-app="player" role="tabpanel" aria-labelledby="tab-player"
-              src="player/index.html" title="Player" allow="autoplay; microphone; screen-wake-lock"></iframe>
+              src="player/index.html" title="Player" data-i18n-attr="title:player" allow="autoplay; microphone; screen-wake-lock"></iframe>
     </main>
 
-    <footer class="copyright"><button type="button" class="linklike" id="shareBtn" aria-haspopup="dialog">Share<svg class="share-ico" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button> &middot; <button type="button" class="linklike" id="creditsBtn" aria-haspopup="dialog">Credits</button> &middot; <a href="https://github.com/mpascucci/practice-room" target="_blank" rel="noopener">GitHub</a> &middot; <a href="https://buymeacoffee.com/mpascucci" target="_blank" rel="noopener">&#9749; <span class="cof-long">Buy me a </span>coffee<span class="cof-q" hidden>?</span></a> <span class="install-sep">&middot;</span> <button type="button" class="linklike" id="installBtn">&#10515; Install</button></footer>
+    <footer class="copyright"><span class="lang-pick"><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.500 2.700 3.700 5.700 3.700 9s-1.200 6.300-3.700 9c-2.500-2.700-3.700-5.700-3.700-9S9.500 5.700 12 3z"/></svg><span class="lang-code" id="langCode" aria-hidden="true">EN</span><select id="langSel" aria-label="Language" data-i18n-attr="aria-label:language"><option value="en">English</option><option value="it">Italiano</option><option value="fr">Français</option><option value="es">Español</option><option value="de">Deutsch</option></select></span> &middot; <button type="button" class="linklike" id="shareBtn" aria-haspopup="dialog"><span data-i18n="share">Share</span><svg class="share-ico" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button><span class="credits-link"> &middot; <button type="button" class="linklike" id="creditsBtn" aria-haspopup="dialog" data-i18n="credits">Credits</button></span><span class="gh-link"> &middot; <a href="https://github.com/mpascucci/practice-room" target="_blank" rel="noopener">GitHub</a></span> &middot; <a href="https://buymeacoffee.com/mpascucci" target="_blank" rel="noopener">&#9749; <span class="cof-long" data-i18n="coffeeLong">Buy me a coffee</span><span class="cof-q" hidden data-i18n="coffeeShort">coffee?</span></a> <span class="install-sep">&middot;</span> <button type="button" class="linklike" id="installBtn">&#10515; <span data-i18n="install">Install</span></button></footer>
   </div>
 
   <dialog id="creditsDialog" aria-labelledby="creditsTitle">
-    <div class="credits-body" id="creditsBody" tabindex="0">Loading…</div>
-    <button type="button" class="dlg-btn dlg-close" id="creditsClose">Close</button>
+    <div class="credits-body" id="creditsBody" tabindex="0" data-i18n="loading">Loading…</div>
+    <button type="button" class="dlg-btn dlg-close" id="creditsClose" data-i18n="close">Close</button>
   </dialog>
 
   <dialog id="shareDialog" aria-labelledby="shareTitle">
     <div class="share-body">
-      <h2 id="shareTitle">Share Practice Room</h2>
-      <img src="share-qr.svg" alt="QR code for https://mpascucci.github.io/practice-room/" width="220" height="220">
-      <button type="button" class="dlg-btn" id="shareCopy"><span>Copy link</span><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg></button>
-      <button type="button" class="dlg-btn" id="shareNative" hidden>Share<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
+      <h2 id="shareTitle" data-i18n="shareTitle">Share Practice Room</h2>
+      <img src="share-qr.svg" data-i18n-attr="alt:qrAlt" alt="QR code for https://mpascucci.github.io/practice-room/" width="220" height="220">
+      <button type="button" class="dlg-btn" id="shareCopy"><span data-i18n="copyLink">Copy link</span><svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1"/></svg></button>
+      <button type="button" class="dlg-btn" id="shareNative" hidden data-i18n="share">Share<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"/></svg></button>
     </div>
-    <button type="button" class="dlg-btn dlg-close" id="shareClose">Close</button>
+    <button type="button" class="dlg-btn dlg-close" id="shareClose" data-i18n="close">Close</button>
   </dialog>
 
+  <script src="i18n.js" defer></script>
+  <script src="strings.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>

@@ -3,6 +3,7 @@ const TAB_KEY = 'home:tab';
 const VOL_KEY = 'home:vol';
 const slot = (app) => document.querySelector(`.slot[data-app="${app}"]`);
 const pane = (app) => document.querySelector(`iframe[data-app="${app}"]`);
+const appName = (app) => t(app);   // 'metronome' / 'drone' / 'player' are also the translation keys
 
 // ---------- Tabs ----------
 function select(app, focus = false) {
@@ -58,7 +59,8 @@ let popApp = null;
 function renderVol(app) {
   const b = slot(app).querySelector('.vol');
   slot(app).classList.toggle('muted', vols[app] === 0);
-  b.title = `${app[0].toUpperCase()}${app.slice(1)} volume: ${vols[app]}%`;
+  b.title = t('volTitle', { app: appName(app), n: vols[app] });
+  b.setAttribute('aria-label', t('volApp', { app: appName(app) }));
 }
 
 function closePop() {
@@ -73,7 +75,7 @@ function openPop(app) {
   popApp = app;
   const btn = slot(app).querySelector('.vol');
   btn.setAttribute('aria-expanded', 'true');
-  document.getElementById('volname').textContent = app[0].toUpperCase() + app.slice(1);
+  document.getElementById('volname').textContent = appName(app);
   popRange.value = vols[app];
   popOut.textContent = `${vols[app]}%`;
   pop.style.setProperty('--c', getComputedStyle(slot(app)).getPropertyValue('--c'));
@@ -106,6 +108,9 @@ window.addEventListener('resize', closePop);
 // ---------- Status from the apps ----------
 const warnTimers = {};
 const busy = {};   // app -> playing or recording (from its status messages); blocks the auto update
+const playing = {};
+const renderPlay = (app) => slot(app).querySelector('.play')
+  .setAttribute('aria-label', t(playing[app] ? 'stopApp' : 'playApp', { app: appName(app) }));
 window.addEventListener('message', (e) => {
   const d = e.data;
   if (!d || !APPS.includes(d.app) || e.source !== pane(d.app).contentWindow) return;
@@ -116,13 +121,14 @@ window.addEventListener('message', (e) => {
     s.classList.toggle('playing', d.playing);
     const btn = s.querySelector('.play');
     btn.setAttribute('aria-pressed', d.playing);
-    btn.setAttribute('aria-label', `${d.playing ? 'Stop' : 'Play'} ${d.app}`);
+    playing[d.app] = d.playing;
+    renderPlay(d.app);
     if (!warnTimers[d.app]) info.textContent = d.info;
     info.dataset.last = d.info;
   } else if (d.type === 'blocked') {
     // Browser refused audio in the frame: ask for one tap inside the app.
     select(d.app);
-    info.textContent = 'Audio blocked — press play inside the app';
+    info.textContent = t('audioBlocked');
     info.classList.add('warn');
     clearTimeout(warnTimers[d.app]);
     warnTimers[d.app] = setTimeout(() => {
@@ -138,8 +144,24 @@ for (const app of APPS) {
   pane(app).addEventListener('load', () => {
     pane(app).contentWindow.postMessage({ type: 'cmd', action: 'ping' }, '*');
     sendVol(app);
+    sendLang(app);
   });
 }
+
+// ---------- Language ----------
+// The footer picker shows the current language (chosen, or detected from the browser) and saves an explicit
+// choice. The apps follow through the `storage` event, and through a message in case storage is unavailable.
+const langSel = document.getElementById('langSel');
+const sendLang = (app) => pane(app).contentWindow?.postMessage({ type: 'cmd', action: 'lang', value: I18N.lang }, '*');
+function renderLang() {
+  langSel.value = I18N.lang;
+  document.getElementById('langCode').textContent = I18N.lang.toUpperCase();
+  for (const app of APPS) { renderVol(app); renderPlay(app); }
+  closePop();
+}
+langSel.addEventListener('change', () => { I18N.set(langSel.value, true); for (const app of APPS) sendLang(app); });
+I18N.onChange(renderLang);
+renderLang();
 
 // ---------- Init ----------
 let initial = location.hash.slice(1);
@@ -230,11 +252,11 @@ shareCopy.addEventListener('click', async () => {
   try {
     await navigator.clipboard.writeText(url);
     const label = shareCopy.firstElementChild;
-    label.textContent = 'Copied!';
+    label.textContent = t('copied');
     shareCopy.classList.add('done');
-    setTimeout(() => { label.textContent = 'Copy link'; shareCopy.classList.remove('done'); }, 1500);
+    setTimeout(() => { label.textContent = t('copyLink'); shareCopy.classList.remove('done'); }, 1500);
   } catch (e) {
-    prompt('Copy this link:', url);
+    prompt(t('copyPrompt'), url);
   }
 });
 
@@ -244,7 +266,7 @@ if (navigator.share) {
   shareNative.hidden = false;
   shareNative.addEventListener('click', async () => {
     try {
-      await navigator.share({ title: 'Practice Room', text: 'Metronome, drone and audio player for music practice.', url: SHARE_URL });
+      await navigator.share({ title: 'Practice Room', text: t('shareText'), url: SHARE_URL });
     } catch (e) { /* cancelled */ }
   });
 }
@@ -270,10 +292,10 @@ installBtn.addEventListener('click', async () => {
   }
   const ua = navigator.userAgent;
   const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  alert(ios ? 'To install: tap the Share button, then "Add to Home Screen".'
-    : /Firefox/.test(ua) ? 'Firefox on desktop can\'t install web apps. Use Chrome or Edge, or Firefox on Android (menu → Install).'
-    : /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua) ? 'To install: File → Add to Dock.'
-    : 'To install: use the browser menu → "Install app" (or "Add to Home screen"). If the app is already installed, open it from your apps.');
+  alert(t(ios ? 'installIos'
+    : /Firefox/.test(ua) ? 'installFirefox'
+    : /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua) ? 'installSafari'
+    : 'installOther'));
 });
 
 // ---------- PWA: offline support ----------

@@ -9,29 +9,29 @@
 </head>
 <body>
   <main class="app">
-    <section class="tuner collapsed" id="tuner" aria-label="Tuner">
+    <section class="tuner collapsed" id="tuner" aria-label="Tuner" data-i18n-attr="aria-label:tuner">
       <div class="curtain" id="tunerBody">
         <div class="curtain-inner">
           <div class="tuner-row">
             <div class="tuner-id">
-              <p class="tuner-note idle" id="tunerNote" aria-live="off">listening...</p>
+              <p class="tuner-note idle" id="tunerNote" aria-live="off" data-i18n="listening">listening...</p>
             </div>
             <div class="tuner-disks" id="tunerDisks" aria-hidden="true"><span class="disk"></span><span class="disk"></span><span class="disk"></span><span class="disk"></span><span class="disk mid"></span><span class="disk"></span><span class="disk"></span><span class="disk"></span><span class="disk"></span></div>
           <p class="tuner-hz" id="tunerHz">&nbsp;</p>
           </div>
           <div class="tuner-opts">
             <fieldset class="field notation">
-              <legend>Notation</legend>
+              <legend data-i18n="notation">Notation</legend>
               <div class="seg">
                 <label><input type="radio" name="notation" value="solfege"><span>Do, Re, Mi</span></label>
                 <label><input type="radio" name="notation" value="letters"><span>C, D, E</span></label>
-                <label><input type="radio" name="notation" value="both" checked><span>Both</span></label>
+                <label><input type="radio" name="notation" value="both" checked><span data-i18n="both">Both</span></label>
               </div>
             </fieldset>
           </div>
           <div class="tuner-opts">
             <div class="field">
-              <label for="temper">Temperament</label>
+              <label for="temper" data-i18n="temperament">Temperament</label>
               <select id="temper"></select>
             </div>
             <div class="field">
@@ -42,13 +42,13 @@
           <div class="tuner-opts" id="refRow" hidden>
             <div class="field">
               <span class="label-row">
-                <label for="refSel" id="refLabel">Reference note</label>
-                <button type="button" class="info-btn" id="refInfoBtn" aria-haspopup="dialog" aria-label="About the reference note">i</button>
+                <label for="refSel" id="refLabel" data-i18n="refNote">Reference note</label>
+                <button type="button" class="info-btn" id="refInfoBtn" aria-haspopup="dialog" aria-label="About the reference note" data-i18n-attr="aria-label:aboutRef">i</button>
               </span>
               <select id="refSel"></select>
               <p class="ref-cap" id="refCap" aria-live="polite" hidden></p>
             </div>
-            <button type="button" class="ref-rec" id="refRec" data-state="idle" aria-label="Record the reference: play a steady note">
+            <button type="button" class="ref-rec" id="refRec" data-state="idle" aria-label="Record the reference: play a steady note" data-i18n-attr="aria-label:refRecIdle">
               <svg class="i-rec" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="6"/></svg>
               <svg class="i-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="1.5"/></svg>
               <svg class="i-trash" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></svg>
@@ -57,25 +57,25 @@
           <p class="tuner-msg" id="tunerMsg" role="status" hidden></p>
         </div>
       </div>
-      <button type="button" class="tuner-handle" id="tunerToggle" aria-expanded="false" aria-controls="tunerBody" title="Pull down the tuner">
+      <button type="button" class="tuner-handle" id="tunerToggle" aria-expanded="false" aria-controls="tunerBody" title="Pull down the tuner" data-i18n-attr="title:tunerPull">
         <svg class="fork" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 3v8a3.5 3.5 0 0 0 7 0V3M12 14.5V21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span>Tuner</span>
+        <span data-i18n="tuner">Tuner</span>
         <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
     </section>
 
     <header class="top">
-      <h1 class="title">Drone</h1>
+      <h1 class="title" data-i18n="drone">Drone</h1>
 
       <div class="transport">
-        <span class="temper-tag" id="temperTag" hidden><span id="temperName"></span><button type="button" class="temper-clear" id="temperClear" aria-label="Back to equal temperament" title="Back to equal temperament" hidden><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button></span>
+        <span class="temper-tag" id="temperTag" hidden><span id="temperName"></span><button type="button" class="temper-clear" id="temperClear" aria-label="Back to equal temperament" title="Back to equal temperament" data-i18n-attr="aria-label:backToEqual title:backToEqual" hidden><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7"/></svg></button></span>
         <div class="field">
-          <label for="note">Base note (H1)</label>
+          <label for="note" data-i18n="baseNote">Base note (H1)</label>
           <select id="note"></select>
         </div>
 
         <div class="field">
-          <label for="octave">Octave</label>
+          <label for="octave" data-i18n="octave">Octave</label>
           <select id="octave">
             <option value="1">1</option>
             <option value="2">2</option>
@@ -85,12 +85,12 @@
           </select>
         </div>
 
-        <button type="button" class="play rec" id="harmRec" aria-pressed="false" aria-label="Rec: set the harmonics from the microphone" title="Listen to the microphone and set the harmonics to the sound you play">
+        <button type="button" class="play rec" id="harmRec" aria-pressed="false" aria-label="Rec: set the harmonics from the microphone" title="Listen to the microphone and set the harmonics to the sound you play" data-i18n-attr="aria-label:harmRecLabel title:harmRecTitle">
           <svg class="icon-rec" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.485"/></svg>
           <svg class="icon-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
         </button>
 
-        <button class="play" id="play" type="button" aria-pressed="false" aria-label="Play">
+        <button class="play" id="play" type="button" aria-pressed="false" aria-label="Play" data-i18n-attr="aria-label:play">
           <svg class="icon-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
           <svg class="icon-stop" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5"/></svg>
         </button>
@@ -102,21 +102,21 @@
 
 
     <div class="harm-wrap" id="harmWrap">
-    <section class="harmonics" aria-label="Harmonics">
+    <section class="harmonics" aria-label="Harmonics" data-i18n-attr="aria-label:harmonics">
       <div class="harmonics-head">
-        <button type="button" class="harm-toggle" id="harmToggle" aria-expanded="true" aria-controls="harmBody rows" title="Collapse / expand the harmonics">
+        <button type="button" class="harm-toggle" id="harmToggle" aria-expanded="true" aria-controls="harmBody rows" title="Collapse / expand the harmonics" data-i18n-attr="title:harmToggle">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span>Harmonics</span>
+          <span data-i18n="harmonics">Harmonics</span>
         </button>
         <span class="harm-hist" id="harmHist" aria-hidden="true"></span>
         <div class="bulk" id="harmBody">
-          <button type="button" id="allOn">All on</button>
-          <button type="button" id="allOff">All off</button>
-          <button type="button" id="presetFlat" title="H1–H10 at the same volume (H11–H13 off)">Flat</button>
-          <button type="button" id="presetLinear" title="Volume decreasing linearly from H1 to H13">Linear</button>
-          <select id="instrument" class="instrument" aria-label="Instrument preset" title="Instrument preset"></select>
-          <select id="presetSel" class="instrument preset" aria-label="Saved presets" title="Your saved presets"></select>
-          <button type="button" id="reset">Reset</button>
+          <button type="button" id="allOn" data-i18n="allOn">All on</button>
+          <button type="button" id="allOff" data-i18n="allOff">All off</button>
+          <button type="button" id="presetFlat" title="H1–H10 at the same volume (H11–H13 off)" data-i18n-attr="title:flatTitle" data-i18n="flat">Flat</button>
+          <button type="button" id="presetLinear" title="Volume decreasing linearly from H1 to H13" data-i18n-attr="title:linearTitle" data-i18n="linear">Linear</button>
+          <select id="instrument" class="instrument" aria-label="Instrument preset" title="Instrument preset" data-i18n-attr="aria-label:instPreset title:instPreset"></select>
+          <select id="presetSel" class="instrument preset" aria-label="Saved presets" title="Your saved presets" data-i18n-attr="aria-label:savedPresets title:yourPresets"></select>
+          <button type="button" id="reset" data-i18n="reset">Reset</button>
         </div>
       </div>
       <ol class="rows" id="rows"></ol>
@@ -124,38 +124,38 @@
     <canvas class="spectro" id="spectro" aria-hidden="true"></canvas>
     </div>
 
-    <section class="sweep" aria-label="Harmonic sweep">
+    <section class="sweep" aria-label="Harmonic sweep" data-i18n-attr="aria-label:harmSweep">
       <label class="switch sweep-toggle">
         <input type="checkbox" id="modOn">
         <span class="track"><span class="knob"></span></span>
-        <span class="sweep-title">Sweep <small id="modRange">H2–H13</small></span>
+        <span class="sweep-title" data-i18n="sweep">Sweep <small id="modRange">H2–H13</small></span>
       </label>
       <div class="field sweep-from">
-        <label for="modFrom">From</label>
+        <label for="modFrom" data-i18n="from">From</label>
         <select id="modFrom"></select>
       </div>
       <div class="field">
-        <label for="modRate">Rate <output id="modRateOut"></output></label>
+        <label for="modRate" data-i18n="rate">Rate <output id="modRateOut"></output></label>
         <input id="modRate" type="range" min="0" max="100" step="0.5">
       </div>
       <div class="field">
-        <label for="modDepth">Depth <output id="modDepthOut"></output></label>
+        <label for="modDepth" data-i18n="depth">Depth <output id="modDepthOut"></output></label>
         <input id="modDepth" type="range" min="0" max="100">
       </div>
     </section>
 
-    <section class="sweep swell" id="swellSection" aria-label="Brass swell">
+    <section class="sweep swell" id="swellSection" aria-label="Brass swell" data-i18n-attr="aria-label:brassSwell">
       <label class="switch sweep-toggle">
         <input type="checkbox" id="swellOn">
         <span class="track"><span class="knob"></span></span>
-        <span class="sweep-title">Swell</span>
+        <span class="sweep-title" data-i18n="swell">Swell</span>
       </label>
       <div class="field">
-        <label for="swellRate">Rate <output id="swellRateOut"></output></label>
+        <label for="swellRate" data-i18n="rate">Rate <output id="swellRateOut"></output></label>
         <input id="swellRate" type="range" min="0" max="100" step="0.5">
       </div>
       <div class="field">
-        <label for="swellDepth">Depth <output id="swellDepthOut"></output></label>
+        <label for="swellDepth" data-i18n="depth">Depth <output id="swellDepthOut"></output></label>
         <input id="swellDepth" type="range" min="0" max="100">
       </div>
     </section>
@@ -177,29 +177,31 @@
 
   <dialog class="pdlg" id="presetsDialog" aria-labelledby="presetsLabel">
     <form method="dialog">
-      <p id="presetsLabel" class="dlg-title">Presets <small>harmonics, sweep and swell</small></p>
+      <p id="presetsLabel" class="dlg-title" data-i18n="presets">Presets <small data-i18n="presetsHint">harmonics, sweep and swell</small></p>
       <div class="preset-save">
-        <input id="presetName" type="text" maxlength="20" autocomplete="off" aria-label="Preset label">
-        <button type="button" class="btn primary" id="presetSave">Save</button>
+        <input id="presetName" type="text" maxlength="20" autocomplete="off" aria-label="Preset label" data-i18n-attr="aria-label:presetLabel">
+        <button type="button" class="btn primary" id="presetSave" data-i18n="save">Save</button>
       </div>
-      <ul class="preset-list" id="presetList" aria-label="Saved presets"></ul>
-      <p class="preset-empty" id="presetEmpty">No presets yet. Set up the harmonics, edit the label if you like and press Save.</p>
+      <ul class="preset-list" id="presetList" aria-label="Saved presets" data-i18n-attr="aria-label:savedPresets"></ul>
+      <p class="preset-empty" id="presetEmpty" data-i18n="presetEmpty">No presets yet. Set up the harmonics, edit the label if you like and press Save.</p>
       <div class="pdlg-actions">
-        <button type="submit" class="btn">Close</button>
+        <button type="submit" class="btn" data-i18n="close">Close</button>
       </div>
     </form>
   </dialog>
 
   <dialog class="pdlg info-dlg" id="refDialog" aria-labelledby="refDlgTitle">
     <form method="dialog">
-      <p id="refDlgTitle" class="dlg-title">Reference note</p>
+      <p id="refDlgTitle" class="dlg-title" data-i18n="refNote">Reference note</p>
       <p class="info-text" id="refInfo"></p>
       <div class="pdlg-actions">
-        <button type="submit" class="btn">Close</button>
+        <button type="submit" class="btn" data-i18n="close">Close</button>
       </div>
     </form>
   </dialog>
 
+  <script src="../i18n.js" defer></script>
+  <script src="strings.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>

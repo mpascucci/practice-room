@@ -330,8 +330,8 @@ function addMarker() {
 // Clicking a label opens the same dialog for that marker: rename it, or remove it.
 function editMarker(i) {
   markerEditing = i;
-  el.markerTitle.textContent = 'Marker';
-  el.markerOk.textContent = 'Save';
+  el.markerTitle.textContent = t('marker');
+  el.markerOk.textContent = t('save');
   el.markerRemove.hidden = false;
   el.markerName.value = markers[i].name;
   el.markerDialog.showModal();
@@ -368,8 +368,8 @@ function renderMarkerLabels(w) {
     b.type = 'button';
     b.className = 'marker-label';
     b.textContent = m.name;
-    b.title = `Marker "${m.name}" at ${fmt(m.t)}: click to rename or remove, drag to move`;
-    b.setAttribute('aria-label', `Marker ${m.name} at ${fmt(m.t)}`);
+    b.title = t('markerLabelTitle', { name: m.name, time: fmt(m.t) });
+    b.setAttribute('aria-label', t('markerLabelAria', { name: m.name, time: fmt(m.t) }));
     let x0 = 0, moved = false;
     b.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse' && !markerDrag) showTrash(i); });
     b.addEventListener('pointerleave', hideTrashSoon);
@@ -422,20 +422,20 @@ function markerTrash() {
   trashEl = document.createElement('div');   // the tools row: edit and trash side by side
   trashEl.className = 'marker-tools';
   trashEl.hidden = true;
-  const tool = (cls, label, path, fn) => {
-    const t = document.createElement('button');
-    t.type = 'button';
-    t.className = `marker-tool ${cls}`;
-    t.title = label;
-    t.setAttribute('aria-label', label);
-    t.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
-    t.addEventListener('click', () => { const i = trashFor; hideTrash(); if (i != null) fn(i); });
-    return t;
+  const tool = (cls, key, path, fn) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = `marker-tool ${cls}`;
+    b.dataset.i18nAttr = `title:${key} aria-label:${key}`;   // translated by i18n.js, now and on a language switch
+    b.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${path}</svg>`;
+    b.addEventListener('click', () => { const i = trashFor; hideTrash(); if (i != null) fn(i); });
+    return b;
   };
   trashEl.append(
-    tool('edit', 'Edit marker', '<path d="M4 20h4L19 9l-4-4L4 16z"/>', editMarker),
-    tool('trash', 'Delete marker', '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>', removeMarker),
+    tool('edit', 'editMarker', '<path d="M4 20h4L19 9l-4-4L4 16z"/>', editMarker),
+    tool('trash', 'deleteMarker', '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>', removeMarker),
   );
+  I18N.apply(trashEl);
   trashEl.addEventListener('pointerenter', () => clearTimeout(trashTimer));
   trashEl.addEventListener('pointerleave', hideTrashSoon);
   return trashEl;
@@ -674,7 +674,7 @@ function ensurePitch() {
       console.warn('Transpose unavailable:', err);
       pitchFailed = true;
       try { ctx && ctx.close(); } catch {}
-      for (const b of [el.transpose, el.transposeDown, el.transposeUp, el.transposeReset, el.transposeFine]) { b.disabled = true; b.title = 'Transpose is not supported on this device'; }
+      for (const b of [el.transpose, el.transposeDown, el.transposeUp, el.transposeReset, el.transposeFine]) { b.disabled = true; b.title = t('transposeUnsupported'); }
       return false;
     } finally { pitchBuilding = null; }
   })();
@@ -690,21 +690,23 @@ function renderTranspose() {
   fill(el.transpose, state.transpose, TRANSPOSE_MIN, TRANSPOSE_MAX);
   const sign = state.transpose > 0 ? '+' : state.transpose < 0 ? '−' : '';
   el.transposeOut.textContent = `${sign}${Math.abs(state.transpose)}`;
-  el.transposeOut.dataset.unit = Math.abs(state.transpose) === 1 ? 'semitone' : 'semitones';   // the unit is added in CSS (short "st" in the compact box)
+  // the unit is added in CSS: the word, or the short form in the compact box
+  el.transposeOut.dataset.unit = t('semitones', { n: Math.abs(state.transpose) });
+  el.transposeOut.dataset.short = t('stShort');
   const abs = Math.abs(state.transpose);   // a quarter tone (half a semitone) is shown as a trailing ¼
   el.transposeInt.textContent = state.transpose ? `${sign}${INTERVALS[Math.floor(abs)]}${abs % 1 ? '¼' : ''}` : '';
 }
 function renderLoop() {
   drawWave();
   // the button names the action it will do: "Start Loop" when off, "Stop Loop" when on
-  const label = state.loop ? 'Stop Loop' : 'Start Loop';
+  const label = t(state.loop ? 'stopLoop' : 'startLoop');
   el.loopOn.dataset.on = state.loop;
   el.loopOn.setAttribute('aria-label', label);
   el.loopOn.title = `${label} (L)`;
   el.loopOn.querySelector('.txt').textContent = label;
   el.clearLoop.disabled = loopA == null && loopB == null;
   const a = loopA == null ? '–' : fmt(loopA), b = loopB == null ? '–' : fmt(loopB);
-  el.loopOut.textContent = loopA == null && loopB == null ? 'off' : `${a} → ${b}${hasLoop() && !state.loop ? ' (loop off)' : ''}`;
+  el.loopOut.textContent = loopA == null && loopB == null ? t('off') : `${a} → ${b}${hasLoop() && !state.loop ? ` (${t('loopOff')})` : ''}`;
 }
 function renderTime() {
   const d = audio.duration || 0;
@@ -719,7 +721,7 @@ function renderTime() {
 function renderPlay() {
   el.play.setAttribute('aria-pressed', playing);
   el.pause.disabled = !playing || recording;
-  el.play.setAttribute('aria-label', playing ? 'Pause' : 'Play');
+  el.play.setAttribute('aria-label', t(playing ? 'pause' : 'play'));
 }
 function renderEnabled() {
   for (const b of [el.play, el.rewind, el.addMarker, el.setA, el.setB, el.seek, el.armLoop]) b.disabled = !loaded;
@@ -829,7 +831,7 @@ audio.addEventListener('error', () => {
   playing = false;
   clearInterval(timer);
   el.name.classList.remove('loaded', 'placeholder');
-  el.name.textContent = `Can't play "${trackName}" — unsupported or damaged file.`;
+  el.name.textContent = t('cantPlay', { name: trackName });
   renderPlay();
   renderEnabled();
   report();
@@ -851,19 +853,19 @@ function recMessage(text, warn = false) {
 // Explain a failed getUserMedia. A blocked permission can't be re-prompted by the page: the user
 // has to change the site setting, so say how.
 async function micErrorText(err) {
-  if (err.name === 'NotFoundError') return 'No microphone found. Plug one in and press Rec again.';
-  if (err.name === 'NotReadableError') return 'The microphone is in use by another app or can\'t be opened. Close the other app and try again.';
-  if (err.name !== 'NotAllowedError' && err.name !== 'SecurityError') return `Can't open the microphone (${err.name}).`;
-  if (!window.isSecureContext) return 'Microphone access needs a secure page: open the app over https or on localhost.';
+  if (err.name === 'NotFoundError') return t('micNotFound');
+  if (err.name === 'NotReadableError') return t('micInUse');
+  if (err.name !== 'NotAllowedError' && err.name !== 'SecurityError') return t('micError', { name: err.name });
+  if (!window.isSecureContext) return t('micInsecure');
   let state = '';
   try { state = (await navigator.permissions.query({ name: 'microphone' })).state; } catch {}   // not supported everywhere (Safari)
-  if (state === 'prompt') return 'Microphone permission was not granted. Press Rec again and choose Allow.';
+  if (state === 'prompt') return t('micNotGranted');
   const ua = navigator.userAgent;
-  const where = /iPhone|iPad/.test(ua) ? 'Settings → Safari → Microphone (or the "aA" menu → Website Settings), set it to Allow'
-    : /Firefox/.test(ua) ? 'the icon left of the address bar → Permissions → Use the Microphone → Allow'
-    : /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua) ? 'Safari → Settings → Websites → Microphone, set this site to Allow'
-    : 'the icon left of the address bar → Site settings → Microphone → Allow';
-  return `Microphone access is blocked. Open ${where}, then reload this page and press Rec again. If it still fails, enable your browser in the system's microphone privacy settings.`;
+  const where = /iPhone|iPad/.test(ua) ? 'micWhereIos'
+    : /Firefox/.test(ua) ? 'micWhereFirefox'
+    : /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua) ? 'micWhereSafari'
+    : 'micWhereOther';
+  return t('micBlocked', { where: t(where) });
 }
 const HINT = el.recMsg.textContent;
 
@@ -992,21 +994,21 @@ function finishRec() {
   const ext = mime.includes('mp4') ? 'm4a' : mime.includes('ogg') ? 'ogg' : 'webm';
   const d = new Date(), pad = (n) => String(n).padStart(2, '0');
   // Replace the loaded track with the recording.
-  openFile(new File([blob], `Take ${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}.${ext}`, { type: mime }), true);
+  openFile(new File([blob], `${t('take')} ${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}.${ext}`, { type: mime }), true);
 }
 
 function renderRec() {
   el.rec.setAttribute('aria-pressed', recording);
-  el.rec.setAttribute('aria-label', recording ? 'Stop recording' : 'Record a take');
-  const t = fmt((performance.now() - recStartedAt) / 1000);
-  el.recLabel.textContent = recording ? t : 'Rec';
-  el.recTime.textContent = recording ? t : '0:00';
+  el.rec.setAttribute('aria-label', t(recording ? 'stopRecording' : 'recordTake'));
+  const time = fmt((performance.now() - recStartedAt) / 1000);
+  el.recLabel.textContent = recording ? time : t('rec');
+  el.recTime.textContent = recording ? time : '0:00';
 }
 
 el.rec.addEventListener('click', () => (recording ? stopRec() : startRec()));
 el.recStop.addEventListener('click', stopRec);
 el.recDialog.addEventListener('close', stopRec);   // Esc also ends the recording (it is kept)
-if (!canRecord) { el.rec.disabled = true; recMessage('Recording is not supported in this browser.'); }
+if (!canRecord) { el.rec.disabled = true; recMessage(t('recUnsupported')); }
 
 
 // ---------- Unsaved recording guard ----------
@@ -1032,7 +1034,7 @@ function openFile(file, isTake = false, restored = false) {
   el.name.classList.remove('placeholder');
   if (!(file.type.startsWith('audio/') || /\.(mp3|m4a|aac|wav|ogg|oga|opus|flac|webm)$/i.test(file.name))) {
     el.name.classList.remove('loaded');
-    el.name.textContent = `"${file.name}" doesn't look like an audio file.`;
+    el.name.textContent = t('notAudio', { name: file.name });
     return;
   }
   persistTrack();   // the track being replaced
@@ -1159,7 +1161,7 @@ function drawNorm() {
 function renderNorm() {
   const db = +el.normLimit.value, peakDb = 20 * Math.log10(rawPeak), gainDb = NORM_CEIL_DB - db;
   const clipped = db < peakDb - 0.05;
-  el.normInfo.textContent = `Limit ${dbText(db)} → ${dbText(NORM_CEIL_DB)} (gain ${dbText(gainDb)})${clipped ? ' · peaks above the lines are clipped' : ''}`;
+  el.normInfo.textContent = `${t('normLimit', { from: dbText(db), to: dbText(NORM_CEIL_DB), gain: dbText(gainDb) })}${clipped ? ` · ${t('normClipped')}` : ''}`;
   el.normInfo.classList.toggle('warn', clipped);
   fill(el.normLimit, db, +el.normLimit.min, +el.normLimit.max);
   drawNorm();
@@ -1230,7 +1232,7 @@ async function applyNormalize() {
     replaceAudio(new File([blob], `${trackName.replace(/-normalized$/, '')}-normalized.wav`, { type: 'audio/wav' }));
     el.normDialog.close();
   } catch {
-    el.normInfo.textContent = 'Could not process this file.';
+    el.normInfo.textContent = t('normFailed');
     el.normInfo.classList.add('warn');
     el.normOk.disabled = false;
   }
@@ -1260,7 +1262,7 @@ function setTranspose(v) {
 function renderLoopPause() {
   el.loopPause.value = state.loopPause;
   fill(el.loopPause, state.loopPause, 0, 10);
-  el.loopPauseOut.textContent = state.loopPause ? `${state.loopPause} s` : 'none';
+  el.loopPauseOut.textContent = state.loopPause ? `${state.loopPause} s` : t('none');
 }
 el.loopPause.addEventListener('input', () => {
   state.loopPause = +el.loopPause.value;
@@ -1273,7 +1275,7 @@ const speedStep = () => {
   const small = smallScreen.matches;
   el.speed.step = small ? 5 : 1;
   // small screens: the 100% tick under the slider is a button that resets the speed (the reset button is hidden there)
-  if (small) { el.speedTick.setAttribute('role', 'button'); el.speedTick.tabIndex = 0; el.speedTick.title = 'Reset speed to 100%'; }
+  if (small) { el.speedTick.setAttribute('role', 'button'); el.speedTick.tabIndex = 0; el.speedTick.title = t('resetSpeed'); }
   else { el.speedTick.removeAttribute('role'); el.speedTick.removeAttribute('tabindex'); el.speedTick.removeAttribute('title'); el.speedTick.setAttribute('aria-hidden', 'true'); }
   if (small) el.speedTick.removeAttribute('aria-hidden');
   renderSpeed();
@@ -1568,7 +1570,7 @@ if (EMBEDDED) document.documentElement.classList.add('embedded');
 
 function report() {
   if (!EMBEDDED) return;
-  const info = loaded || trackName ? `${trackName}${state.speed !== 100 ? ` · ${state.speed}%` : ''}${state.transpose ? ` · ${state.transpose > 0 ? '+' : '−'}${Math.abs(state.transpose)} st` : ''}` : 'No file';
+  const info = loaded || trackName ? `${trackName}${state.speed !== 100 ? ` · ${state.speed}%` : ''}${state.transpose ? ` · ${state.transpose > 0 ? '+' : '−'}${Math.abs(state.transpose)} ${t('stShort')}` : ''}` : t('noFile');
   parent.postMessage({ type: 'status', app: 'player', playing, busy: playing || recording || !!recStream || saving > 0, info: recording ? `● rec · ${info}` : info }, '*');
 }
 function blocked() {
@@ -1583,6 +1585,22 @@ window.addEventListener('message', (e) => {
   else if (a === 'stop') stop();
   else if (a === 'ping') report();
   else if (a === 'volume' && Number.isFinite(e.data.value)) audio.volume = Math.min(1, Math.max(0, e.data.value));   // ignored by iOS Safari
+});
+
+// ---------- Language ----------
+// Static text is switched by i18n.js; re-render what is built here.
+I18N.onChange(() => {
+  renderPlay();
+  renderRec();
+  renderLoop();
+  renderTranspose();
+  renderLoopPause();
+  speedStep();
+  markerKey = '';   // relabel the markers
+  drawWave();
+  if (el.normDialog.open) renderNorm();
+  if (!canRecord) recMessage(t('recUnsupported'));
+  report();
 });
 
 // ---------- Init ----------

@@ -94,7 +94,8 @@ const isCustom = () => state.measures.some((_, m) => lenOf(m) < beatCount());
 const normLens = (lens, count, n) => Array.from({ length: count }, (_, i) =>
   (Number.isInteger(lens?.[i]) ? clamp(lens[i], 1, n) : n));
 // "3 × 7 beats" or, with erased beats, "2 custom bars"
-const barsLabel = (n, count, custom) => (custom ? `${count} custom bar${count > 1 ? 's' : ''}` : `${n}${count > 1 ? ` × ${count}` : ''} beats`);
+const barsLabel = (n, count, custom) => (custom ? t('customBars', { n: count })
+  : t('beatsN', { n, x: count > 1 ? `${n} × ${count}` : n }));
 load();
 
 let ctx = null;          // AudioContext (created on first user gesture)
@@ -137,7 +138,7 @@ function save() {
 
 // ---------- Rendering ----------
 function diskLabel(m, i) {
-  return `Measure ${m + 1}, beat ${i + 1}: ${state.measures[m][i]}`;
+  return t('diskAria', { m: m + 1, i: i + 1, state: t(state.measures[m][i]) });
 }
 
 function renderBeats() {
@@ -160,7 +161,7 @@ function renderBeats() {
     measuresEl.append(row);
   }
   [...measuresEl.children].forEach((row, m) => {
-    row.setAttribute('aria-label', `Measure ${m + 1} (click a beat to change: silent, normal, accent)`);
+    row.setAttribute('aria-label', t('measureAria', { m: m + 1 }));
     const cells = row.firstElementChild;
     const strike = cells.querySelector('.strike');
     let disks = [...cells.querySelectorAll('.disk')];
@@ -197,7 +198,7 @@ function paintRow(m) {
     el.disabled = erased;
   });
   const h = cells.querySelector('.handle');
-  h.setAttribute('aria-label', `Measure ${m + 1}: ${len} of ${n} beats. Drag left to erase beats, right to restore. Enter for help.`);
+  h.setAttribute('aria-label', t('handleAria', { m: m + 1, len, n }));
 }
 
 function setLen(m, len) {
@@ -388,7 +389,7 @@ function start() {
   worker.postMessage('start');
   rafId = requestAnimationFrame(draw);
   playBtn.setAttribute('aria-pressed', 'true');
-  playBtn.setAttribute('aria-label', 'Stop');
+  playBtn.setAttribute('aria-label', t('stop'));
   requestWakeLock();
   report();
   checkBlocked();
@@ -401,7 +402,7 @@ function stop() {
   queue = [];
   setLit(null);
   playBtn.setAttribute('aria-pressed', 'false');
-  playBtn.setAttribute('aria-label', 'Play');
+  playBtn.setAttribute('aria-label', t('play'));
   wakeLock?.release().catch(() => {});
   wakeLock = null;
   report();
@@ -488,7 +489,7 @@ function tap() {
     setTempo(60000 / avgMs);
     syncInputs();
   }
-  tapInfo.textContent = 'tap again';
+  tapInfo.textContent = t('tapAgain');
 
   tapBtn.classList.add('hit');
   clearTimeout(tapFlashTimer);
@@ -688,7 +689,7 @@ function updateSeq() {
   seqResult.textContent = beats.length ? `${beats.join(' + ')} = ${sum}` : '';
   const tooMany = sum > MAX_BEATS;
   seqWarn.hidden = !tooMany;
-  seqWarn.textContent = tooMany ? `Too many beats: the maximum is ${MAX_BEATS} (${sum - MAX_BEATS} over).` : '';
+  seqWarn.textContent = tooMany ? t('tooManyBeats', { max: MAX_BEATS, over: sum - MAX_BEATS }) : '';
   seqOk.disabled = !beats.length || tooMany;
 }
 
@@ -876,9 +877,9 @@ function storePresets() {
 }
 
 // Name of the current sound, used as the default label prefix and in the list.
-const PERC_NAMES = { machine: 'Machine', 'bass-snare': 'Bass-Snare', darabuka: 'Darabuka', tapan: 'Tapan', pier: 'Pier' };
-const soundName = (p) => (p.mode === 'percussion' ? PERC_NAMES[p.perc]
-  : p.mode === 'instrument' ? (p.timbre === 'string' ? 'Pluck' : 'Sustain') : p.mode === 'mute' ? 'Mute' : 'Click');
+const PERC_NAMES = { 'bass-snare': 'Bass-Snare', darabuka: 'Darabuka', tapan: 'Tapan', pier: 'Pier' };   // machine: translated
+const soundName = (p) => (p.mode === 'percussion' ? PERC_NAMES[p.perc] ?? t('sndMachine')
+  : t(p.mode === 'instrument' ? (p.timbre === 'string' ? 'sndPluck' : 'sndSustain') : p.mode === 'mute' ? 'sndMute' : 'sndClick'));
 
 // Default label: <Sound> 01, <Sound> 02, … the smallest number not used yet (e.g. Darabuka 01).
 function nextPresetName() {
@@ -932,7 +933,7 @@ function renderPresets() {
     del.type = 'button';
     del.className = 'icon-btn preset-del';
     del.dataset.del = i;
-    del.setAttribute('aria-label', `Delete preset ${p.name}`);
+    del.setAttribute('aria-label', t('deletePreset', { name: p.name }));
     del.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V4h4v3M7 7l1 13h8l1-13"/></svg>';
     li.append(load, del);
     return li;
@@ -950,7 +951,7 @@ function savePreset() {
   const at = presets.findIndex((x) => x.name.toLowerCase() === name.toLowerCase());
   if (at >= 0) presets[at] = p;                       // same label: overwrite
   else if (presets.length < MAX_PRESETS) presets.push(p);
-  else { presetEmpty.textContent = `Too many presets (max ${MAX_PRESETS}): delete one first.`; presetEmpty.hidden = false; return; }
+  else { presetEmpty.textContent = t('tooManyPresets', { max: MAX_PRESETS }); presetEmpty.hidden = false; return; }
   storePresets();
   renderPresets();
 }
@@ -971,7 +972,7 @@ function applyPreset(p) {
 }
 
 $('presetsBtn').addEventListener('click', () => {
-  presetEmpty.textContent = 'No presets yet. Set up the metronome, edit the label if you like and press Save.';
+  presetEmpty.textContent = t('presetEmpty');
   renderPresets();
   presetsDialog.showModal();
   $('presetSave').focus();   // not the text field: no virtual keyboard on touch devices
@@ -996,6 +997,22 @@ if (matchMedia('(pointer: coarse)').matches) {
     input.classList.add('display-only');
   }
 }
+
+// ---------- Language ----------
+// Static text is switched by i18n.js; re-render what is built here.
+I18N.onChange(() => {
+  renderBeats();
+  playBtn.setAttribute('aria-label', t(state.playing ? 'stop' : 'play'));
+  if (tapInfo.textContent) tapInfo.textContent = t('tapAgain');
+  if (presetsDialog.open) {   // keep the label being typed
+    const label = presetName.value;
+    presetEmpty.textContent = t('presetEmpty');
+    renderPresets();
+    presetName.value = label;
+  }
+  updateSeq();
+  report();
+});
 
 // ---------- Init ----------
 renderBeats();

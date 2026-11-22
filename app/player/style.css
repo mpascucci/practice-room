@@ -240,7 +240,7 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
   #transposePanel label { grid-column: 1; grid-row: 1 / 3; text-align: center; }
   #transposePanel .interval { display: block; font-size: 1.4rem; font-weight: 600; }   /* the interval is the big label */
   #transposePanel .interval:empty::before { content: "0"; }
-  .tune[data-open="speed"] #transposeOut::after { content: " st"; }   /* compact box: no room for the full word */
+  .tune[data-open="speed"] #transposeOut::after { content: " " attr(data-short); }   /* compact box: no room for the full word */
   #transposePanel #transposeOut { display: block; font-size: .8rem; font-weight: 400; color: var(--muted); }
   #transposePanel .lt { display: block; position: absolute; top: 10px; left: 10px; }   /* "TR." in the corner, like the SPEED label */
   #transposePanel .lt .full { display: none; }

@@ -38,6 +38,7 @@ Use it online or install: <https://mpascucci.github.io/practice-room/app>
   - Files stay on your device
 - **Tabs with transport**: each app has its own play/stop button in the top bar, so you can start and stop either one without switching tabs.
 - **Per-app volume**: a volume button on each tab sets the level of the metronome, drone and player independently.
+- **Languages**: English, Italian, French, Spanish and German; follows the browser language, or pick one in the footer.
 - **Responsive design**: works on phones, tablets and desktops.
 - **Installable app**: Install and use offline on PC or mobile device.
 

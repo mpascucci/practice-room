@@ -3,7 +3,7 @@
 // background, so edits show up on the next launch. Bump VERSION to force a clean re-cache
 // (e.g. after adding or removing files).
 
-const VERSION = 'v5.07';
+const VERSION = 'v5.08';
 const CACHE = `practice-room-${VERSION}`;
 
 const FILES = [
@@ -11,6 +11,8 @@ const FILES = [
   'index.html',
   'style.css',
   'app.js',
+  'i18n.js',
+  'strings.js',
   'manifest.webmanifest',
   'CREDITS.md',
   'share-qr.svg',
@@ -22,6 +24,7 @@ const FILES = [
   'metronome/index.html',
   'metronome/style.css',
   'metronome/app.js',
+  'metronome/strings.js',
   'metronome/sounds/machine/low.flac',
   'metronome/sounds/machine/high.flac',
   'metronome/sounds/bass-snare/low.flac',
@@ -35,9 +38,11 @@ const FILES = [
   'drone/index.html',
   'drone/style.css',
   'drone/app.js',
+  'drone/strings.js',
   'player/index.html',
   'player/style.css',
   'player/app.js',
+  'player/strings.js',
   'player/pitchshift.js',
 ];
 

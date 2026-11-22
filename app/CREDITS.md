@@ -19,7 +19,7 @@ I created Practice Room with the help of Claude Code. Almost all the code was AI
 If you want, you can support my work in at least three ways:
 
 - Share the app
-- Contribute to the project. Read the [CONTRIBUTING.md](../CONTRIBUTING.md) file for more information.
+- Contribute to the project on [GitHub](https://github.com/mpascucci/practice-room). Read the [CONTRIBUTING.md](../CONTRIBUTING.md) file for more information.
 - [Buy me a coffee](https://buymeacoffee.com/mpascucci)
 
 ## Sounds and samples
