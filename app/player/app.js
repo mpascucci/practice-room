@@ -241,6 +241,22 @@ function viewToMark() {
   afterZoom();
 }
 
+// First play of an A-B loop: put the start mark at A and zoom so that A-B fills the window (with a little margin), since the window then
+// stays still. Later plays of the same loop leave the mark and the view alone.
+let preparedLoop = '';
+function prepareLoop() {
+  const d = audio.duration || 0;
+  if (!d || !hasLoop() || !state.loop) { preparedLoop = ''; return; }
+  const key = `${loopA}-${loopB}`;
+  if (key === preparedLoop) return;
+  preparedLoop = key;
+  startMark = loopA;
+  const pad = (loopB - loopA) * 0.05;
+  viewStart = (loopA - pad) / d;
+  viewSpan = (loopB - loopA + 2 * pad) / d;
+  afterZoom();
+}
+
 // Smooth playback position: audio.currentTime can advance in coarse, uneven steps, so while playing the position is a clock of our own: set
 // from audio.currentTime when the audio really starts to move, then advanced by real time x playbackRate, never pulled back by the
 // (stale, stepped) currentTime readings. It is re-synced only when the audio itself jumps (seek, loop wrap, a difference over 0.5 s) or
@@ -271,12 +287,14 @@ audio.addEventListener('waiting', () => { ppRunning = false; });                
 // position in the window (0..1): left of the middle (e.g. a play started at the left edge) the window stays still and the playhead
 // moves alone until it reaches the middle; at the middle or right of it (after a seek, a zoom, a pan, a loop wrap) the window recentres
 // on it at once. Near the ends of the track clampView() keeps the window inside the track, so the playhead leaves the middle and
-// runs to the edge at the end.
+// runs to the edge at the end. Exception: while the A-B loop is on, the window stays still unless the playhead leaves it.
 function followPlayhead(dt = 0) {
   const d = audio.duration || 0;
   if (!d || viewSpan >= 0.999 || interacting || !playing) return;
   const f = playPos() / d;
   const p = (f - viewStart) / viewSpan;
+  // While an A-B loop plays the window stays still (no scrolling, no jump at the wrap); it only moves if the playhead leaves it.
+  if (hasLoop() && state.loop) { if (p >= 0 && p <= 1) return; }
   if (p < 0 || p >= 0.5) { viewStart = f - viewSpan / 2; clampView(); }   // else: left of the middle, only the playhead moves
 }
 
@@ -753,6 +771,7 @@ function tick() {
 
 async function start() {
   if (!loaded || playing) return;
+  prepareLoop();
   // Only seek when needed: assigning currentTime, even to the same value, flushes the media pipeline and delays the start.
   if (startMark != null) { if (Math.abs(audio.currentTime - startMark) > 0.01) audio.currentTime = startMark; }
   else startMark = audio.currentTime;
@@ -780,7 +799,7 @@ function stop(pause = false) {
   audio.pause();
   if (pause) startMark = audio.currentTime;
   else if (startMark != null) audio.currentTime = startMark;   // back to where playback started
-  viewToMark();
+  if (!pause && !(hasLoop() && state.loop)) viewToMark();   // pause, and loop mode: the view stays as it is
   playing = false;
   clearInterval(timer);
   stopFrames();
@@ -1524,7 +1543,7 @@ el.markerRemove.addEventListener('click', () => {
   el.markerDialog.close();
 });
 el.clearLoop.addEventListener('click', () => { loopA = loopB = null; renderLoop(); });
-const toggleLoop = () => { state.loop = !state.loop; save(); renderLoop(); };
+const toggleLoop = () => { state.loop = !state.loop; prepareLoop(); save(); renderLoop(); };   // Start Loop: fit the view to A-B at once
 el.loopOn.addEventListener('click', toggleLoop);
 
 // Keyboard: Space play/pause, arrows seek, [ ] set A/B, L loop on/off.
