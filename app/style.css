@@ -191,8 +191,11 @@ body {
   border: 0;
   /* keep inactive pane alive (audio, timers) but out of sight and out of the tab order */
   visibility: hidden;
+  /* iPad Safari can let a hidden pane take taps or paint over the active one (the player, last in the DOM,
+     covered the metronome after its Presets button was tapped): hidden panes never take input, the active one is on top */
+  pointer-events: none;
 }
-.panes iframe.active { visibility: visible; }
+.panes iframe.active { visibility: visible; pointer-events: auto; z-index: 1; }
 
 .copyright {
   flex: none;

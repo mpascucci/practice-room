@@ -17,6 +17,7 @@ function select(app, focus = false) {
     tab.tabIndex = on ? 0 : -1;
     pane(a).classList.toggle('active', on);
     pane(a).tabIndex = on ? 0 : -1;
+    pane(a).inert = !on;   // hidden panes take no taps or focus (iPad Safari, see .panes iframe in style.css)
     if (on && focus) tab.focus();
   }
   history.replaceState(null, '', `#${app}`);
