@@ -50,7 +50,7 @@ const TEMPERAMENTS = [
   { id: 'werckmeister', name: 'Werckmeister III', fixed: true, ref: 9, cents: [0, 90.22, 192.18, 294.13, 390.22, 498.04, 588.27, 696.09, 792.18, 888.27, 996.09, 1092.18] },
   { id: 'kirnberger', name: 'Kirnberger III', fixed: true, ref: 9, cents: [0, 90.22, 193.16, 294.13, 386.31, 498.04, 590.22, 696.58, 792.18, 889.74, 996.09, 1088.27] },
   { id: 'vallotti', name: 'Vallotti', fixed: true, ref: 9, cents: [0, 94.13, 196.09, 298.04, 392.18, 501.96, 592.18, 698.04, 796.09, 894.13, 998.04, 1090.22] },
-  { id: 'turkish', name: 'Turkish (53 koma)', sys: 'turkish', ref: 7 },
+  { id: 'turkish', name: 'Ottoman (Holdrian 53 komma)', sys: 'turkish', ref: 7 },
   { id: 'arabic', name: 'Arabic (24 quarter tones)', sys: 'arabic', ref: 0 },
 ];
 
@@ -649,12 +649,18 @@ function renderSwell() {
   setRangeFill(swellDepth);
 }
 
-// Turkish system: solfège name of pitch class pc counted from the Rast note `a`, which is always SOL (as when playing
-// in another ahenk), followed by the sounding western letter, e.g. "SOL - C4" when Rast is on C.
-const trSolfege = (pc, a, oct = '') => noteName(SOLFEGE[(pc - a + 19) % 12], LETTERS[pc], oct);   // +7 (SOL) +12
-// Name of each drone note ("DO - C"). On the Turkish system the solfège is relative to Rast (see
+// Turkish system: the written name of the sounding pitch class pc when Rast sounds on `a`. Rast is always written
+// SOL - G (as when playing in another ahenk), so the whole name is transposed by the ahenk: with Rast on A, a sounding
+// A reads "SOL - G" and a sounding C4 "SI♭ - B♭3". The shift is the nearest one (−6…+5 semitones), which sets the
+// written octave.
+const trShift = (a) => ((a - 7 + 18) % 12) - 6;   // sounding − written, in semitones (0 in bolahenk, Rast on G)
+function trSolfege(pc, a, oct = '') {
+  const w = pc - trShift(a), wpc = ((w % 12) + 12) % 12;
+  return noteName(SOLFEGE[wpc], LETTERS[wpc], oct === '' ? '' : oct + Math.floor(w / 12));
+}
+// Name of each drone note ("DO - C"). On the Turkish system the name is the written one, Rast = SOL - G (see
 // trSolfege), and a note tuned to a named makam degree (the grid note temperDelta tunes it to) gets that name first,
-// e.g. "Rast (SOL - C)".
+// e.g. "Rast (SOL - G)" whatever the Rast note.
 function droneNames(oct = '') {
   const temp = TEMPERAMENTS.find((t) => t.id === state.temper);
   if (temp.sys !== 'turkish') return LETTERS.map((l, i) => noteName(SOLFEGE[i], l, oct));
@@ -787,7 +793,7 @@ let tunerMidi = null, tunerLastAt = 0;
 // Reference capture (rec button beside the reference note): while `capturing`, the tuner's raw pitch readings feed a run
 // that must stay within CAP_TOL_CENTS of its median for CAP_STEADY_MS; a few stray readings (CAP_MISSES in a row) are
 // ignored, a longer miss or a gap in the signal restarts the run. The median of the run becomes the reference.
-const CAP_STEADY_MS = 2000, CAP_TOL_CENTS = 10, CAP_MISSES = 3, CAP_GAP_MS = 250;
+const CAP_STEADY_MS = 3000, CAP_TOL_CENTS = 10, CAP_MISSES = 3, CAP_GAP_MS = 250;
 let capturing = false, capRun = [], capMiss = 0;
 const median = (a) => { const s = [...a].sort((x, y) => x - y), h = s.length >> 1; return s.length % 2 ? s[h] : (s[h - 1] + s[h]) / 2; };
 function capFeed(midi, now) {
@@ -806,7 +812,67 @@ function capFeed(midi, now) {
     retune(); save();
   }
 }
-function capStop() { capturing = false; capRun = []; capMiss = 0; syncRefRow(); }
+function capStop() { capturing = false; capRun = []; capMiss = 0; capDisplay(false); syncRefRow(); }
+
+// Capture display: the disks are hidden and a trace of the fundamental over the last CAP_TRACE_MS scrolls in their
+// place, right of the note name (newest at the right), centred on the pitch being captured (the run's
+// median, else the recent readings'), with the ±CAP_TOL_CENTS band the run must stay in, so steadiness shows at once.
+// The trace uses the raw (unsmoothed) pitch.
+const CAP_TRACE_MS = 4000, CAP_TRACE_CENTS = 60;   // time span and half height (cents) of the trace
+const capTrace = $('capTrace'), capBox = $('capBox'), capProgress = $('capProgress');
+let capHist = [];
+function capDisplay(on) {
+  $('tunerDisks').classList.toggle('capturing', on);
+  capBox.parentElement.classList.toggle('capturing', on);   // .tuner-id: note name left, trace + progress right
+  capBox.hidden = !on;
+  capProgress.style.width = '0';
+  capHist = [];
+}
+function capShow(midi, now) {
+  capProgress.style.width = `${capRun.length ? Math.min(100, ((now - capRun[0].t) / CAP_STEADY_MS) * 100) : 0}%`;   // the steady run so far
+  capHist.push({ t: now, midi });
+  while (capHist.length && now - capHist[0].t > CAP_TRACE_MS) capHist.shift();
+  capDraw(now);
+}
+function capDraw(now) {
+  const dpr = window.devicePixelRatio || 1, w = capTrace.clientWidth, h = capTrace.clientHeight;
+  if (!w || !h) return;
+  if (capTrace.width !== Math.round(w * dpr) || capTrace.height !== Math.round(h * dpr)) { capTrace.width = Math.round(w * dpr); capTrace.height = Math.round(h * dpr); }
+  const g = capTrace.getContext('2d');
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.clearRect(0, 0, w, h);
+  const cs = getComputedStyle(capTrace), lit = cs.getPropertyValue('--tn-lit').trim(), ring = cs.getPropertyValue('--tn-ring').trim();
+  const half = h / 2 - 6;
+  // tolerance band (the area outside it is dimmed) and centre line, drawn even in silence
+  const band = (CAP_TOL_CENTS / CAP_TRACE_CENTS) * half;
+  g.fillStyle = 'rgba(0, 0, 0, .35)';
+  g.fillRect(0, 0, w, h / 2 - band);
+  g.fillRect(0, h / 2 + band, w, h / 2 - band);
+  g.fillStyle = lit; g.globalAlpha = .2;   // the band: a yellow tint with brighter edges
+  g.fillRect(0, h / 2 - band, w, band * 2);
+  g.strokeStyle = lit; g.lineWidth = 1; g.globalAlpha = .6;
+  g.beginPath(); g.moveTo(0, h / 2 - band + .5); g.lineTo(w, h / 2 - band + .5); g.moveTo(0, h / 2 + band - .5); g.lineTo(w, h / 2 + band - .5); g.stroke();
+  g.globalAlpha = .8;
+  g.beginPath(); g.moveTo(0, h / 2); g.lineTo(w, h / 2); g.stroke();
+  g.globalAlpha = 1;
+  // the trace: bright line with a glow, broken at silences and at gaps; none while nothing has been heard recently
+  const recent = capHist.filter((p) => p.midi !== null && now - p.t < 1000).map((p) => p.midi);
+  const centre = capRun.length ? median(capRun.map((x) => x.midi)) : recent.length ? median(recent) : null;
+  if (centre === null) return;
+  const yOf = (m) => h / 2 - Math.max(-1, Math.min(1, ((m - centre) * 100) / CAP_TRACE_CENTS)) * half;
+  const xOf = (t) => w - ((now - t) / CAP_TRACE_MS) * w; g.lineWidth = 2.5; g.lineJoin = g.lineCap = 'round';
+  g.strokeStyle = ring; g.shadowColor = lit; g.shadowBlur = 8;
+  g.beginPath();
+  let prev = null;
+  for (const p of capHist) {
+    if (p.midi === null) { prev = null; continue; }
+    const x = xOf(p.t), y = yOf(p.midi);
+    if (prev && p.t - prev.t < 120) g.lineTo(x, y); else g.moveTo(x, y);
+    prev = p;
+  }
+  g.stroke();
+  g.shadowBlur = 0;
+}
 
 function tunerMsg(text = '') {   // error text only; hidden when empty
   $('tunerMsg').textContent = text;
@@ -854,7 +920,7 @@ function tunerReadout(f) {
   note.classList.remove('idle');
   if (temp.sys === 'turkish') {
     // Named relative to Rast: the traditional name in big and the nearest equal-tempered note to the target in small,
-    // its solfège counted from Rast = SOL (trSolfege), e.g. "Rast (SOL - C4)" when Rast is on C; just that when there
+    // its written name, Rast = SOL - G (trSolfege), e.g. "Rast (SOL - G4)" whatever the Rast note; just that when there
     // is no traditional name.
     const tn = sys.notes[deg], spc = ((n % 12) + 12) % 12, western = trSolfege(spc, anchor, Math.floor(n / 12) - 1);
     note.innerHTML = tn.trad ? `${tn.trad} <small>(${western})</small>` : western;
@@ -868,6 +934,8 @@ function tunerReadout(f) {
   const commas = Math.round(dev / COMMA_CENTS * 10) / 10;
   $('tunerHz').innerHTML = `<b>${f.toFixed(1)}</b> Hz &nbsp;<b>${sgn(cents)}${Math.abs(cents)}</b>¢ &nbsp;<b>${sgn(commas)}${Math.abs(commas).toFixed(1)}</b> ${t('koma')}`;
   // Disk k (k = -4…4) is the bin centred on k·10 cents; lit by how close the pitch is to that centre.
+  // The disks are hidden while a reference is being recorded (capDisplay).
+  if (capturing) return;
   const dc = Math.max(-40, Math.min(40, dev));
   const top = Math.round(dc / 10) + 4;   // nearest bin = most intense disk, outlined in white
   tunerDisks.forEach((d, k) => {
@@ -913,7 +981,8 @@ function tunerLoop() {
   let sq = 0;
   for (let i = 0; i < tunerBuf.length; i++) sq += tunerBuf[i] * tunerBuf[i];
   const now = performance.now();
-  const f = Math.sqrt(sq / tunerBuf.length) >= TUNER_RMS_GATE ? yinPitch(tunerBuf, tunerCtx.sampleRate) : 0;
+  const rms = Math.sqrt(sq / tunerBuf.length);
+  const f = rms >= TUNER_RMS_GATE ? yinPitch(tunerBuf, tunerCtx.sampleRate) : 0;
   if (f) {
     const midi = 69 + 12 * Math.log2(f / state.refA);
     // Light smoothing, but jump straight to a new note instead of gliding through the semitones in between.
@@ -927,7 +996,7 @@ function tunerLoop() {
     tunerReadout(0);
   }
   if (!f) capFeed(null, now);
-  if (capturing) capLabel(tunerMidi);
+  if (capturing) { capLabel(tunerMidi); capShow(f ? 69 + 12 * Math.log2(f / state.refA) : null, now); }
 }
 
 async function tunerMicError(err) {
@@ -1053,6 +1122,7 @@ refRec.addEventListener('click', () => {
   if (capturing) { capStop(); return; }
   if (state.caps[state.temper]) { delete state.caps[state.temper]; syncRefRow(); retune(); save(); return; }
   capturing = true; capRun = []; capMiss = 0;
+  capDisplay(true);
   syncRefRow();
 });
 syncRefRow();
@@ -1075,7 +1145,7 @@ notationRadios.forEach((r) => {
   });
 });
 window.addEventListener('storage', (e) => { if (e.key === NOTATION_KEY) applyNotation(readNotation()); });
-temperSel.addEventListener('change', () => { state.temper = temperSel.value; capturing = false; syncRefRow(); retune(); save(); });
+temperSel.addEventListener('change', () => { state.temper = temperSel.value; if (capturing) capStop(); syncRefRow(); retune(); save(); });
 refASel.addEventListener('change', () => {
   const v = Math.round(+refASel.value);
   state.refA = Number.isFinite(v) ? Math.min(REF_A_MAX, Math.max(REF_A_MIN, v)) : 440;

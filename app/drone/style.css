@@ -67,7 +67,7 @@
 /* tuner controls sit on the curtain: firmer border so the --row tint stands out from it */
 :root[data-theme="light"] .curtain-inner { --line: #b8ac97; }
 /* the disks container stays dark: dark-theme disk colours */
-:root[data-theme="light"] .tuner-disks {
+:root[data-theme="light"] :is(.tuner-disks, .cap-trace) {
   --tn-dim: #6b490d; --tn-lit: #ffd95e; --tn-mid-dim: #2a4a7f; --tn-mid-lit: #a8d2ff; --tn-ring: #fff;
 }
 /* field labels in black */
@@ -511,7 +511,8 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid var(--a
 .tuner-handle .fork { width: 18px; height: 18px; }
 .tuner-handle .chev { width: 16px; height: 16px; transition: transform 280ms; transform: rotate(180deg); }
 .tuner.collapsed .tuner-handle .chev { transform: none; }
-.tuner-row { display: flex; flex-direction: column; align-items: center; gap: 16px; width: min(100%, 520px); }
+.tuner-row { --d: min(46px, calc((100vw - 92px) / 11));   /* disk size (see .tuner-disks), also sizes the capture trace */
+  display: flex; flex-direction: column; align-items: center; gap: 16px; width: min(100%, 520px); }
 .tuner-id { display: flex; align-items: center; justify-content: center; height: 2.5rem; }   /* fixed: same height for the big note and the small "listening..." */
 .tuner-note { font-size: 2.2rem; font-weight: 600; line-height: 1.1; }
 .tuner-note .acc { height: .8em; width: auto; overflow: visible; vertical-align: -.08em; margin: 0 .06em; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
@@ -525,7 +526,7 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid var(--a
 .tuner-disks {
   width: 100%; display: flex; justify-content: center;
   /* 9 disks + 8 gaps (.25 d) = 11 d must fit the width left by the page (2×14px), curtain (2×12px) and container (2×14px) padding, plus the outline ring */
-  --d: min(46px, calc((100vw - 92px) / 11)); gap: calc(var(--d) * .25);
+  gap: calc(var(--d) * .25);
   /* rectangular dark container, like the beats panel of the metronome */
   padding: 16px 14px; border-radius: 14px;
   background: #141210; box-shadow: 0 8px 30px var(--shadow), inset 0 0 0 1px #ffffff0d;
@@ -540,6 +541,19 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid var(--a
 }
 .tuner-disks .disk.top { outline-color: var(--tn-ring); }
 .tuner-disks .disk.mid { --dim: var(--tn-mid-dim); --lit: var(--tn-mid-lit); }
+/* Recording the reference: the disks are hidden; the note name moves to the left third and the trace of the
+   fundamental (#capTrace, drawn by capDraw) takes the right two thirds, on a dark display like the disks'. The row
+   takes the disks' place, so the curtain keeps its height: note row (2.5rem) + row gap (16px) + disks (--d + 2×16px). */
+.tuner-disks.capturing { display: none; }
+.tuner-id.capturing { align-self: stretch; justify-content: space-between; gap: 10px; height: calc(2.5rem + 16px + var(--d) + 32px); }
+.tuner-id.capturing .tuner-note { flex: 1 1 0; min-width: 0; font-size: 1.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tuner-id.capturing .tuner-note.idle { font-size: .95rem; white-space: normal; }
+/* trace + progress bar (how long the current steady run has lasted, of CAP_STEADY_MS; set by capShow) */
+.cap-box { flex: 0 0 66.67%; width: 66.67%; min-width: 0; height: 100%; display: flex; flex-direction: column; gap: 6px; }   /* explicit width: a canvas's own pixel size would push the note out */
+.cap-box[hidden] { display: none; }
+.cap-progress { flex: none; height: 4px; border-radius: 2px; background: var(--tn-dim); overflow: hidden; }
+.cap-progress span { display: block; height: 100%; width: 0; background: var(--tn-lit); border-radius: inherit; }
+.cap-trace { flex: 1 1 auto; min-height: 0; width: 100%;  border-radius: 10px; background: #141210; box-shadow: inset 0 0 0 1px #ffffff0d; }
 
 .tuner-opts { display: flex; gap: 12px; align-items: flex-end; justify-content: center; margin-top: 14px; width: min(100%, 520px); }
 .tuner-opts[hidden] { display: none; }

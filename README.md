@@ -29,7 +29,7 @@ Use it online or install: <https://mpascucci.github.io/practice-room/app>
   - Spectrometer to visualize the sound harmonics.
 - **Tuner** (in the Drone tab)
   - Western temperaments (just, Pythagorean, meantone, Werckmeister, Kirnberger, Vallotti)
-  - Turkish 53-koma and Arabic quarter-tone systems.
+  - Ottoman (Holdrian 53-komma) and Arabic quarter-tone systems.
   - Reference note per temperament, or record it from a note you play
 - **Player**: open or record an audio file.
   - Waveform you can zoom (pinch or mouse wheel)

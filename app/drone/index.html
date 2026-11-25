@@ -16,6 +16,7 @@
           <div class="tuner-row">
             <div class="tuner-id">
               <p class="tuner-note idle" id="tunerNote" aria-live="off" data-i18n="listening">listening...</p>
+              <div class="cap-box" id="capBox" aria-hidden="true" hidden><canvas class="cap-trace" id="capTrace"></canvas><div class="cap-progress"><span id="capProgress"></span></div></div>
             </div>
             <div class="tuner-disks" id="tunerDisks" aria-hidden="true"><span class="disk"></span><span class="disk"></span><span class="disk"></span><span class="disk"></span><span class="disk mid"></span><span class="disk"></span><span class="disk"></span><span class="disk"></span><span class="disk"></span></div>
           <p class="tuner-hz" id="tunerHz">&nbsp;</p>
@@ -145,11 +146,11 @@
       </div>
     </section>
 
-    <section class="sweep swell" id="swellSection" aria-label="Brass swell" data-i18n-attr="aria-label:brassSwell">
+    <section class="sweep swell" id="swellSection" aria-label="Vibrato" data-i18n-attr="aria-label:brassSwell">
       <label class="switch sweep-toggle">
         <input type="checkbox" id="swellOn">
         <span class="track"><span class="knob"></span></span>
-        <span class="sweep-title" data-i18n="swell">Swell</span>
+        <span class="sweep-title" data-i18n="swell">Vibrato</span>
       </label>
       <div class="field">
         <label for="swellRate" data-i18n="rate">Rate <output id="swellRateOut"></output></label>
@@ -178,7 +179,7 @@
 
   <dialog class="pdlg" id="presetsDialog" aria-labelledby="presetsLabel">
     <form method="dialog">
-      <p id="presetsLabel" class="dlg-title" data-i18n="presets">Presets <small data-i18n="presetsHint">harmonics, sweep and swell</small></p>
+      <p id="presetsLabel" class="dlg-title" data-i18n="presets">Presets <small data-i18n="presetsHint">harmonics, sweep and vibrato</small></p>
       <div class="preset-save">
         <input id="presetName" type="text" maxlength="20" autocomplete="off" aria-label="Preset label" data-i18n-attr="aria-label:presetLabel">
         <button type="button" class="btn primary" id="presetSave" data-i18n="save">Save</button>
