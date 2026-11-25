@@ -330,6 +330,19 @@ body {
 .dlg-close { flex: none; margin: 8px 20px 16px; }
 
 
+/* ---------- Install dialog (iOS steps) ---------- */
+#installDialog {
+  width: min(92vw, 360px); padding: 0; border: 1px solid var(--line); border-radius: 14px;
+  background: var(--tab-active); color: var(--text); box-shadow: 0 20px 60px var(--shadow);
+}
+#installDialog[open] { display: flex; flex-direction: column; }
+#installDialog::backdrop { background: rgba(0, 0, 0, .65); }
+.install-body { padding: 18px 20px 6px; }
+.install-body h2 { margin: 0 0 12px; font-size: 1.15rem; text-align: center; }
+.install-body ol { margin: 0; padding-left: 1.4em; line-height: 1.5; }
+.install-body li + li { margin-top: 8px; }
+.ios-share { vertical-align: -.25em; color: var(--link); }
+
 /* ---------- Share dialog (QR code) ---------- */
 #shareDialog {
   width: min(92vw, 360px); padding: 0; border: 1px solid var(--line); border-radius: 14px;

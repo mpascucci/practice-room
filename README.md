@@ -11,6 +11,8 @@ Use it online or install: <https://mpascucci.github.io/practice-room/app>
   &nbsp;&nbsp;
   <a href="screenshots/drone.png"><img src="screenshots/drone.png" alt="Drone" width="150"></a>
   &nbsp;&nbsp;
+  <a href="screenshots/tuner.png"><img src="screenshots/tuner.png" alt="Tuner" width="150"></a>
+  &nbsp;&nbsp;
   <a href="screenshots/player.png"><img src="screenshots/player.png" alt="Player" width="150"></a>
 </p>
 

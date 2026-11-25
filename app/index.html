@@ -91,6 +91,18 @@
     <button type="button" class="dlg-btn dlg-close" id="shareClose" data-i18n="close">Close</button>
   </dialog>
 
+  <dialog id="installDialog" aria-labelledby="installTitle">
+    <div class="install-body">
+      <h2 id="installTitle" data-i18n="installTitle">Install Practice Room</h2>
+      <ol>
+        <li><span data-i18n="installIos1">Tap the Share button</span> <svg class="ios-share" viewBox="0 0 24 24" width="1.2em" height="1.2em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9H6.5A1.5 1.5 0 0 0 5 10.5v9A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 17.5 9H16"/><path d="M12 14V3M8 6.5 12 3l4 3.5"/></svg></li>
+        <li data-i18n="installIos2">Tap “Show more”</li>
+        <li data-i18n="installIos3">Tap “Add to Home Screen”</li>
+      </ol>
+    </div>
+    <button type="button" class="dlg-btn dlg-close" id="installClose" data-i18n="close">Close</button>
+  </dialog>
+
   <script src="i18n.js" defer></script>
   <script src="strings.js" defer></script>
   <script src="app.js" defer></script>

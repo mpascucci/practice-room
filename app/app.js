@@ -301,6 +301,9 @@ window.addEventListener('appinstalled', () => {
   installBtn.hidden = true;
   installBtn.previousElementSibling.hidden = true;
 });
+const installDialog = document.getElementById('installDialog');
+document.getElementById('installClose').addEventListener('click', () => installDialog.close());
+installDialog.addEventListener('click', (e) => { if (e.target === installDialog) installDialog.close(); });   // backdrop
 installBtn.addEventListener('click', async () => {
   if (deferredInstall) {
     const ev = deferredInstall;
@@ -311,8 +314,8 @@ installBtn.addEventListener('click', async () => {
   }
   const ua = navigator.userAgent;
   const ios = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  alert(t(ios ? 'installIos'
-    : /Firefox/.test(ua) ? 'installFirefox'
+  if (ios) { installDialog.showModal(); return; }   // a dialog, not an alert: the steps show the iOS share icon
+  alert(t(/Firefox/.test(ua) ? 'installFirefox'
     : /Safari/.test(ua) && !/Chrome|Chromium|Edg/.test(ua) ? 'installSafari'
     : 'installOther'));
 });
