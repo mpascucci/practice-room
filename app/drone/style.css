@@ -541,16 +541,17 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid var(--a
 }
 .tuner-disks .disk.top { outline-color: var(--tn-ring); }
 .tuner-disks .disk.mid { --dim: var(--tn-mid-dim); --lit: var(--tn-mid-lit); }
-/* Recording the reference: the disks are hidden; the note name moves to the left third and the trace of the
+/* Trace (recording the reference, or the plot view): the disks are hidden; the note name moves to the left third and the trace of the
    fundamental (#capTrace, drawn by capDraw) takes the right two thirds, on a dark display like the disks'. The row
    takes the disks' place, so the curtain keeps its height: note row (2.5rem) + row gap (16px) + disks (--d + 2×16px). */
-.tuner-disks.capturing { display: none; }
-.tuner-id.capturing { align-self: stretch; justify-content: space-between; gap: 10px; height: calc(2.5rem + 16px + var(--d) + 32px); }
-.tuner-id.capturing .tuner-note { flex: 1 1 0; min-width: 0; font-size: 1.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tuner-id.capturing .tuner-note.idle { font-size: .95rem; white-space: normal; }
+.tuner-disks.trace { display: none; }
+.tuner-id.trace { align-self: stretch; justify-content: space-between; gap: 10px; height: calc(2.5rem + 16px + var(--d) + 32px); }
+.tuner-id.trace .tuner-note { flex: 1 1 0; min-width: 0; font-size: 1.5rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tuner-id.trace .tuner-note.idle { font-size: .95rem; white-space: normal; }
 /* trace + progress bar (how long the current steady run has lasted, of CAP_STEADY_MS; set by capShow) */
 .cap-box { flex: 0 0 66.67%; width: 66.67%; min-width: 0; height: 100%; display: flex; flex-direction: column; gap: 6px; }   /* explicit width: a canvas's own pixel size would push the note out */
 .cap-box[hidden] { display: none; }
+.cap-progress[hidden] { display: none; }
 .cap-progress { flex: none; height: 4px; border-radius: 2px; background: var(--tn-dim); overflow: hidden; }
 .cap-progress span { display: block; height: 100%; width: 0; background: var(--tn-lit); border-radius: inherit; }
 .cap-trace { flex: 1 1 auto; min-height: 0; width: 100%;  border-radius: 10px; background: #141210; box-shadow: inset 0 0 0 1px #ffffff0d; }
@@ -616,6 +617,18 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid var(--a
 .ref-rec[data-state="captured"]:hover { border-color: var(--muted); }
 .ref-rec:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .ref-rec[data-state="listening"] { animation: none; } }
+/* Display button right of the Notation radio: switches the tuner between disks and plot; shows the other view's icon */
+.view-btn {
+  flex: 0 0 auto; width: 48px; height: 36px; padding: 0; border: 1px solid var(--line); border-radius: 9px;   /* same height and corners as the radio */
+  display: grid; place-items: center; background: var(--row); color: var(--text); cursor: pointer;
+}
+.view-btn:hover { border-color: var(--muted); }
+.view-btn:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+.view-btn svg { width: 20px; height: 20px; }
+.view-btn .i-plot { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.view-btn .i-disks { width: 32px; fill: var(--tn-lit); }   /* the tuner disks' colours: amber outside, blue centre */
+.view-btn .i-disks .mid { fill: var(--tn-mid-lit); }
+.view-btn[data-view="plot"] .i-plot, .view-btn[data-view="disks"] .i-disks { display: none; }
 .info-text { margin: 0; line-height: 1.45; color: var(--text); }
 .pdlg .dlg-title small { color: var(--muted); font-weight: 400; font-size: .8rem; margin-left: .4em; }
 .preset-save { display: flex; gap: 8px; }

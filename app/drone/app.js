@@ -146,6 +146,7 @@ const defaults = () => ({
   temper: 'equal',  // tuner temperament (see TEMPERAMENTS)
   refs: {},         // tuner reference note per temperament id (pitch class); missing = the temperament's `ref`
   caps: {},         // tuner reference recorded from the mic per temperament id (Hz); overrides `refs`
+  view: 'disks',    // tuner display: 'disks' or 'plot' (the trace of the reference recording, see traceDisplay)
   mod: { on: true, rate: 0.2, depth: 70, from: 2 },
   swell: { on: false, rate: 0.5, depth: 50 },   // 2 s period
   harmonics: Array.from({ length: HARMONICS }, (_, i) => ({
@@ -200,6 +201,7 @@ function load() {
       refA: Number.isFinite(s.refA) && s.refA >= REF_A_MIN && s.refA <= REF_A_MAX ? Math.round(s.refA) : d.refA,
       temper: TEMPERAMENTS.some((t) => t.id === s.temper) ? s.temper : d.temper,
       refs: loadRefs(s),
+      view: s.view === 'plot' ? 'plot' : d.view,
       caps: Object.fromEntries(Object.entries(s.caps && typeof s.caps === 'object' ? s.caps : {})
         .filter(([id, hz]) => TEMPERAMENTS.some((t) => t.id === id && t.ref !== undefined) && Number.isFinite(hz) && hz >= 20 && hz <= 5000)),
       mod: {
@@ -812,27 +814,56 @@ function capFeed(midi, now) {
     retune(); save();
   }
 }
-function capStop() { capturing = false; capRun = []; capMiss = 0; capDisplay(false); syncRefRow(); }
+function capStop() { capturing = false; capRun = []; capMiss = 0; traceDisplay(); syncRefRow(); }
 
-// Capture display: the disks are hidden and a trace of the fundamental over the last CAP_TRACE_MS scrolls in their
-// place, right of the note name (newest at the right), centred on the pitch being captured (the run's
-// median, else the recent readings'), with the ±CAP_TOL_CENTS band the run must stay in, so steadiness shows at once.
-// The trace uses the raw (unsmoothed) pitch.
-const CAP_TRACE_MS = 4000, CAP_TRACE_CENTS = 60;   // time span and half height (cents) of the trace
+// Trace display: the disks are hidden and a trace of the fundamental over the last CAP_TRACE_MS scrolls in their
+// place, right of the note name (newest at the right), with a ±CAP_TOL_CENTS band, so steadiness shows at once.
+// The trace uses the raw (unsmoothed) pitch. Shown while recording a reference (centred on the pitch being
+// captured: the run's median, else the recent readings', with a progress bar) and in the tuner's plot view
+// (state.view, the button beside the Notation radio: centred on the nearest note of the temperament, as the disks).
+const CAP_TRACE_MS = 4000, CAP_TRACE_CENTS = 46;   // time span and half height (cents) of the trace
+// y-axis labels (cents) in a left gutter, on medium and large screens only
+const TRACE_LABELS = [-30, -10, 10, 30], TRACE_GUTTER = 30, traceLabelsMq = window.matchMedia('(min-width: 600px)');
 const capTrace = $('capTrace'), capBox = $('capBox'), capProgress = $('capProgress');
-let capHist = [];
-function capDisplay(on) {
-  $('tunerDisks').classList.toggle('capturing', on);
-  capBox.parentElement.classList.toggle('capturing', on);   // .tuner-id: note name left, trace + progress right
-  capBox.hidden = !on;
+let capHist = [], traceMode = null;   // null (disks), 'cap' or 'plot'
+let plotTarget = null;   // plot view: the displayed note (midi, fractional in other temperaments) the trace is centred on
+let plotNext = null, plotNextAt = 0;   // a different note being displayed, and since when (see PLOT_SWITCH_MS)
+const PLOT_SWITCH_MS = 250;   // a note change shorter than this (a peak) keeps the plot
+function traceDisplay() {
+  const mode = capturing ? 'cap' : state.view === 'plot' ? 'plot' : null;
+  $('tunerDisks').classList.toggle('trace', !!mode);
+  capBox.parentElement.classList.toggle('trace', !!mode);   // .tuner-id: note name left, trace (+ progress) right
+  capBox.hidden = !mode;
+  capProgress.parentElement.hidden = mode !== 'cap';
   capProgress.style.width = '0';
-  capHist = [];
+  if (mode !== traceMode) { capHist = []; plotTarget = plotNext = null; }   // the two modes centre the trace differently
+  traceMode = mode;
 }
-function capShow(midi, now) {
-  capProgress.style.width = `${capRun.length ? Math.min(100, ((now - capRun[0].t) / CAP_STEADY_MS) * 100) : 0}%`;   // the steady run so far
-  capHist.push({ t: now, midi });
+// midi: raw pitch or null; dev: its deviation (cents) from the nearest note of the temperament (plot view only)
+function capShow(midi, now, dev = null) {
+  if (traceMode === 'cap') capProgress.style.width = `${capRun.length ? Math.min(100, ((now - capRun[0].t) / CAP_STEADY_MS) * 100) : 0}%`;   // the steady run so far
+  capHist.push({ t: now, midi, dev });
   while (capHist.length && now - capHist[0].t > CAP_TRACE_MS) capHist.shift();
   capDraw(now);
+}
+// Plot view: the trace is centred on the displayed note (the nearest note of the temperament to the smoothed pitch)
+// and shows the raw pitch's deviation from it. The history is erased on silence (when the readout falls back to
+// "listening...", after TUNER_HOLD_MS) and when that note changes for at least PLOT_SWITCH_MS: a shorter change
+// is drawn against the current note (a spike); a lasting one keeps its points, re-measured from the new note.
+function plotFeed(f, now) {
+  const tgt = tunerMidi === null ? null : tunerMidi - tunerNearest(freqOfMidi(tunerMidi), tunerTemp()).dev / 100;
+  const same = (a, b) => Math.abs(a - b) <= 0.05;
+  if (tgt === null) { capHist = []; plotTarget = plotNext = null; }
+  else if (plotTarget === null) { capHist = []; plotTarget = tgt; plotNext = null; }
+  else if (same(tgt, plotTarget)) plotNext = null;
+  else if (plotNext === null || !same(tgt, plotNext)) { plotNext = tgt; plotNextAt = now; }
+  else if (now - plotNextAt >= PLOT_SWITCH_MS) {
+    capHist = capHist.filter((p) => p.t >= plotNextAt)
+      .map((p) => ({ ...p, dev: p.midi === null ? null : (p.midi - tgt) * 100 }));
+    plotTarget = tgt; plotNext = null;
+  }
+  const midi = f && plotTarget !== null ? 69 + 12 * Math.log2(f / state.refA) : null;
+  capShow(midi, now, midi === null ? null : (midi - plotTarget) * 100);
 }
 function capDraw(now) {
   const dpr = window.devicePixelRatio || 1, w = capTrace.clientWidth, h = capTrace.clientHeight;
@@ -843,34 +874,56 @@ function capDraw(now) {
   g.clearRect(0, 0, w, h);
   const cs = getComputedStyle(capTrace), lit = cs.getPropertyValue('--tn-lit').trim(), ring = cs.getPropertyValue('--tn-ring').trim();
   const half = h / 2 - 6;
+  const x0 = traceLabelsMq.matches ? TRACE_GUTTER : 0, pw = w - x0;   // plot area, right of the labels
+  const yc = (c) => h / 2 - (c / CAP_TRACE_CENTS) * half;
   // tolerance band (the area outside it is dimmed) and centre line, drawn even in silence
   const band = (CAP_TOL_CENTS / CAP_TRACE_CENTS) * half;
   g.fillStyle = 'rgba(0, 0, 0, .35)';
-  g.fillRect(0, 0, w, h / 2 - band);
-  g.fillRect(0, h / 2 + band, w, h / 2 - band);
+  g.fillRect(x0, 0, pw, h / 2 - band);
+  g.fillRect(x0, h / 2 + band, pw, h / 2 - band);
   g.fillStyle = lit; g.globalAlpha = .2;   // the band: a yellow tint with brighter edges
-  g.fillRect(0, h / 2 - band, w, band * 2);
+  g.fillRect(x0, h / 2 - band, pw, band * 2);
   g.strokeStyle = lit; g.lineWidth = 1; g.globalAlpha = .6;
-  g.beginPath(); g.moveTo(0, h / 2 - band + .5); g.lineTo(w, h / 2 - band + .5); g.moveTo(0, h / 2 + band - .5); g.lineTo(w, h / 2 + band - .5); g.stroke();
+  g.beginPath(); g.moveTo(x0, h / 2 - band + .5); g.lineTo(w, h / 2 - band + .5); g.moveTo(x0, h / 2 + band - .5); g.lineTo(w, h / 2 + band - .5); g.stroke();
   g.globalAlpha = .8;
-  g.beginPath(); g.moveTo(0, h / 2); g.lineTo(w, h / 2); g.stroke();
+  g.beginPath(); g.moveTo(x0, h / 2); g.lineTo(w, h / 2); g.stroke();
   g.globalAlpha = 1;
+  if (x0) {
+    // labels right-aligned in the gutter; faint grid lines where the band doesn't already mark the value
+    g.font = '10px system-ui, sans-serif'; g.textAlign = 'right'; g.textBaseline = 'middle';
+    for (const c of TRACE_LABELS) {
+      const y = Math.round(yc(c)) + .5;
+      if (Math.abs(c) !== CAP_TOL_CENTS) { g.strokeStyle = 'rgba(255, 255, 255, .12)'; g.beginPath(); g.moveTo(x0, y); g.lineTo(w, y); g.stroke(); }
+      g.fillStyle = 'rgba(255, 255, 255, .55)';
+      g.fillText(`${c > 0 ? '+' : '−'}${Math.abs(c)}¢`, x0 - 4, y);
+    }
+  }
   // the trace: bright line with a glow, broken at silences and at gaps; none while nothing has been heard recently
-  const recent = capHist.filter((p) => p.midi !== null && now - p.t < 1000).map((p) => p.midi);
-  const centre = capRun.length ? median(capRun.map((x) => x.midi)) : recent.length ? median(recent) : null;
-  if (centre === null) return;
-  const yOf = (m) => h / 2 - Math.max(-1, Math.min(1, ((m - centre) * 100) / CAP_TRACE_CENTS)) * half;
-  const xOf = (t) => w - ((now - t) / CAP_TRACE_MS) * w; g.lineWidth = 2.5; g.lineJoin = g.lineCap = 'round';
+  // offset of a point from the centre line, in cents
+  let off;
+  if (traceMode === 'plot') {
+    if (!capHist.some((p) => p.midi !== null && now - p.t < 1000)) return;
+    off = (p) => p.dev;
+  } else {
+    const recent = capHist.filter((p) => p.midi !== null && now - p.t < 1000).map((p) => p.midi);
+    const centre = capRun.length ? median(capRun.map((x) => x.midi)) : recent.length ? median(recent) : null;
+    if (centre === null) return;
+    off = (p) => (p.midi - centre) * 100;
+  }
+  const yOf = (p) => h / 2 - Math.max(-1, Math.min(1, off(p) / CAP_TRACE_CENTS)) * half;
+  const xOf = (t) => w - ((now - t) / CAP_TRACE_MS) * pw; g.lineWidth = 2.5; g.lineJoin = g.lineCap = 'round';
+  g.save(); g.beginPath(); g.rect(x0, 0, pw, h); g.clip();   // the oldest points don't run under the labels
   g.strokeStyle = ring; g.shadowColor = lit; g.shadowBlur = 8;
   g.beginPath();
   let prev = null;
   for (const p of capHist) {
     if (p.midi === null) { prev = null; continue; }
-    const x = xOf(p.t), y = yOf(p.midi);
-    if (prev && p.t - prev.t < 120) g.lineTo(x, y); else g.moveTo(x, y);
+    const x = xOf(p.t), y = yOf(p);
+    if (prev && p.t - prev.t < 120) g.lineTo(x, y); else g.moveTo(x, y);   // broken at gaps
     prev = p;
   }
   g.stroke();
+  g.restore();
   g.shadowBlur = 0;
 }
 
@@ -881,20 +934,12 @@ function tunerMsg(text = '') {   // error text only; hidden when empty
 }
 
 const tunerDisks = [...document.querySelectorAll('#tunerDisks .disk')];
-function tunerReadout(f) {
-  const note = $('tunerNote');
-  if (!f) {
-    note.textContent = t('listening');
-    note.classList.add('idle');
-    $('tunerHz').innerHTML = '&nbsp;';
-    tunerDisks.forEach((d) => { d.style.setProperty('--i', 0); d.classList.remove('top'); });
-    return;
-  }
-  // Cents above the anchor note (see anchorOf), folded into one octave, then the nearest degree of the temperament.
-  // While a reference is being recorded the display is in equal temperament, independent of the current reference.
-  const temp = capturing ? TEMPERAMENTS[0] : TEMPERAMENTS.find((t) => t.id === state.temper);
-  const sys = SYSTEMS[temp.sys];
-  const anchor = anchorOf(temp);
+// While a reference is being recorded the display is in equal temperament, independent of the current reference.
+const tunerTemp = () => (capturing ? TEMPERAMENTS[0] : TEMPERAMENTS.find((t) => t.id === state.temper));
+// Cents above the anchor note (see anchorOf), folded into one octave, then the nearest degree of the temperament and
+// the deviation from it (cents).
+function tunerNearest(f, temp) {
+  const sys = SYSTEMS[temp.sys], anchor = anchorOf(temp);
   const tonic = freqOfMidi(60 + anchor + anchorCents(temp) / 100);
   const c = ((1200 * Math.log2(f / tonic)) % 1200 + 1200) % 1200;
   const scale = temperScale(temp);
@@ -914,6 +959,20 @@ function tunerReadout(f) {
     });
     if (Math.abs(nd) <= TR_NAME_RANGE) { deg = nk; dev = nd; }
   }
+  return { anchor, deg, dev };
+}
+function tunerReadout(f) {
+  const note = $('tunerNote');
+  if (!f) {
+    note.textContent = t('listening');
+    note.classList.add('idle');
+    $('tunerHz').innerHTML = '&nbsp;';
+    tunerDisks.forEach((d) => { d.style.setProperty('--i', 0); d.classList.remove('top'); });
+    return;
+  }
+  const temp = tunerTemp();
+  const sys = SYSTEMS[temp.sys];
+  const { anchor, deg, dev } = tunerNearest(f, temp);
   const pc = sys ? 0 : (anchor + deg) % 12;
   const target = f * Math.pow(2, -dev / 1200);
   const n = Math.round(69 + 12 * Math.log2(target / state.refA));   // equal-tempered neighbour, for the octave number only
@@ -934,8 +993,8 @@ function tunerReadout(f) {
   const commas = Math.round(dev / COMMA_CENTS * 10) / 10;
   $('tunerHz').innerHTML = `<b>${f.toFixed(1)}</b> Hz &nbsp;<b>${sgn(cents)}${Math.abs(cents)}</b>¢ &nbsp;<b>${sgn(commas)}${Math.abs(commas).toFixed(1)}</b> ${t('koma')}`;
   // Disk k (k = -4…4) is the bin centred on k·10 cents; lit by how close the pitch is to that centre.
-  // The disks are hidden while a reference is being recorded (capDisplay).
-  if (capturing) return;
+  // The disks are hidden while the trace is shown (traceDisplay).
+  if (traceMode) return;
   const dc = Math.max(-40, Math.min(40, dev));
   const top = Math.round(dc / 10) + 4;   // nearest bin = most intense disk, outlined in white
   tunerDisks.forEach((d, k) => {
@@ -996,7 +1055,9 @@ function tunerLoop() {
     tunerReadout(0);
   }
   if (!f) capFeed(null, now);
-  if (capturing) { capLabel(tunerMidi); capShow(f ? 69 + 12 * Math.log2(f / state.refA) : null, now); }
+  if (capturing) capLabel(tunerMidi);
+  if (traceMode === 'cap') capShow(f ? 69 + 12 * Math.log2(f / state.refA) : null, now);
+  else if (traceMode === 'plot') plotFeed(f, now);
 }
 
 async function tunerMicError(err) {
@@ -1122,7 +1183,7 @@ refRec.addEventListener('click', () => {
   if (capturing) { capStop(); return; }
   if (state.caps[state.temper]) { delete state.caps[state.temper]; syncRefRow(); retune(); save(); return; }
   capturing = true; capRun = []; capMiss = 0;
-  capDisplay(true);
+  traceDisplay();
   syncRefRow();
 });
 syncRefRow();
@@ -1145,6 +1206,21 @@ notationRadios.forEach((r) => {
   });
 });
 window.addEventListener('storage', (e) => { if (e.key === NOTATION_KEY) applyNotation(readNotation()); });
+// Display button (right of the Notation radio): switches the tuner between the disks and the plot (trace) view.
+// Its icon and label show the view it switches to.
+const viewBtn = $('tunerView');
+function syncViewBtn() {
+  viewBtn.dataset.view = state.view;
+  const label = t(state.view === 'plot' ? 'showDisks' : 'showPlot');
+  viewBtn.setAttribute('aria-label', label);
+  viewBtn.title = label;
+}
+viewBtn.addEventListener('click', () => {
+  state.view = state.view === 'plot' ? 'disks' : 'plot';
+  syncViewBtn(); traceDisplay(); save();
+  if (!traceMode) tunerReadout(tunerMidi === null ? 0 : freqOfMidi(tunerMidi));   // relight the disks at once
+});
+syncViewBtn(); traceDisplay();
 temperSel.addEventListener('change', () => { state.temper = temperSel.value; if (capturing) capStop(); syncRefRow(); retune(); save(); });
 refASel.addEventListener('change', () => {
   const v = Math.round(+refASel.value);
@@ -1703,6 +1779,7 @@ I18N.onChange(() => {
   buildTemperSel();
   retune();
   syncRefRow();
+  syncViewBtn();
   const note = $('tunerNote');
   if (note.classList.contains('idle')) note.textContent = t('listening');
   buildInstruments();
