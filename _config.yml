@@ -1,0 +1,8 @@
+# GitHub Pages (Jekyll) settings for the site root, i.e. the rendered README.
+# The default theme's jekyll-seo-tag turns these into <title>, description, Open Graph and Twitter tags.
+# The app (app/index.html) has its own tags.
+title: Practice Room
+description: Metronome, tuner, drone and audio player for music practice. Free, works offline, no ads, no tracking.
+image: /app/og-image.png
+twitter:
+  card: summary_large_image
