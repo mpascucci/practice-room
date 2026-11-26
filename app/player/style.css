@@ -326,7 +326,7 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
   .loop-btns .ico, .steps .ico { display: block; }
 }
 
-.zoom-reset { position: absolute; top: 6px; right: 6px; min-height: 0; height: 24px; padding: 0 8px; border-radius: 12px; font-size: .75rem; background: #000a; font-variant-numeric: tabular-nums; }
+.zoom-reset { position: absolute; top: 6px; right: 6px; min-height: 0; height: 24px; padding: 0 8px; border-radius: 12px; font-size: .75rem; background: #000a; color: #fff; font-variant-numeric: tabular-nums; }
 
 .skip .ico { width: 20px; height: 20px; display: block; }
 
