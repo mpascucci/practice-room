@@ -233,11 +233,14 @@ function afterZoom() {
   el.zoomReset.textContent = `×${(1 / viewSpan).toFixed(1)}`;
   drawWave();
 }
-// After stop / end of track: scroll the zoomed view so the start mark is at the left edge (zoom level kept).
+// After stop / end of track: if the start mark is no longer visible, scroll the zoomed view so it is at the left edge (zoom level
+// kept). If it is still visible the view stays as it is and only the playhead goes back.
 function viewToMark() {
   const d = audio.duration || 0;
   if (!d || startMark == null || viewSpan >= 0.999) return;
-  viewStart = startMark / d;
+  const f = startMark / d;
+  if (f >= viewStart && f <= viewStart + viewSpan) return;   // mark still visible: keep the view
+  viewStart = f;
   afterZoom();
 }
 
