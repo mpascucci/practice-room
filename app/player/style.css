@@ -154,6 +154,18 @@ input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-of
 /* Waveform: canvas for display, transparent range input on top for pointer + keyboard seeking */
 .wave { touch-action: pan-y; user-select: none; -webkit-user-select: none; position: relative; height: 96px; border-radius: 10px; background: var(--panel); border: 1px solid var(--line); overflow: hidden; }
 .wave canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+/* Decoding: a row of bars pulsing in a wave, centred on the flat line */
+.wave-loading { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; gap: 6px; pointer-events: none; }
+.wave.loading .wave-loading { display: flex; }
+.wave-loading i { width: 6px; height: 60%; max-height: 64px; border-radius: 3px; background: var(--accent); transform: scaleY(.15); animation: wave-load 1.1s ease-in-out infinite; }
+.wave-loading i:nth-child(2) { animation-delay: .1s; }
+.wave-loading i:nth-child(3) { animation-delay: .2s; }
+.wave-loading i:nth-child(4) { animation-delay: .3s; }
+.wave-loading i:nth-child(5) { animation-delay: .4s; }
+.wave-loading i:nth-child(6) { animation-delay: .5s; }
+.wave-loading i:nth-child(7) { animation-delay: .6s; }
+@keyframes wave-load { 0%, 100% { transform: scaleY(.15); opacity: .5; } 50% { transform: scaleY(1); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .wave-loading i { animation-duration: 3s; } }
 .wave input[type="range"] { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; pointer-events: none; }   /* keyboard only; pointer input is handled in JS */
 /* Full-track progress under the waveform: accent band = visible (zoomed) window, round handle = playback position */
 .progress { position: relative; height: 16px; margin-top: 2px; cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }   /* tall hit area around the thin track */

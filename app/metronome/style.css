@@ -181,7 +181,7 @@ body {
 .handle:hover { color: var(--text); }
 .handle:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; border-radius: 4px; }
 
-/* One measure: no handle, so no room reserved for it */
+/* One measure or one beat: no handle, so no room reserved for it */
 .stage[data-nohandle] .handle { display: none; }
 .stage[data-nohandle] .cells { padding-right: 0; }
 .stage[data-nohandle] .beats {
@@ -254,6 +254,7 @@ body {
   color: var(--muted);
 }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
+.stage[data-single] + .legend span:first-child { display: none; }   /* one beat: no silent state */
 .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .dot.silent { background: var(--silent); box-shadow: inset 0 0 0 1px #fff3; }
 .dot.normal { background: var(--normal); }

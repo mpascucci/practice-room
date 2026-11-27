@@ -147,8 +147,10 @@ function renderBeats() {
   stageEl.style.setProperty('--n', n);
   stageEl.style.setProperty('--m', mCount);
   stageEl.toggleAttribute('data-single', n === 1);   // one beat: drawn bigger
-  // One measure: no length handle (unless it is already erased, so it can still be restored).
-  stageEl.toggleAttribute('data-nohandle', mCount === 1 && !isCustom());
+  // One beat: no silent state (a silent lone beat would play nothing).
+  if (n === 1) state.measures.forEach((m) => { if (m[0] === 'silent') m[0] = 'normal'; });
+  // No length handle with one beat (nothing to erase) or one measure (unless it is already erased, so it can still be restored).
+  stageEl.toggleAttribute('data-nohandle', n === 1 || (mCount === 1 && !isCustom()));
 
   // Reuse existing rows/disks, add/remove the difference.
   while (measuresEl.children.length > mCount) measuresEl.lastElementChild.remove();
@@ -513,7 +515,8 @@ measuresEl.addEventListener('click', (e) => {
   if (!disk) return;
   const m = +disk.dataset.measure, i = +disk.dataset.index;
   const row = state.measures[m];
-  row[i] = STATES[(STATES.indexOf(row[i]) + 1) % STATES.length];
+  const states = beatCount() === 1 ? ['normal', 'accent'] : STATES;   // one beat: never silent
+  row[i] = states[(states.indexOf(row[i]) + 1) % states.length];
   disk.dataset.state = row[i];
   disk.setAttribute('aria-label', diskLabel(m, i));
   save();
@@ -786,13 +789,21 @@ for (const kind of ['normal', 'accent']) {
 }
 const modeClick = $('modeClick'), modeInst = $('modeInst'), modePerc = $('modePerc'), modeMute = $('modeMute');
 const percDialog = $('percDialog'), percForm = $('percForm');
+let lastSound = 'click';   // the sound Mute goes back to when tapped again
 function syncMode() {
+  if (state.mode !== 'mute') lastSound = state.mode;
   modeClick.setAttribute('aria-pressed', state.mode === 'click');
   modeInst.setAttribute('aria-pressed', state.mode === 'instrument');
   modePerc.setAttribute('aria-pressed', state.mode === 'percussion');
   modeMute.setAttribute('aria-pressed', state.mode === 'mute');
 }
-modeMute.addEventListener('click', () => { state.mode = 'mute'; syncMode(); save(); });
+// Tapping Mute again unmutes, back to the previous sound.
+modeMute.addEventListener('click', () => {
+  state.mode = state.mode === 'mute' ? lastSound : 'mute';
+  syncMode();
+  save();
+  if (ctx && state.mode === 'percussion') loadPerc();   // no-op if the set is already loaded
+});
 modeClick.addEventListener('click', () => { state.mode = 'click'; syncMode(); save(); });
 // Selecting Percussion (or tapping it again) opens its dialog.
 modePerc.addEventListener('click', () => {

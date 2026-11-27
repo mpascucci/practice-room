@@ -182,8 +182,15 @@ const hasLoop = () => loopA != null && loopB != null;
 // ---------- Waveform ----------
 const PEAK_BUCKETS = 20000;   // fine enough to stay readable when zoomed in
 
+// Animated bars over the waveform box while the file is being decoded.
+function setWaveLoading(on) {
+  el.wave.parentElement.classList.toggle('loading', on);
+  el.wave.parentElement.toggleAttribute('aria-busy', on);
+}
+
 // Decode the file once (offline context, no audio output) and keep a coarse peak envelope.
 async function computePeaks(file, token) {
+  setWaveLoading(true);
   try {
     const Ctx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
     const buf = await new Ctx(1, 1, 44100).decodeAudioData(await file.arrayBuffer());
@@ -208,6 +215,8 @@ async function computePeaks(file, token) {
     drawWave();
   } catch {
     // undecodable here (or out of memory): keep the flat line; playback may still work
+  } finally {
+    if (token === loadToken) setWaveLoading(false);   // else a newer load owns the animation
   }
 }
 
@@ -949,6 +958,7 @@ function unloadTrack() {
   audio.load();
   loaded = false;
   loadToken++;            // ignore a waveform still being decoded
+  setWaveLoading(false);
   peaks = null;
   loopA = loopB = null;
   clearMarkers();
