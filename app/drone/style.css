@@ -368,6 +368,8 @@ input[type="range"]:focus-visible::-moz-range-thumb { outline: 2px solid var(--a
 /* animated by JS while sweeping — no lag */
 .rows.sweeping .row.swept::before { transition: none; }
 .row.off { background: var(--row-off); }
+.row.tail[hidden] { display: none; }   /* H14–H64 row: only while a recording left a tail */
+.row.tail .h { font-size: .7rem; white-space: nowrap; }   /* longer label in the same column */
 .row.off .pitch, .row.off .hz, .row.off .pct { opacity: .4; }
 .row.off .vol { opacity: .45; }
 

@@ -12,6 +12,10 @@ let notation = readNotation();
 const noteName = (sol, letter, oct = '') => (notation === 'solfege' ? `${sol}${oct}`
   : notation === 'letters' ? `${letter}${oct}` : `${sol} - ${letter}${oct}`);
 const HARMONICS = 13;
+// Harmonics above H13 measured by the recorder ("tail"): not shown, played by one extra oscillator.
+const TAIL_MAX = 64, TAIL_MAX_HZ = 8000;
+const cleanTail = (t) => (Array.isArray(t) && t.length <= TAIL_MAX - HARMONICS && t.every((a) => Number.isFinite(a) && a >= 0 && a <= 1)
+  && t.some((a) => a > 0) ? t : null);
 const STORAGE_KEY = 'shrutibox:v1';
 const ATTACK = 0.6, RELEASE = 0.9, GLIDE = 0.08; // seconds
 
@@ -153,6 +157,9 @@ const defaults = () => ({
     on: i < 4,   // default and Reset: H1–H4 only
     vol: Math.round(100 / Math.pow(i + 1, 0.8)),   // gently falling spectrum
   })),
+  tail: null,       // recorded amplitudes of H14… (same scale as the slider gains), or null; see the harmonics recorder
+  tailOn: true,     // the Tail row (shown while a tail exists): on/off and volume, applied on top of the recorded levels
+  tailVol: 100,
 });
 
 const $ = (id) => document.getElementById(id);
@@ -219,6 +226,9 @@ function load() {
         on: typeof s.harmonics[i]?.on === 'boolean' ? s.harmonics[i].on : h.on,
         vol: Number.isFinite(s.harmonics[i]?.vol) ? s.harmonics[i].vol : h.vol,
       })),
+      tail: cleanTail(s.tail),
+      tailOn: typeof s.tailOn === 'boolean' ? s.tailOn : d.tailOn,
+      tailVol: Number.isFinite(s.tailVol) ? Math.min(100, Math.max(0, s.tailVol)) : d.tailVol,
     };
   } catch { /* storage unavailable — use defaults */ }
 }
@@ -355,7 +365,17 @@ function buildGraph() {
     Object.assign(p, { mod, depth, lfo, swell, swellDepth });
     partials.push(p);
   }
-  nodes = { master, partials, rate, swellLfo };
+  // Tail (H14… from a recording): one oscillator at f0 whose PeriodicWave holds only those harmonics, fed into
+  // H13's sweep stage (after its slider gain), so it gets H13's sweep and swell but not its level.
+  const tailOsc = ctx.createOscillator();
+  tailOsc.frequency.value = f0;
+  tailOsc.detune.value = (Math.random() - 0.5) * 4;
+  const tailGain = ctx.createGain();
+  tailGain.gain.value = 0;
+  tailOsc.connect(tailGain).connect(partials[HARMONICS - 1].mod);
+  tailOsc.start();
+  nodes = { master, partials, rate, swellLfo, tailOsc, tailGain };
+  applyTail();
   applyMod(true);
   applySwell(true);
 }
@@ -485,6 +505,20 @@ function applyPitch() {
   if (!nodes) return;
   const f0 = fundamental();
   nodes.partials.forEach((p, i) => p.osc.frequency.setTargetAtTime(f0 * (i + 1), ctx.currentTime, GLIDE));
+  nodes.tailOsc.frequency.setTargetAtTime(f0, ctx.currentTime, GLIDE);
+}
+
+// Rebuilds the tail's waveform from state.tail; silent without a tail or while the tuner mutes H2 and above.
+function applyTail() {
+  if (!nodes) return;
+  const tail = state.tail;
+  if (tail) {
+    const n = HARMONICS + 1 + tail.length;
+    const re = new Float32Array(n), im = new Float32Array(n);
+    tail.forEach((a, j) => { im[HARMONICS + 1 + j] = a; });
+    nodes.tailOsc.setPeriodicWave(ctx.createPeriodicWave(re, im, { disableNormalization: true }));
+  }
+  nodes.tailGain.gain.setTargetAtTime(tail && !harmHold && state.tailOn ? volToGain(state.tailVol) : 0, ctx.currentTime, 0.03);
 }
 
 function applyMaster(target = playing ? volToGain(MASTER_VOL) : 0, tc = 0.05) {
@@ -580,6 +614,54 @@ function buildRows() {
     rowsEl.append(li);
     rowEls.push(el);
   }
+  buildTailRow(tpl);
+}
+
+// Tail row, labelled H14–H64 (after H13, shown only while a recording left a tail): one on/off and volume for all of H14…
+let tailEl = null;
+function tailLabels() {
+  tailEl.h.textContent = `H${HARMONICS + 1}–H${TAIL_MAX}`;
+  tailEl.on.setAttribute('aria-label', t('tailOnOff'));
+  tailEl.vol.setAttribute('aria-label', t('tailVolume'));
+}
+function buildTailRow(tpl) {
+  const li = tpl.content.firstElementChild.cloneNode(true);
+  li.classList.add('tail');
+  tailEl = {
+    li, on: li.querySelector('.on'), h: li.querySelector('.h'), pitch: li.querySelector('.pitch'),
+    hz: li.querySelector('.hz'), vol: li.querySelector('.vol'), pct: li.querySelector('.pct'),
+  };
+  tailLabels();
+  tailEl.on.addEventListener('change', () => {
+    state.tailOn = tailEl.on.checked;
+    clearInstrument();
+    renderTail(); applyTail(); save();
+  });
+  tailEl.vol.addEventListener('input', () => {
+    state.tailVol = tailEl.vol.valueAsNumber;
+    if (!state.tailOn && state.tailVol > 0) state.tailOn = true;   // as for the harmonics
+    clearInstrument();
+    renderTail(); applyTail(); save();
+  });
+  rowsEl.append(li);
+}
+// Like renderRow; the tail follows H13's sweep and swell.
+function renderTail() {
+  const el = tailEl, tail = state.tail;
+  if (!el) return;   // rows not built yet
+  el.li.hidden = !tail;
+  if (!tail) return;
+  el.hz.textContent = `${Math.round(fundamental() * (HARMONICS + 1))}+ Hz`;
+  el.on.checked = state.tailOn;
+  if (el.vol.valueAsNumber !== state.tailVol) el.vol.value = state.tailVol;
+  el.pct.textContent = state.tailVol;
+  el.li.classList.toggle('off', !state.tailOn);
+  el.li.classList.toggle('swept', HARMONICS - 1 >= animatedFrom());
+  const m = modFactor(HARMONICS - 1);
+  const level = playing && state.tailOn ? (0.25 + 0.75 * state.tailVol / 100) * m : 0;
+  el.li.style.setProperty('--level', level.toFixed(3));
+  const sweeping = playing && state.tailOn && m !== 1;
+  setRangeFill(el.vol, sweeping ? (state.tailVol / 100) * Math.sqrt(m) : undefined);
 }
 
 // Slider visuals: --p = thumb position (set value), --lp = live level fill (0..1).
@@ -614,6 +696,7 @@ function renderRow(i) {
 const animatedFrom = () => (state.swell.on ? 0 : modStart());
 function animate() {
   for (let i = animatedFrom(); i < HARMONICS; i++) renderRow(i);
+  renderTail();
   animId = requestAnimationFrame(animate);
 }
 function syncAnimation() {
@@ -686,10 +769,11 @@ function renderPitch() {
     el.pitch.innerHTML = `${name}${c}`;
     el.hz.textContent = `${(f0 * (i + 1)).toFixed(1)} Hz`;
   });
+  renderTail();
   freqEl.textContent = `${droneNames(state.octave)[state.note]} · ${f0.toFixed(2)} Hz (A4 = ${state.refA} Hz)`;
 }
 
-const updateLevels = () => state.harmonics.forEach((_, i) => renderRow(i));
+const updateLevels = () => { state.harmonics.forEach((_, i) => renderRow(i)); renderTail(); };
 
 function renderAll() {
   noteSel.value = state.note;
@@ -700,8 +784,10 @@ function renderAll() {
   updateLevels();
 }
 
-function setAll(fn) {
+// clearTail: presets and resets also drop the recorded harmonics above H13.
+function setAll(fn, clearTail = false) {
   clearInstrument();
+  if (clearTail) { state.tail = null; applyTail(); renderTail(); }
   state.harmonics.forEach((h, i) => { fn(h, i); applyPartial(i); });
   updateLevels();
   save();
@@ -757,13 +843,13 @@ swellDepth.addEventListener('input', () => {
 });
 
 $('allOn').addEventListener('click', () => setAll((h) => { h.on = true; }));
-$('allOff').addEventListener('click', () => setAll((h) => { h.on = false; }));
+$('allOff').addEventListener('click', () => setAll((h) => { h.on = false; }, true));
 // Spectrum presets
 const FLAT_VOL = 60;
 const linearVol = (i) => Math.round((100 * (HARMONICS - i)) / HARMONICS);   // H1 100 → H13 8
 const FLAT_ON = 10;   // flat: H1–H10 on, H11–H13 off (still set to the flat volume, so they sound right if switched on)
-$('presetFlat').addEventListener('click', () => setAll((h, i) => { h.on = i < FLAT_ON; h.vol = FLAT_VOL; }));
-$('presetLinear').addEventListener('click', () => setAll((h, i) => { h.on = true; h.vol = linearVol(i); }));
+$('presetFlat').addEventListener('click', () => setAll((h, i) => { h.on = i < FLAT_ON; h.vol = FLAT_VOL; }, true));
+$('presetLinear').addEventListener('click', () => setAll((h, i) => { h.on = true; h.vol = linearVol(i); }, true));
 
 // ---------- Collapsible harmonics panel ----------
 // The header's chevron button folds the preset buttons and the harmonic rows away (open by default, remembered).
@@ -1111,6 +1197,7 @@ function holdHarmonics(mute) {
   if (mute) harmHold = state.harmonics.map((h) => h.on);
   state.harmonics.forEach((h, i) => { h.on = mute ? i === 0 && h.on : harmHold[i]; renderRow(i); applyPartial(i); });
   if (!mute) harmHold = null;
+  applyTail();
   save();
 }
 
@@ -1358,10 +1445,11 @@ function recFrame() {
   const dt = Math.min(0.1, (now - recLastAt) / 1000);
   const k = recLastAt ? 1 - Math.exp(-dt / REC_SMOOTH_S) : 1;
   recLastAt = now;
-  const raw = [];
-  for (let i = 0; i < HARMONICS; i++) {
+  const raw = [];   // H1…H13 for the sliders, then the tail up to TAIL_MAX
+  const fMax = Math.min(TAIL_MAX_HZ, sr / 2 * 0.95);
+  for (let i = 0; i < TAIL_MAX; i++) {
     const f = f0 * (i + 1);
-    if (f * ratio >= sr / 2 * 0.95) { raw.push(0); continue; }
+    if (f * ratio >= (i < HARMONICS ? sr / 2 * 0.95 : fMax)) { raw.push(0); continue; }
     const lo = Math.max(1, Math.floor((f / ratio) / bin)), hi = Math.min(recSpec.length - 1, Math.ceil((f * ratio) / bin));
     let peak = -Infinity;
     for (let b = lo; b <= hi; b++) if (recSpec[b] > peak) peak = recSpec[b];
@@ -1372,14 +1460,18 @@ function recFrame() {
   const top = Math.max(...recAmps);
   if (!(top > 0)) return;
   clearInstrument();
-  recAmps.forEach((a, i) => {
+  const tail = recAmps.slice(HARMONICS).map((a) => (a / top >= REC_OFF_BELOW ? Math.round(1e4 * a / top) / 1e4 : 0));   // 4 decimals: compact in storage
+  state.tail = cleanTail(tail);
+  if (state.tail) { state.tailOn = true; state.tailVol = 100; }   // the recorded levels, as for the sliders
+  renderTail();
+  recAmps.slice(0, HARMONICS).forEach((a, i) => {
     const rel = a / top;
     const h = state.harmonics[i];
     h.on = rel >= REC_OFF_BELOW;
     if (h.on) h.vol = Math.round(100 * Math.sqrt(rel));
     renderRow(i); applyPartial(i);
   });
-  if (now - recSavedAt > 500) { recSavedAt = now; save(); }
+  if (now - recSavedAt > 500) { recSavedAt = now; applyTail(); save(); }
 }
 
 async function recStart() {
@@ -1417,7 +1509,7 @@ function recStop() {
   const wasOn = !!recStream;
   recStream = recCtx = recAnalyser = recTime = recSpec = recAmps = null;
   recBtn.classList.remove('on'); recBtn.setAttribute('aria-pressed', 'false');
-  if (wasOn) save();
+  if (wasOn) { applyTail(); save(); }
 }
 
 recBtn.addEventListener('click', () => (recBtn.classList.contains('on') ? recStop() : recStart()));
@@ -1488,7 +1580,7 @@ function applyInstrument(id) {
     const a = inst.amps[i] / peak;
     h.on = a > 0;
     if (a > 0) h.vol = Math.round(100 * Math.sqrt(a));
-  });
+  }, true);
   Object.assign(state.mod, inst.mod ?? { on: false });
   Object.assign(state.swell, inst.swell ?? { on: false });
   renderMod(); renderSwell();
@@ -1537,6 +1629,9 @@ function loadPresets() {
           rate: clampNum(p.swell?.rate, RATE_MIN, SWELL_RATE_MAX, d.swell.rate),
           depth: clampNum(p.swell?.depth, 0, 100, d.swell.depth),
         },
+        tail: cleanTail(p.tail),
+        tailOn: p.tailOn !== false,
+        tailVol: clampNum(p.tailVol, 0, 100, 100),
       }];
     }).slice(0, MAX_PRESETS);
   } catch { return []; }
@@ -1620,6 +1715,7 @@ function savePreset() {
     name,
     harmonics: state.harmonics.map((h) => ({ on: h.on, vol: h.vol })),
     mod: { ...state.mod }, swell: { ...state.swell },
+    tail: state.tail, tailOn: state.tailOn, tailVol: state.tailVol,
   };
   const at = presets.findIndex((x) => x.name.toLowerCase() === name.toLowerCase());
   if (at >= 0) presets[at] = p;                       // same label: overwrite
@@ -1634,6 +1730,9 @@ function applyPreset(p) {
   state.harmonics.forEach((h, i) => { Object.assign(h, p.harmonics[i]); applyPartial(i); });
   Object.assign(state.mod, p.mod);
   Object.assign(state.swell, p.swell);
+  state.tail = p.tail ?? null;   // older presets have none
+  state.tailOn = p.tailOn ?? true; state.tailVol = p.tailVol ?? 100;
+  applyTail();
   renderMod(); renderSwell();
   applyRate(); applyModFrom(); applySwellRate(); applySwell();
   syncAnimation(); updateLevels(); save();
@@ -1665,7 +1764,7 @@ renderPresetSelect();
 
 $('reset').addEventListener('click', () => {
   const d = defaults().harmonics;
-  setAll((h, i) => { h.on = d[i].on; h.vol = d[i].vol; });
+  setAll((h, i) => { h.on = d[i].on; h.vol = d[i].vol; }, true);
 });
 
 // Space = play/stop (unless a control has focus and uses Space itself).
@@ -1776,6 +1875,7 @@ window.addEventListener('message', (e) => {
 I18N.onChange(() => {
   playBtn.setAttribute('aria-label', t(playing ? 'stop' : 'play'));
   rowEls.forEach(rowLabels);
+  tailLabels();
   buildTemperSel();
   retune();
   syncRefRow();
