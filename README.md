@@ -4,7 +4,11 @@ A small, installable web app for music practice: a **metronome**, a **tuner**, a
 
 It is completely free and its source code is available (non-commercial license, see below): you can use it online or install it on your device. No ads, no tracking, no cookies. Settings are stored locally on your device.
 
-Use it online or install: <https://mpascucci.github.io/practice-room/app>
+<p align="center">
+  <br>
+  <a href="https://mpascucci.github.io/practice-room/app"><img src="https://img.shields.io/badge/-Open_the_app-2b6cb0?style=for-the-badge" alt="Open the app"></a>
+  <br><br>
+</p>
 
 <p align="center">
   <a href="screenshots/metronome.png"><img src="screenshots/metronome.png" alt="Metronome" width="150"></a>
