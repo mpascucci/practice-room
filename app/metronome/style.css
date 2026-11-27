@@ -188,9 +188,12 @@ body {
   --d: min(88px, 100cqw / (var(--n) * 1.25 - 0.25),
            (100cqh - 2 * var(--pad-y) - (var(--m) - 1) * var(--row-gap)) / var(--m));
 }
-/* A lone beat is drawn bigger (up to 150px) */
-.stage[data-single] .beats { --d: min(150px, 100cqw / 1.85, (100cqh - 2 * var(--pad-y) - (var(--m) - 1) * var(--row-gap)) / var(--m)); }
-.stage[data-single][data-nohandle] .beats { --d: min(150px, 100cqw, (100cqh - 2 * var(--pad-y) - (var(--m) - 1) * var(--row-gap)) / var(--m)); }
+/* A lone beat is drawn bigger (up to 150px). The rows are spaced by 0.35 d instead of
+   --row-gap, so the lit ring (offset outline + scale, ~0.15 d) never reaches the next disk. */
+.stage[data-single] .measures { gap: 0; }
+.stage[data-single] .beats + .beats { margin-top: calc(var(--d) * 0.35); }
+.stage[data-single] .beats { --d: min(150px, 100cqw / 1.85, (100cqh - 2 * var(--pad-y)) / (var(--m) * 1.35 - 0.35)); }
+.stage[data-single][data-nohandle] .beats { --d: min(150px, 100cqw, (100cqh - 2 * var(--pad-y)) / (var(--m) * 1.35 - 0.35)); }
 
 /* Horizontal segment striking through the erased beats, up to the arrow tip. */
 .strike {
@@ -238,6 +241,8 @@ body {
 
 /* Lit beat: instant on, short fade out */
 .disk.lit {
+  position: relative;
+  z-index: 1;                /* ring painted above the neighbouring disks */
   outline-color: var(--ring);
   transform: scale(1.06);
   transition: none;

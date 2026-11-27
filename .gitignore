@@ -22,6 +22,9 @@ npm-debug.log*
 *.swp
 *~
 
+# Dev server and element inspector (local tooling, kept out of git)
+dev/
+
 # Claude Code local settings
 .claude/settings.local.json
 .claude/
